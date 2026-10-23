@@ -17,12 +17,10 @@ SDD_GLOBS_TESTE_PADRAO='tests/**,test/**,__tests__/**,spec/**,**/*.test.*,**/*.s
 # Localização
 # ---------------------------------------------------------------------------
 
-# Raiz do plugin (pasta acima de lib/).
+# Raiz do plugin (pasta acima de lib/). Vem sempre da localização deste
+# arquivo: CLAUDE_PLUGIN_ROOT pode apontar para outro plugin quando os
+# utilitários são chamados de fora de uma sessão com o SDD.
 sdd_raiz_plugin() {
-  if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
-    printf '%s\n' "$CLAUDE_PLUGIN_ROOT"
-    return
-  fi
   local aqui
   aqui="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   (cd "$aqui/.." && pwd)

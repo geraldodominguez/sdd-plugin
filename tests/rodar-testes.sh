@@ -53,6 +53,10 @@ n="$(grep -c '<!-- sdd:inicio -->' "$P/CLAUDE.md")"
 grep -q 'Texto do usuário.' "$P/CLAUDE.md" && ok "preserva conteúdo do usuário no CLAUDE.md" || fail "preserva conteúdo do usuário"
 (cd "$P" && assert_exit 1 "rejeita proteção inválida" sdd-iniciar --protecao talvez)
 
+Q3="$TMP/outro-plugin"; mkdir -p "$Q3"
+(cd "$Q3" && CLAUDE_PLUGIN_ROOT=/caminho/de/outro/plugin sdd-iniciar >/dev/null 2>&1)
+[ -f "$Q3/.sdd/constituicao.md" ] && ok "ignora CLAUDE_PLUGIN_ROOT de outro plugin" || fail "CLAUDE_PLUGIN_ROOT de outro plugin"
+
 echo "sdd-estado"
 (cd "$P" && assert_exit 0 "cria feature nível 2" sdd-estado nova "Redefinição de senha" --nivel 2)
 F="$(cd "$P" && sdd-estado ver feature)"
@@ -193,7 +197,8 @@ grep -q '| fase | especificacao para tarefas |' "$Q2/specs/001-primeira/historic
 grep -q '| criada | nível 1: Primeira | por: Pessoa Teste' "$Q2/specs/001-primeira/historico.md" && ok "histórico registra autor pelo git" || fail "autor no histórico"
 n="$(cd "$Q2" && sdd-estado listar | wc -l | tr -d ' ')"
 [ "$n" = "2" ] && ok "listar mostra todas as features" || fail "listar" "linhas: $n"
-(cd "$Q2" && sdd-estado historico 001-primeira --desde 2999-01-01 | grep -q .) && fail "historico --desde filtra" || ok "historico --desde filtra"
+out="$(cd "$Q2" && sdd-estado historico 001-primeira --desde 2999-01-01)"
+[ -z "$out" ] && ok "historico --desde filtra" || fail "historico --desde filtra" "$out"
 
 echo "aprovação"
 (cd "$Q2" && sdd-estado usar 002-segunda >/dev/null)
@@ -277,7 +282,8 @@ out="$(cd "$Q2" && sdd-pendencias)"
 echo "$out" | grep -q '003-do-backlog: spec.md espera aprovação' && ok "pendência de aprovação" || fail "pendência de aprovação" "$out"
 echo "$out" | grep -q 'B-001 está na sprint 2026-S51 e ainda não tem spec' && ok "pendência de sprint sem spec" || fail "sprint sem spec" "$out"
 mkdir -p "$Q2/docs/adr"; printf '# ADR-0001: algo\n\n| Campo | Valor |\n|---|---|\n| Situação | proposta |\n' > "$Q2/docs/adr/0001-algo.md"
-(cd "$Q2" && sdd-pendencias) | grep -q 'docs/adr/0001-algo.md: ADR-0001: algo' && ok "pendência de ADR proposto" || fail "ADR proposto"
+out="$(cd "$Q2" && sdd-pendencias)"
+echo "$out" | grep -q 'docs/adr/0001-algo.md: ADR-0001: algo' && ok "pendência de ADR proposto" || fail "ADR proposto" "$out"
 n="$(cd "$Q2" && sdd-pendencias --contar)"
 [ "$n" -ge 3 ] && ok "contar pendências ($n)" || fail "contar pendências" "$n"
 out="$(cd "$Q2" && sdd-status)"
