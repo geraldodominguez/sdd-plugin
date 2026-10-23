@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+# sdd-backlog: gerencia os itens ainda sem spec (.sdd/backlog.md).
+#
+# Uso:
+#   sdd-backlog listar [--todos]          itens abertos por prioridade (--todos inclui promovidos e descartados)
+#   sdd-backlog adicionar "título" [--prioridade alta|media|baixa] [--nivel 1|2|?] [--origem "texto"]
+#   sdd-backlog ver B-NNN                 a linha do item e o detalhe abaixo dela
+#   sdd-backlog prioridade B-NNN alta|media|baixa
+#   sdd-backlog promover B-NNN NNN-slug   marca o item como virado feature (usado por sdd-estado nova)
+#   sdd-backlog descartar B-NNN "motivo"
+#   sdd-backlog contar                    quantidade de itens abertos
+#
+# Formato da linha (contrato público, lido pelos utilitários):
+#   - [ ] B-NNN título (prioridade: alta; nivel: 2; origem: texto; criado: AAAA-MM-DD)
+#   - [x] B-NNN título (...; feature: NNN-slug)        promovido
+#   - [-] B-NNN título (...; descartado: motivo)       descartado
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+[ -d "$RAIZ/.sdd" ] || { echo "sdd-backlog: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+ARQ="$RAIZ/.sdd/backlog.md"
+
+garantir_arquivo() {
+  [ -f "$ARQ" ] && return
+  local t
+  t="$RAIZ/.sdd/templates/backlog.md"
+  [ -f "$t" ] || t="$(sdd_raiz_plugin)/skills/metodologia/templates/backlog.md"
+  cp "$t" "$ARQ"
+}
+
+linhas_itens() { grep -E '^- \[[ xX-]\] B-[0-9]{3} ' "$ARQ" 2>/dev/null || true; }
+
+campo() { # campo <linha> <nome>
+  { printf '%s' "$1" | grep -oE "[(; ]$2: [^;)]*" || true; } | head -1 | sed -E "s/^[(; ]$2: //"
+}
+
+peso() { case "$1" in alta) echo 1 ;; media|média) echo 2 ;; baixa) echo 3 ;; *) echo 4 ;; esac; }
+
+proximo_id() {
+  local maior=0 n
+  for n in $(linhas_itens | grep -oE 'B-[0-9]{3}' | cut -c3-); do
+    n=$((10#$n)); [ "$n" -gt "$maior" ] && maior="$n"
+  done
+  printf 'B-%03d' $((maior + 1))
+}
+
+existe() { linhas_itens | grep -qE "^- \[[ xX-]\] $1 " || { echo "sdd-backlog: item $1 não encontrado." >&2; exit 1; }; }
+
+# troca_linha <id> <nova_linha>
+troca_linha() {
+  local id="$1" nova="$2" tmp="$ARQ.tmp.$$"
+  awk -v id="$id" -v nova="$nova" '
+    !feito && $0 ~ ("^- \\[[ xX-]\\] " id " ") { print nova; feito = 1; next }
+    { print }
+  ' "$ARQ" > "$tmp"
+  mv "$tmp" "$ARQ"
+}
+
+linha_de() { linhas_itens | grep -E "^- \[[ xX-]\] $1 " | head -1; }
+
+cmd="${1:-listar}"
+shift || true
+
+case "$cmd" in
+  listar)
+    todos=0; [ "${1:-}" = "--todos" ] && todos=1
+    [ -f "$ARQ" ] || { echo "Backlog vazio."; exit 0; }
+    i=0
+    linhas_itens | while IFS= read -r l; do
+      i=$((i + 1))
+      marca="$(printf '%s' "$l" | cut -c4)"
+      if [ "$todos" -eq 0 ] && [ "$marca" != " " ]; then continue; fi
+      printf '%s\t%04d\t%s\n' "$(peso "$(campo "$l" prioridade)")" "$i" "$l"
+    done | sort -t "$(printf '\t')" -k1,1n -k2,2n | cut -f3- | {
+      n=0
+      while IFS= read -r l; do
+        n=$((n + 1))
+        id="$(printf '%s' "$l" | grep -oE 'B-[0-9]{3}' | head -1)"
+        titulo="$(printf '%s' "$l" | sed -E 's/^- \[.\] B-[0-9]{3} //; s/ \([^()]*\)$//')"
+        marca="$(printf '%s' "$l" | cut -c4)"
+        sit=""
+        case "$marca" in x|X) sit=" → $(campo "$l" feature)" ;; -) sit=" (descartado)" ;; esac
+        printf '%-6s %-6s n%-2s %s%s\n' "$id" "$(campo "$l" prioridade)" "$(campo "$l" nivel)" "$titulo" "$sit"
+      done
+      [ "$n" -gt 0 ] || echo "Nenhum item aberto no backlog."
+    }
+    ;;
+
+  adicionar)
+    titulo="${1:-}"; shift || true
+    [ -n "$titulo" ] || { echo "uso: sdd-backlog adicionar \"título\" [--prioridade P] [--nivel N] [--origem texto]" >&2; exit 1; }
+    prio=media; nivel="?"; origem="pedido direto"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --prioridade) prio="${2:?}"; shift ;;
+        --nivel) nivel="${2:?}"; shift ;;
+        --origem) origem="${2:?}"; shift ;;
+        *) echo "sdd-backlog adicionar: opção desconhecida $1" >&2; exit 1 ;;
+      esac
+      shift
+    done
+    case "$prio" in alta|media|baixa) ;; *) echo "sdd-backlog: prioridade deve ser alta, media ou baixa" >&2; exit 1 ;; esac
+    case "$nivel" in 1|2|"?") ;; *) echo "sdd-backlog: nível deve ser 1, 2 ou ?" >&2; exit 1 ;; esac
+    titulo="$(printf '%s' "$titulo" | tr -d '();')"
+    origem="$(printf '%s' "$origem" | tr -d '();')"
+    garantir_arquivo
+    id="$(proximo_id)"
+    printf -- '- [ ] %s %s (prioridade: %s; nivel: %s; origem: %s; criado: %s)\n' \
+      "$id" "$titulo" "$prio" "$nivel" "$origem" "$(date +%Y-%m-%d)" >> "$ARQ"
+    sdd_registrar "$RAIZ" "" backlog "$id adicionado: $titulo"
+    echo "$id adicionado ao backlog."
+    ;;
+
+  ver)
+    id="${1:?uso: sdd-backlog ver B-NNN}"
+    existe "$id"
+    awk -v id="$id" '
+      $0 ~ ("^- \\[[ xX-]\\] " id " ") { mostrando = 1; print; next }
+      mostrando && /^- \[/ { exit }
+      mostrando && /^#/ { exit }
+      mostrando { print }
+    ' "$ARQ"
+    ;;
+
+  prioridade)
+    id="${1:?uso: sdd-backlog prioridade B-NNN alta|media|baixa}"; prio="${2:?}"
+    case "$prio" in alta|media|baixa) ;; *) echo "sdd-backlog: prioridade deve ser alta, media ou baixa" >&2; exit 1 ;; esac
+    existe "$id"
+    l="$(linha_de "$id")"
+    antiga="$(campo "$l" prioridade)"
+    troca_linha "$id" "$(printf '%s' "$l" | sed -E "s/prioridade: [^;)]*/prioridade: $prio/")"
+    sdd_registrar "$RAIZ" "" backlog "$id prioridade $antiga para $prio"
+    echo "$id agora tem prioridade $prio."
+    ;;
+
+  promover)
+    id="${1:?uso: sdd-backlog promover B-NNN NNN-slug}"; feat="${2:?}"
+    existe "$id"
+    l="$(linha_de "$id")"
+    nova="$(printf '%s' "$l" | sed -E 's/^- \[.\]/- [x]/; s/\)$/; feature: '"$feat"')/')"
+    troca_linha "$id" "$nova"
+    sdd_registrar "$RAIZ" "" backlog "$id promovido a $feat"
+    echo "$id promovido a $feat."
+    ;;
+
+  descartar)
+    id="${1:?uso: sdd-backlog descartar B-NNN \"motivo\"}"; motivo="${2:?informe o motivo}"
+    motivo="$(printf '%s' "$motivo" | tr -d '();')"
+    existe "$id"
+    l="$(linha_de "$id")"
+    nova="$(printf '%s' "$l" | sed -E 's/^- \[.\]/- [-]/; s/\)$/; descartado: '"$(printf '%s' "$motivo" | sed 's/[\/&]/\\&/g')"')/')"
+    troca_linha "$id" "$nova"
+    sdd_registrar "$RAIZ" "" backlog "$id descartado: $motivo"
+    echo "$id descartado."
+    ;;
+
+  contar)
+    linhas_itens | grep -cE '^- \[ \]' || true
+    ;;
+
+  -h|--ajuda|--help|ajuda)
+    sed -n '2,17p' "$0"
+    ;;
+
+  *)
+    echo "sdd-backlog: comando desconhecido '$cmd'. Use --ajuda." >&2
+    exit 1
+    ;;
+esac

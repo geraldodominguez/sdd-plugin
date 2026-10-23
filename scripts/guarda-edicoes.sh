@@ -17,6 +17,8 @@
 #              green: bloqueia testes e globs_de_contrato
 #              auditoria: só artefatos
 #   Sem feature ativa, ou com a fase concluida, nada é bloqueado.
+#   Em qualquer fase (proteção leve ou estrita), históricos e arquivos de estado
+#   não podem ser editados à mão: só os utilitários os escrevem.
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
@@ -36,11 +38,6 @@ RAIZ="${RAIZ//\\//}"
 PROTECAO="$(sdd_config "$RAIZ" protecao leve)"
 [ "$PROTECAO" = "desligada" ] && exit 0
 
-FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
-FASE="$(sdd_estado_ler "$RAIZ" fase)"
-[ -n "$FEATURE" ] || exit 0
-case "$FASE" in ""|concluida) exit 0 ;; esac
-
 ARQUIVO="$(sdd_json_campo "$ENTRADA" file_path notebook_path path)"
 [ -n "$ARQUIVO" ] || exit 0
 ARQUIVO="${ARQUIVO//\\//}"
@@ -52,6 +49,25 @@ case "$REL" in
 esac
 
 PASTA_SPECS="$(sdd_config "$RAIZ" pasta_specs specs)"
+
+# Histórico e estado são escritos só pelos utilitários. Editar à mão permitiria
+# forjar uma aprovação ou pular uma fase, em qualquer fase.
+case "$REL" in
+  "$PASTA_SPECS"/*/historico.md|"$PASTA_SPECS"/*/estado|.sdd/historico.md|.sdd/estado)
+    {
+      echo "SDD (proteção $PROTECAO) bloqueou a edição de '$REL'."
+      echo "Histórico e estado são gravados só pelos utilitários (sdd-estado, sdd-backlog, sdd-sprint). Aprovações passam pelo /sdd:aprovar, que é do usuário."
+      echo "Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir."
+    } >&2
+    exit 2
+    ;;
+esac
+
+FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
+FASE="$(sdd_estado_ler "$RAIZ" fase)"
+[ -n "$FEATURE" ] || exit 0
+case "$FASE" in ""|concluida) exit 0 ;; esac
+
 GLOBS_TESTE="$(sdd_config "$RAIZ" globs_de_teste "$SDD_GLOBS_TESTE_PADRAO")"
 GLOBS_CONTRATO="$(sdd_config "$RAIZ" globs_de_contrato "")"
 

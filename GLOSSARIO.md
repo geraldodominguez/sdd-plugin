@@ -78,13 +78,46 @@ Architecture Decision Record. O registro curto de uma decisão durável, em `doc
 **Teste enfraquecido**:
 Um teste que passa sem verificar de fato o **critério de aceitação** que diz verificar.
 
+**Aprovação**:
+O registro de que uma pessoa aceitou o artefato de uma **fase**, feito pelo `/sdd:aprovar`, com data, autor e **hash** do artefato. É o que transforma um **gate** em fato verificável.
+_Evite_: ok, aceite verbal
+
+**Hash do artefato**:
+Uma impressão curta do conteúdo aprovado. Se o artefato muda, o hash deixa de bater, e a **aprovação** é invalidada.
+
+**Histórico**:
+O registro de eventos de uma **feature** (`specs/NNN/historico.md`) ou do projeto (`.sdd/historico.md`): criação, **fases**, **aprovações**, backlog e sprints. Escrito só pelos utilitários.
+_Evite_: log (genérico demais)
+
+**Item de backlog** (`B`):
+Uma ideia, pedido, bug relatado ou pendência que ainda não tem **spec**, em `.sdd/backlog.md`. Vira **feature** quando é promovido.
+_Evite_: história, tarefa (uma **tarefa** pertence a uma feature)
+
+**Backlog**:
+A fila priorizada de **itens de backlog**.
+
+**Sprint**:
+Um período com um objetivo e um compromisso (features e itens de backlog), em `.sdd/sprints/<id>.md`.
+_Evite_: ciclo, iteração
+
+**Quadro**:
+A visão de todas as **features** por coluna (especificação, planejamento, implementação, auditoria), mostrada pelo `/sdd:status`.
+
+**Pendência**:
+Algo que espera uma decisão humana: **aprovação**, dúvida na spec, **delta spec** ou ADR proposto, item a triar, item da sprint sem spec. Listado pelo `/sdd:pendencias`.
+
+**Feature ativa**:
+A feature em que a pessoa está trabalhando agora, apontada em `.sdd/estado`. Cada pessoa tem a sua.
+
 ## Relações
 
 - Uma **feature** tem uma **spec**, um **nível de rigor** e, no nível 2, um **plano**
 - Uma **spec** tem muitos **requisitos**, e cada **requisito** tem ao menos um **critério de aceitação**
 - Uma **tarefa** atende um ou mais **requisitos** ou **critérios**
 - Um **critério de aceitação** tem ao menos um teste com a **marca de teste**
-- Toda **fase** termina num **gate**
+- Toda **fase** termina num **gate**, e todo gate termina numa **aprovação** registrada no **histórico**
+- Um **item de backlog** vira no máximo uma **feature**, e a spec dela guarda a origem
+- Uma **sprint** compromete **features** e **itens de backlog**
 - Um **drift** termina corrigido no código ou absorvido por uma **delta spec**
 
 ## Ambiguidades resolvidas
@@ -92,3 +125,5 @@ Um teste que passa sem verificar de fato o **critério de aceitação** que diz 
 - "Tag" era usado para a marca nos testes e para as tags de versão do git. Resolvido: nos testes, **marca de teste**.
 - "Enforcement" era usado para o modo dos hooks. Resolvido: **proteção**, com os valores `desligada`, `leve` e `estrita`.
 - "Spec" às vezes queria dizer a spec e o plano juntos. Resolvido: a **spec** é só o quê e por quê; o como é o **plano**.
+- "Pendência" era usado para o que o agente achava fora do escopo. Resolvido: isso vira **item de backlog** (origem "pendência da NNN"); **pendência** é o que espera decisão humana.
+- "Estado" queria dizer tanto a feature ativa quanto a fase. Resolvido: a **feature ativa** é pessoal (`.sdd/estado`); a fase é da feature (`specs/NNN/estado`).

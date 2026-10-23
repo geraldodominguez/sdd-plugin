@@ -17,7 +17,8 @@ contexto.
 
 1. **Pré-condições.** `sdd-estado ver`. É preciso uma feature ativa com
    `spec.md`. Sem isso, diga ao usuário para rodar `/sdd:especificar` e pare.
-   Rode `sdd-estado definir fase=clarificacao`.
+   Rode `sdd-estado definir fase=clarificacao`. Se a spec já tinha sido
+   aprovada, avise que qualquer mudança vai exigir uma nova aprovação.
 
 2. **Analise a spec** (`sdd-estado caminho spec.md`) e liste os problemas:
 
@@ -48,7 +49,8 @@ contexto.
    menores registradas.
 
 6. **Gate.** Mostre o que mudou, por seção, e o que ainda está em aberto.
-   Próximo: `/sdd:planejar` no nível 2, `/sdd:tarefas` no nível 1.
+   Próximo: `/sdd:aprovar`, para aprovar a spec. Depois da aprovação vêm o
+   `/sdd:planejar` (nível 2) ou as `/sdd:tarefas` (nível 1).
 
 ## Não faça
 

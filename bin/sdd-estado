@@ -1,16 +1,25 @@
 #!/usr/bin/env bash
-# sdd-estado: lê e altera o estado SDD do projeto (.sdd/estado).
+# sdd-estado: lê e altera o estado SDD do projeto e das features.
 #
 # Uso:
-#   sdd-estado ver [chave]                mostra o estado inteiro ou uma chave
-#   sdd-estado definir chave=valor [...]  altera fase, nivel ou feature
-#   sdd-estado nova "título" [--nivel N]  cria specs/NNN-slug/ e ativa a feature
-#   sdd-estado usar <NNN-slug>            ativa uma feature existente
-#   sdd-estado encerrar                   encerra a feature ativa (fase=concluida)
-#   sdd-estado caminho [arquivo]          caminho da pasta da feature ativa
-#   sdd-estado template <nome.md>         caminho do template (local ou do plugin)
+#   sdd-estado ver [chave]                    ponteiros e estado da feature ativa
+#   sdd-estado definir chave=valor [...]      fase, nivel (da feature ativa), feature, sprint
+#   sdd-estado nova "título" [--nivel N] [--origem B-NNN]
+#                                             cria specs/NNN-slug/ e ativa a feature
+#   sdd-estado usar <NNN-slug>                ativa uma feature existente
+#   sdd-estado encerrar                       encerra a feature ativa (fase=concluida)
+#   sdd-estado aprovar [artefato] [--decisao aprovar|delta|corrigir] [--sem-avancar] [--nota "texto"]
+#                                             registra a aprovação humana e avança a fase
+#   sdd-estado aprovado <artefato> [NNN-slug] confere se o artefato está aprovado e inalterado
+#   sdd-estado listar                         todas as features: id, fase, nível, origem, atualização
+#   sdd-estado historico [NNN-slug|--projeto] [--desde AAAA-MM-DD]
+#   sdd-estado caminho [arquivo]              caminho da pasta da feature ativa
+#   sdd-estado template <nome.md>             caminho do template (local ou do plugin)
 #
 # Fases: especificacao clarificacao plano tarefas red green auditoria concluida
+# Artefatos aprováveis: spec.md, plano.md, tarefas.md, testes, auditoria.md
+# Saída de "aprovado": 0 aprovado e inalterado, 4 alterado depois da aprovação,
+# 5 nunca aprovado, 1 artefato inexistente.
 set -euo pipefail
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +32,7 @@ if [ ! -d "$RAIZ/.sdd" ]; then
   exit 1
 fi
 
-PASTA_SPECS="$(sdd_config "$RAIZ" pasta_specs specs)"
-
-carimbar() { sdd_estado_gravar "$RAIZ" atualizado "$(date -u +%Y-%m-%dT%H:%M:%SZ)"; }
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 
 # Transliteração explícita: não depende de locale nem de iconv.
 slug() {
@@ -44,20 +51,16 @@ slug() {
 }
 
 proximo_numero() {
-  local maior=0 d n
-  if [ -d "$RAIZ/$PASTA_SPECS" ]; then
-    for d in "$RAIZ/$PASTA_SPECS"/[0-9][0-9][0-9]-*; do
-      [ -d "$d" ] || continue
-      n="$(basename "$d" | cut -c1-3)"
-      n=$((10#$n))
-      [ "$n" -gt "$maior" ] && maior="$n"
-    done
-  fi
+  local maior=0 id n
+  for id in $(sdd_features "$RAIZ"); do
+    n="$(printf '%s' "$id" | cut -c1-3)"
+    n=$((10#$n))
+    [ "$n" -gt "$maior" ] && maior="$n"
+  done
   printf '%03d' $((maior + 1))
 }
 
 template() {
-  # Prefere o template local do projeto e cai para o do plugin.
   local nome="$1"
   if [ -f "$RAIZ/.sdd/templates/$nome" ]; then
     printf '%s\n' "$RAIZ/.sdd/templates/$nome"
@@ -66,15 +69,42 @@ template() {
   fi
 }
 
+feature_ativa() {
+  local f
+  f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
+  [ -n "$f" ] || { echo "sdd-estado: nenhuma feature ativa. Use 'sdd-estado usar NNN-slug'." >&2; exit 1; }
+  [ -d "$RAIZ/$PASTA_SPECS/$f" ] || { echo "sdd-estado: a feature ativa '$f' não existe em $PASTA_SPECS/." >&2; exit 1; }
+  printf '%s\n' "$f"
+}
+
+carimbar() { sdd_feature_gravar "$RAIZ" "$1" atualizado "$(sdd_agora)"; }
+
+mudar_fase() { # mudar_fase <feature> <nova> [nota]
+  local f="$1" nova="$2" nota="${3:-}" antiga
+  antiga="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+  sdd_feature_gravar "$RAIZ" "$f" fase "$nova"
+  carimbar "$f"
+  if [ "$antiga" != "$nova" ]; then
+    sdd_registrar "$RAIZ" "$f" fase "${antiga:-nenhuma} para $nova${nota:+ ($nota)}"
+  fi
+}
+
 cmd="${1:-ver}"
 shift || true
 
 case "$cmd" in
   ver)
+    f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
     if [ $# -gt 0 ]; then
       sdd_estado_ler "$RAIZ" "$1"
-    else
-      cat "$RAIZ/.sdd/estado" 2>/dev/null || true
+      exit 0
+    fi
+    printf 'feature=%s\n' "$f"
+    printf 'sprint=%s\n' "$(sdd_kv_ler "$RAIZ/.sdd/estado" sprint)"
+    if [ -n "$f" ]; then
+      for k in $SDD_CHAVES_DA_FEATURE; do
+        printf '%s=%s\n' "$k" "$(sdd_feature_ler "$RAIZ" "$f" "$k")"
+      done
     fi
     ;;
 
@@ -84,70 +114,197 @@ case "$cmd" in
       chave="${kv%%=*}"; valor="${kv#*=}"
       case "$chave" in
         fase)
-          sdd_fase_valida "$valor" || { echo "sdd-estado: fase inválida '$valor'. Fases: $SDD_FASES" >&2; exit 1; } ;;
+          sdd_fase_valida "$valor" || { echo "sdd-estado: fase inválida '$valor'. Fases: $SDD_FASES" >&2; exit 1; }
+          mudar_fase "$(feature_ativa)" "$valor" ;;
         nivel)
-          case "$valor" in 1|2) ;; *) echo "sdd-estado: nível deve ser 1 ou 2" >&2; exit 1 ;; esac ;;
+          case "$valor" in 1|2) ;; *) echo "sdd-estado: nível deve ser 1 ou 2" >&2; exit 1 ;; esac
+          f="$(feature_ativa)"
+          antigo="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
+          sdd_feature_gravar "$RAIZ" "$f" nivel "$valor"; carimbar "$f"
+          [ "$antigo" = "$valor" ] || sdd_registrar "$RAIZ" "$f" nivel "${antigo:-nenhum} para $valor" ;;
         feature)
           if [ -n "$valor" ] && [ ! -d "$RAIZ/$PASTA_SPECS/$valor" ]; then
             echo "sdd-estado: a feature '$valor' não existe em $PASTA_SPECS/" >&2; exit 1
-          fi ;;
-        *) echo "sdd-estado: chave desconhecida '$chave' (use fase, nivel ou feature)" >&2; exit 1 ;;
+          fi
+          sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$valor" ;;
+        sprint)
+          if [ -n "$valor" ] && [ ! -f "$RAIZ/.sdd/sprints/$valor.md" ]; then
+            echo "sdd-estado: a sprint '$valor' não existe em .sdd/sprints/" >&2; exit 1
+          fi
+          sdd_kv_gravar "$RAIZ/.sdd/estado" sprint "$valor" ;;
+        *) echo "sdd-estado: chave desconhecida '$chave' (use fase, nivel, feature ou sprint)" >&2; exit 1 ;;
       esac
-      sdd_estado_gravar "$RAIZ" "$chave" "$valor"
     done
-    carimbar
-    cat "$RAIZ/.sdd/estado"
+    "$0" ver
     ;;
 
   nova)
     titulo="${1:-}"; shift || true
-    [ -n "$titulo" ] || { echo "uso: sdd-estado nova \"título\" [--nivel N]" >&2; exit 1; }
+    [ -n "$titulo" ] || { echo "uso: sdd-estado nova \"título\" [--nivel N] [--origem B-NNN]" >&2; exit 1; }
     nivel="$(sdd_config "$RAIZ" nivel_padrao 1)"
+    origem=""
     while [ $# -gt 0 ]; do
       case "$1" in
         --nivel) nivel="${2:?}"; shift ;;
+        --origem) origem="${2:?}"; shift ;;
         *) echo "sdd-estado nova: opção desconhecida $1" >&2; exit 1 ;;
       esac
       shift
     done
     case "$nivel" in 1|2) ;; *) echo "sdd-estado nova: nível deve ser 1 ou 2 (o nível 0 não abre feature)" >&2; exit 1 ;; esac
+    if [ -n "$origem" ]; then
+      printf '%s' "$origem" | grep -qE '^B-[0-9]{3}$' || { echo "sdd-estado nova: --origem deve ser um item de backlog (B-NNN)" >&2; exit 1; }
+    fi
     s="$(slug "$titulo")"
     [ -n "$s" ] || s="feature"
     id="$(proximo_numero)-$s"
     dir="$RAIZ/$PASTA_SPECS/$id"
     mkdir -p "$dir"
-    if [ "$nivel" = "1" ]; then origem="$(template spec-leve.md)"; else origem="$(template spec.md)"; fi
+    if [ "$nivel" = "1" ]; then fonte="$(template spec-leve.md)"; else fonte="$(template spec.md)"; fi
     titulo_sed="$(printf '%s' "$titulo" | sed 's/[\/&]/\\&/g')"
     sed -e "s/{{FEATURE}}/$id/g" \
         -e "s/{{TITULO}}/$titulo_sed/g" \
         -e "s/{{DATA}}/$(date +%Y-%m-%d)/g" \
         -e "s/{{NIVEL}}/$nivel/g" \
-        "$origem" > "$dir/spec.md"
-    sdd_estado_gravar "$RAIZ" feature "$id"
-    sdd_estado_gravar "$RAIZ" fase especificacao
-    sdd_estado_gravar "$RAIZ" nivel "$nivel"
-    carimbar
-    echo "Feature criada: $PASTA_SPECS/$id (nível $nivel)"
+        -e "s/{{ORIGEM}}/${origem:-pedido direto}/g" \
+        "$fonte" > "$dir/spec.md"
+    sdd_feature_gravar "$RAIZ" "$id" fase especificacao
+    sdd_feature_gravar "$RAIZ" "$id" nivel "$nivel"
+    sdd_feature_gravar "$RAIZ" "$id" origem "$origem"
+    carimbar "$id"
+    sdd_registrar "$RAIZ" "$id" criada "nível $nivel${origem:+, origem $origem}: $titulo"
+    sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$id"
+    if [ -n "$origem" ]; then
+      "$AQUI/sdd-backlog" promover "$origem" "$id" >/dev/null
+    fi
+    echo "Feature criada: $PASTA_SPECS/$id (nível $nivel${origem:+, origem $origem})"
     echo "Arquivo: $PASTA_SPECS/$id/spec.md"
     ;;
 
   usar)
     id="${1:?uso: sdd-estado usar <NNN-slug>}"
     [ -d "$RAIZ/$PASTA_SPECS/$id" ] || { echo "sdd-estado: '$id' não existe em $PASTA_SPECS/" >&2; exit 1; }
-    sdd_estado_gravar "$RAIZ" feature "$id"
-    carimbar
-    cat "$RAIZ/.sdd/estado"
+    sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$id"
+    "$0" ver
     ;;
 
   encerrar)
-    sdd_estado_gravar "$RAIZ" fase "concluida"
-    carimbar
-    echo "Feature $(sdd_estado_ler "$RAIZ" feature) encerrada (fase=concluida)."
+    f="$(feature_ativa)"
+    mudar_fase "$f" concluida "encerrada"
+    echo "Feature $f encerrada (fase=concluida)."
+    ;;
+
+  aprovar)
+    f="$(feature_ativa)"
+    fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
+    art=""; decisao=""; avancar=1; nota=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --decisao) decisao="${2:?}"; shift ;;
+        --sem-avancar) avancar=0 ;;
+        --nota) nota="${2:?}"; shift ;;
+        -*) echo "sdd-estado aprovar: opção desconhecida $1" >&2; exit 1 ;;
+        *) art="$1" ;;
+      esac
+      shift
+    done
+
+    if [ -z "$art" ] && [ "$fase" = "green" ]; then
+      if [ "$nivel" = "2" ]; then
+        echo "sdd-estado aprovar: no nível 2 a entrega passa pela auditoria. Rode /sdd:auditar." >&2
+        exit 1
+      fi
+      h="$(sdd_hash_artefato "$RAIZ" "$f" tarefas.md || true)"
+      sdd_registrar "$RAIZ" "$f" aprovacao "entrega | hash=${h:-nenhum}${nota:+ | nota: $nota}"
+      mudar_fase "$f" concluida "entrega aprovada sem auditoria"
+      echo "Entrega aprovada. Feature $f concluída."
+      exit 0
+    fi
+
+    [ -n "$art" ] || art="$(sdd_artefato_da_fase "$fase")"
+    [ -n "$art" ] || { echo "sdd-estado aprovar: nada a aprovar na fase '$fase'." >&2; exit 1; }
+    case "$art" in spec.md|plano.md|tarefas.md|testes|auditoria.md) ;; *)
+      echo "sdd-estado aprovar: artefato inválido '$art' (spec.md, plano.md, tarefas.md, testes, auditoria.md)" >&2; exit 1 ;;
+    esac
+    h="$(sdd_hash_artefato "$RAIZ" "$f" "$art" || true)"
+    [ -n "$h" ] || { echo "sdd-estado aprovar: '$art' não existe na feature $f." >&2; exit 1; }
+
+    if [ "$art" = "auditoria.md" ]; then
+      case "$decisao" in
+        aprovar|delta|corrigir) ;;
+        *) echo "sdd-estado aprovar: a auditoria exige --decisao aprovar, delta ou corrigir." >&2; exit 1 ;;
+      esac
+    fi
+
+    sdd_registrar "$RAIZ" "$f" aprovacao "$art | hash=$h${decisao:+ | decisao: $decisao}${nota:+ | nota: $nota}"
+    echo "Aprovado: $art da feature $f (hash $h)."
+
+    if [ "$avancar" -eq 1 ]; then
+      if [ "$art" = "auditoria.md" ]; then
+        case "$decisao" in
+          aprovar|delta) mudar_fase "$f" concluida "auditoria: $decisao" ;;
+          corrigir) mudar_fase "$f" green "auditoria: corrigir" ;;
+        esac
+      elif [ "$art" = "$(sdd_artefato_da_fase "$fase")" ]; then
+        prox="$(sdd_proxima_fase "$fase" "$nivel")"
+        [ -n "$prox" ] && mudar_fase "$f" "$prox" "$art aprovado"
+      fi
+      echo "Fase atual: $(sdd_feature_ler "$RAIZ" "$f" fase)"
+    fi
+    ;;
+
+  aprovado)
+    art="${1:?uso: sdd-estado aprovado <artefato> [NNN-slug]}"
+    f="${2:-}"
+    [ -n "$f" ] || f="$(feature_ativa)"
+    atual="$(sdd_hash_artefato "$RAIZ" "$f" "$art" || true)"
+    [ -n "$atual" ] || { echo "$art: não existe na feature $f"; exit 1; }
+    aprovado="$(sdd_ultima_aprovacao "$RAIZ" "$f" "$art")"
+    if [ -z "$aprovado" ]; then
+      echo "$art: nunca aprovado"; exit 5
+    elif [ "$aprovado" != "$atual" ]; then
+      echo "$art: alterado depois da aprovação (aprovado $aprovado, atual $atual)"; exit 4
+    fi
+    quando="$( { grep -F "| aprovacao | $art | hash=$aprovado" "$(sdd_arquivo_historico "$RAIZ" "$f")" || true; } | tail -1 | sed -E 's/^- ([^ ]+) .*por: (.*)$/\1 por \2/')"
+    echo "$art: aprovado em $quando"
+    ;;
+
+  listar)
+    for id in $(sdd_features "$RAIZ"); do
+      printf '%s\t%s\t%s\t%s\t%s\n' "$id" \
+        "$(sdd_feature_ler "$RAIZ" "$id" fase)" \
+        "$(sdd_feature_ler "$RAIZ" "$id" nivel)" \
+        "$(sdd_feature_ler "$RAIZ" "$id" origem)" \
+        "$(sdd_feature_ler "$RAIZ" "$id" atualizado)"
+    done
+    ;;
+
+  historico)
+    alvo=""; desde=""; projeto=0
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --desde) desde="${2:?}"; shift ;;
+        --projeto) projeto=1 ;;
+        *) alvo="$1" ;;
+      esac
+      shift
+    done
+    if [ "$projeto" -eq 1 ]; then
+      arq="$(sdd_arquivo_historico "$RAIZ")"
+    else
+      [ -n "$alvo" ] || alvo="$(feature_ativa)"
+      arq="$(sdd_arquivo_historico "$RAIZ" "$alvo")"
+    fi
+    [ -f "$arq" ] || { echo "(sem histórico)"; exit 0; }
+    { grep -E '^- [0-9]{4}-' "$arq" || true; } | while IFS= read -r linha; do
+      data="$(printf '%s' "$linha" | cut -c3-12)"
+      if [ -z "$desde" ] || [ ! "$data" \< "$desde" ]; then printf '%s\n' "$linha"; fi
+    done
     ;;
 
   caminho)
-    id="$(sdd_estado_ler "$RAIZ" feature)"
-    [ -n "$id" ] || { echo "sdd-estado: nenhuma feature ativa" >&2; exit 1; }
+    id="$(feature_ativa)"
     if [ $# -gt 0 ]; then
       printf '%s\n' "$PASTA_SPECS/$id/$1"
     else
@@ -160,7 +317,7 @@ case "$cmd" in
     ;;
 
   -h|--ajuda|--help|ajuda)
-    sed -n '2,14p' "$0"
+    sed -n '2,23p' "$0"
     ;;
 
   *)

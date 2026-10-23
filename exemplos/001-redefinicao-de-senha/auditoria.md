@@ -59,18 +59,20 @@ Rastreabilidade: specs/001-redefinicao-de-senha
 
 ## 6. Delta spec proposta
 
-**Desvio #1**: o registro de IP parece intencional e útil para detectar abuso.
-Proposta:
+Proposta em [`delta-spec.md`](./delta-spec.md): RNF-004 (registro de IP, desvio
+#1), CA-010 e CA-011 (limite por IP, desvio #2).
 
-- **ADICIONADO RNF-004**: O SISTEMA DEVE registrar o IP de origem das
-  solicitações de redefinição para auditoria de segurança, com retenção máxima
-  de 90 dias.
-- **ADICIONADO CA-010** (valida RNF-004): Dado uma solicitação, Quando ela é
-  processada, Então o log contém o IP e não contém o e-mail em claro.
+## 7. Processo
 
-**Desvio #2**: adicionar CA-011 para o limite por IP.
+| Verificação | Resultado |
+|---|---|
+| Spec aprovada e inalterada desde a aprovação | aprovada em 2026-10-20, inalterada |
+| Plano aprovado e inalterado | aprovado em 2026-10-21, inalterado |
+| Tarefas aprovadas | aprovadas em 2026-10-21 |
+| Testes inalterados desde a aprovação da fase red | inalterados |
+| Toda troca de fase precedida de aprovação | sim (`historico.md`) |
 
-## 7. Recomendação
+## 8. Recomendação
 
 Aprovar com a delta spec (RNF-004, CA-010, CA-011), adicionar os dois testes
 correspondentes e confirmar com o responsável por LGPD a retenção de 90 dias.

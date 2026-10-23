@@ -32,8 +32,11 @@ cada projeto poder adaptar os seus.
 
 Seis regras que ela impõe em qualquer fase: não implementar fora das tarefas,
 não editar teste na green, não mexer em contrato na implementação, não avançar
-fase sem aprovação, registrar o que está fora do escopo, e resolver divergência
-primeiro na spec.
+fase nem registrar aprovação sem o `/sdd:aprovar` do usuário, mandar para o
+backlog o que está fora do escopo, e resolver divergência primeiro na spec.
+
+Ela também ensina o modelo de acompanhamento: o que é um item de backlog, uma
+sprint, a fase de cada feature e o histórico.
 
 ## Está funcionando se
 

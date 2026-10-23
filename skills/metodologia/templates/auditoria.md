@@ -41,9 +41,21 @@ alterado, violação da constituição, efeito colateral, teste enfraquecido.
 
 ## 6. Delta spec proposta
 
-> Só quando um desvio parece intencional e correto. Exige aprovação humana.
-> Use o template `delta-spec.md`.
+> Só quando um desvio parece intencional e correto. A proposta fica num arquivo
+> à parte, `delta-spec.md`, na pasta da feature, pelo template de mesmo nome.
+> Exige aprovação humana (`/sdd:aprovar`).
 
-## 7. Recomendação
+{{"nenhuma" ou um resumo de uma linha e o link para delta-spec.md}}
+
+## 7. Processo
+
+| Verificação | Resultado |
+|---|---|
+| Spec aprovada e inalterada desde a aprovação | {{sdd-estado aprovado spec.md}} |
+| Plano aprovado e inalterado (nível 2) | {{sdd-estado aprovado plano.md}} |
+| Tarefas aprovadas | {{sdd-estado aprovado tarefas.md}} |
+| Testes inalterados desde a aprovação da fase red | {{sdd-estado aprovado testes}} |
+
+## 8. Recomendação
 
 {{o que fazer: corrigir T-XXX, aprovar a delta ou abrir uma nova feature}}

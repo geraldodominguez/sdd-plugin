@@ -37,9 +37,10 @@ Subagents), na tabela do modo de falha #5 e na página da skill que o chama.
 
 ## Formatos rastreáveis
 
-A linha de tarefa, a marca de teste `sdd:NNN:CA-XXX`, os IDs (`RF`, `RNF`, `CA`,
-`T`), as fases e as chaves de `.sdd/config.yml` e `.sdd/estado` são **contrato
-público**. Mudar qualquer um exige atualizar, juntos: `bin/`, `lib/`,
+A linha de tarefa, a linha de item de backlog, a marca de teste
+`sdd:NNN:CA-XXX`, os IDs (`RF`, `RNF`, `CA`, `T`, `B`), as fases, a linha do
+histórico, a estrutura do arquivo de sprint e as chaves de `.sdd/config.yml`,
+`.sdd/estado` e `specs/NNN/estado` são **contrato público**. Mudar qualquer um exige atualizar, juntos: `bin/`, `lib/`,
 `scripts/`, `tests/`, templates, skills, documentação e `CHANGELOG.md`. É uma
 mudança incompatível (versão maior).
 

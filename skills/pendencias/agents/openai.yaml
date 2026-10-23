@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pendências"
+  short_description: "O que está esperando por você"
+policy:
+  allow_implicit_invocation: false

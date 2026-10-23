@@ -1,0 +1,5 @@
+interface:
+  display_name: "Retomar"
+  short_description: "O que aconteceu e o próximo passo"
+policy:
+  allow_implicit_invocation: false

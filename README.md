@@ -13,7 +13,11 @@ viciou e conferido por alguém que não foi quem implementou. Este plugin
 organiza isso em fases curtas, cada uma terminando num **gate** em que você
 aprova antes de seguir, com um rigor que acompanha o tamanho do risco.
 
-É pequeno de propósito: dez skills, quatro subagents, dois hooks e quatro
+E mantém você no controle: cada aprovação fica registrada, um quadro mostra a
+situação de todas as features, e um backlog e sprints organizam o que vem
+depois.
+
+É pequeno de propósito: quinze skills, quatro subagents, dois hooks e sete
 utilitários em bash. Tudo em markdown legível. Adapte à vontade.
 
 ## Instalação (1 minuto)
@@ -50,14 +54,19 @@ No Windows, o Claude Code roda os hooks no Git Bash: instale o
 
 Uma vez por repositório. Ele:
 
-- cria `.sdd/` (configuração, estado, templates), `specs/` e `docs/adr/`;
+- cria `.sdd/` (configuração, backlog, sprints, templates), `specs/` e `docs/adr/`;
 - lê o seu código e rascunha a **constituição**, as regras que valem para todas as features;
 - injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md`.
 
-### 3. Pronto: `/sdd:especificar <a mudança que você quer>`
+### 3. Pronto
 
-Perdeu o fio? `/sdd:status` diz onde você está, e `/sdd:ajuda` diz qual comando
-serve para a sua situação.
+| Você tem | Comece por |
+|---|---|
+| uma mudança para fazer agora | `/sdd:especificar <a mudança que você quer>` |
+| uma lista de coisas para fazer | `/sdd:backlog adicionar <ideia>` para cada uma, e `/sdd:sprint planejar` |
+
+Perdeu o fio? `/sdd:status` mostra o quadro, `/sdd:pendencias` mostra o que
+espera você, e `/sdd:ajuda` diz qual comando serve para a sua situação.
 
 ## Por que este plugin existe
 
@@ -135,29 +144,55 @@ etapa com as premissas da anterior.
 | `escritor-de-testes` | red | não vê código nem a intenção de quem vai implementar |
 | `auditor-de-drift` | auditoria | não recebe justificativas e não corrige nada |
 
+### #6: Não sei o que está acontecendo
+
+**O problema.** Com o agente trabalhando em várias features, você perde a
+visão do conjunto: o que está em andamento, o que está parado esperando você, o
+que ficou para depois. A aprovação de cada fase fica perdida na conversa, e
+ninguém consegue provar depois o que foi aprovado e quando.
+
+**A solução** são comandos de acompanhamento e aprovações registradas:
+
+- [`/sdd:aprovar`](skills/aprovar/SKILL.md) é o gate formal: registra quem aprovou, quando, e o **hash** do que foi aprovado. Se o artefato muda depois, os comandos seguintes param e o auditor acusa;
+- [`/sdd:status`](skills/status/SKILL.md) mostra o **quadro**: sprint, features por coluna, topo do backlog e quanto espera você;
+- [`/sdd:pendencias`](skills/pendencias/SKILL.md) é a sua caixa de entrada; [`/sdd:retomar`](skills/retomar/SKILL.md) conta o que aconteceu enquanto você estava fora;
+- [`/sdd:backlog`](skills/backlog/SKILL.md) guarda o que é para depois, e [`/sdd:sprint`](skills/sprint/SKILL.md) organiza o que é para agora.
+
+A rotina recomendada está no [guia de acompanhamento](docs/referencia/acompanhamento.md).
+
 ### Resumo
 
 Os fundamentos de engenharia importam mais do que nunca quando quem digita é um
-agente. Este plugin condensa quatro deles (intenção escrita antes do código,
-teste independente, decisão registrada e auditoria independente) em passos
-curtos e repetíveis.
+agente. Este plugin condensa cinco deles (intenção escrita antes do código,
+teste independente, decisão registrada, auditoria independente e acompanhamento
+visível) em passos curtos e repetíveis.
 
 ## O fluxo
 
 ```mermaid
 flowchart LR
-    A["/sdd:especificar"] --> B["/sdd:clarificar"]
-    B --> C["/sdd:planejar<br/>(nível 2)"]
-    C --> D["/sdd:tarefas"]
-    B -.->|nível 1| D
-    D --> E["/sdd:implementar<br/>red, depois green"]
-    E --> F["/sdd:auditar"]
-    F -->|aprovada| G((concluída))
-    F -->|delta spec| A
-    F -->|corrigir| E
+    BL["/sdd:backlog"] --> SP["/sdd:sprint"]
+    SP --> A["/sdd:especificar"]
+    A --> B["/sdd:clarificar"]
+    B --> AP1{"/sdd:aprovar"}
+    AP1 --> C["/sdd:planejar<br/>(nível 2)"]
+    AP1 -.->|nível 1| D
+    C --> AP2{"/sdd:aprovar"}
+    AP2 --> D["/sdd:tarefas"]
+    D --> AP3{"/sdd:aprovar"}
+    AP3 --> E["/sdd:implementar<br/>red"]
+    E --> AP4{"/sdd:aprovar"}
+    AP4 --> E2["/sdd:implementar<br/>green"]
+    E2 --> F["/sdd:auditar"]
+    F --> AP5{"/sdd:aprovar"}
+    AP5 -->|aprovada| G((concluída))
+    AP5 -->|corrigir| E2
 ```
 
-Cada seta é um gate: o agente apresenta o artefato e para. Um passo a passo com
+Cada losango é um gate: o agente apresenta o artefato e para, e só o
+`/sdd:aprovar`, digitado por você, registra a aprovação e avança. O
+`/sdd:status`, o `/sdd:pendencias` e o `/sdd:retomar` acompanham tudo isso de
+fora. Um passo a passo com
 uma feature real está em
 [docs/referencia/passo-a-passo.md](docs/referencia/passo-a-passo.md), e os
 artefatos que ela produz estão em [exemplos/](exemplos/).
@@ -170,17 +205,25 @@ só rodam quando você digita o comando, e por isso cada uma é um gate. As
 tarefa pede, e guardam a disciplina reutilizável. Uma skill do usuário pode
 chamar skills do modelo, nunca outra skill do usuário.
 
-### Invocadas pelo usuário
+### Invocadas pelo usuário: acompanhamento
 
 - **[ajuda](skills/ajuda/SKILL.md)**: Qual comando ou fluxo serve para a sua situação. Um roteador sobre os comandos do plugin.
+- **[status](skills/status/SKILL.md)**: O quadro do projeto: sprint, features por coluna, backlog e o que espera você, com o próximo comando.
+- **[pendencias](skills/pendencias/SKILL.md)**: A caixa de entrada: aprovações, dúvidas, ADRs, delta specs, backlog a triar e itens da sprint sem spec.
+- **[retomar](skills/retomar/SKILL.md)**: O que aconteceu numa feature desde a última vez e qual é o próximo passo.
+- **[backlog](skills/backlog/SKILL.md)**: Ideias e pedidos ainda sem spec: listar, adicionar, priorizar, descartar.
+- **[sprint](skills/sprint/SKILL.md)**: Planejar, acompanhar e encerrar sprints.
+
+### Invocadas pelo usuário: fluxo
+
 - **[iniciar](skills/iniciar/SKILL.md)**: Prepara o repositório: estrutura `.sdd/`, constituição rascunhada a partir do código e regras no `CLAUDE.md` e no `AGENTS.md`. Uma vez por repositório.
-- **[especificar](skills/especificar/SKILL.md)**: Abre uma feature e escreve a spec (o quê e por quê), classificando o nível de rigor e marcando o que precisa ser esclarecido.
+- **[especificar](skills/especificar/SKILL.md)**: Abre uma feature, a partir de um pedido ou de um item do backlog, e escreve a spec (o quê e por quê), classificando o nível de rigor e marcando o que precisa ser esclarecido.
 - **[clarificar](skills/clarificar/SKILL.md)**: Perguntas com opções e uma recomendação sobre as ambiguidades da spec, incorporadas antes de qualquer decisão técnica.
 - **[planejar](skills/planejar/SKILL.md)**: Plano técnico e contratos da feature (nível 2), num subagent isolado, checados contra a constituição.
 - **[tarefas](skills/tarefas/SKILL.md)**: Quebra a feature em tarefas pequenas e rastreáveis até os requisitos e critérios.
+- **[aprovar](skills/aprovar/SKILL.md)**: O gate formal: registra a aprovação de cada fase, com autor, data e hash do artefato, e avança a feature.
 - **[implementar](skills/implementar/SKILL.md)**: TDD em duas fases: testes escritos por um subagent que não vê código, implementação com os testes congelados.
 - **[auditar](skills/auditar/SKILL.md)**: Auditoria independente do diff contra a spec, os contratos e a constituição, com delta spec proposta.
-- **[status](skills/status/SKILL.md)**: Onde o projeto está e qual comando rodar em seguida.
 
 ### Invocadas pelo modelo
 
@@ -196,11 +239,12 @@ chamar skills do modelo, nunca outra skill do usuário.
 ### Hooks e utilitários
 
 - **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`.
-- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-rastrear` e `sdd-status`.
+- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias` e `sdd-rastrear`, e onde o estado e o histórico moram.
 
 ### Guias
 
-- [Passo a passo de uma feature](docs/referencia/passo-a-passo.md)
+- [Guia de acompanhamento: a rotina do humano](docs/referencia/acompanhamento.md)
+- [Passo a passo: do pedido à entrega](docs/referencia/passo-a-passo.md)
 - [Níveis de rigor](docs/referencia/niveis-de-rigor.md)
 - [Projetos existentes](docs/referencia/projetos-existentes.md)
 - [Portabilidade para outros agentes](docs/referencia/portabilidade.md)

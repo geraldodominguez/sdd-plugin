@@ -20,7 +20,7 @@ dele**.
 ## O AGENTS.md
 
 O `/sdd:iniciar` injeta o mesmo bloco de regras no `CLAUDE.md` e no `AGENTS.md`.
-Agentes que leem o `AGENTS.md` seguem as mesmas sete regras, e um time pode usar
+Agentes que leem o `AGENTS.md` seguem as mesmas oito regras, e um time pode usar
 ferramentas diferentes no mesmo repositório sem quebrar o fluxo.
 
 ## Usando com outro agente

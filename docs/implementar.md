@@ -16,8 +16,19 @@ depois das [tarefas](tarefas.md) aprovadas. Para rodar só uma tarefa ou um grup
 
 ## Pré-requisitos
 
-`tarefas.md` aprovado e um comando de testes conhecido (`comando_teste` no
-`.sdd/config.yml`; se estiver vazio, ela descobre e confirma com você).
+`tarefas.md` aprovado com `/sdd:aprovar` e um comando de testes conhecido
+(`comando_teste` no `.sdd/config.yml`; se estiver vazio, ela descobre e confirma
+com você).
+
+## Duas rodadas, com um gate no meio
+
+| Rodada | O que acontece | Termina com |
+|---|---|---|
+| 1ª `/sdd:implementar` | fase red: o `escritor-de-testes` escreve os testes, que falham | você roda `/sdd:aprovar`, que registra o hash dos testes e leva ao green |
+| 2ª `/sdd:implementar` | fase green: a sessão principal implementa, com os testes congelados | `/sdd:auditar`, ou `/sdd:aprovar` para entregar uma feature de nível 1 |
+
+Se a sessão for interrompida, rode `/sdd:implementar` de novo: ele continua da
+primeira tarefa aberta.
 
 ## Por que separar quem testa de quem implementa
 
@@ -31,7 +42,7 @@ o que o `sdd-rastrear` procura.
 | Se, na fase green... | O agente |
 |---|---|
 | um teste parece errado | para e pergunta: corrigir a spec ou devolver ao escritor-de-testes |
-| aparece algo fora do escopo | anota em "Pendências" e não implementa |
+| aparece algo fora do escopo | registra no [backlog](backlog.md), com origem "pendência da NNN", e não implementa |
 | um contrato precisa mudar | para e propõe voltar ao plano |
 
 ## Perguntas frequentes
@@ -52,10 +63,11 @@ proíbem, e a auditoria procura testes mexidos depois da fase red. Ver o
 
 - Os testes aparecem antes do código, e falham por falta de comportamento, não por erro de sintaxe.
 - Os nomes dos testes descrevem comportamento ("recusa link expirado").
-- Nenhum arquivo de teste muda depois que a fase green começa.
+- Nenhum arquivo de teste muda depois que a fase green começa (`sdd-estado aprovado testes` continua saindo com 0).
 - Cada commit cita a tarefa (`feat(001): T-004 ...`).
 
 ## Onde se encaixa
 
 Quinto passo do fluxo principal, entre [tarefas](tarefas.md) e
-[auditar](auditar.md). O mapa está na [ajuda](ajuda.md).
+[auditar](auditar.md), com o [aprovar](aprovar.md) entre as fases red e green.
+O mapa está na [ajuda](ajuda.md).

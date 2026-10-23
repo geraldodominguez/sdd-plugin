@@ -1,0 +1,5 @@
+interface:
+  display_name: "Backlog"
+  short_description: "Ideias e pedidos ainda sem spec"
+policy:
+  allow_implicit_invocation: false

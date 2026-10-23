@@ -2,7 +2,9 @@
 
 ## O que faz
 
-Diz qual comando ou fluxo do SDD serve para a situação em que você está. Ela
+Diz qual comando ou fluxo do SDD serve para a situação em que você está, entre
+os comandos de fluxo (que levam uma feature do pedido à entrega) e os de
+acompanhamento (que mostram a situação e organizam o trabalho). Ela
 lê o estado do projeto antes de recomendar e confere o `SKILL.md` de um comando
 antes de afirmar o que ele faz, em vez de responder de memória.
 
@@ -17,13 +19,15 @@ que parece errado, mudança que cresceu no meio) ou para ver o mapa inteiro.
 | "Onde eu parei?" | [status](status.md), que é mais direto |
 | "Que comando serve para isto?" | `ajuda` |
 | "Como se escreve um bom critério?" | [metodologia](metodologia.md) |
+| "O que depende de mim?" | [pendencias](pendencias.md) |
 
 ## O mapa que ela carrega
 
 O **fluxo principal** (especificar, clarificar, planejar, tarefas, implementar,
-auditar) e as **bifurcações** que encurtam esse fluxo: há marcadores em aberto?
-Qual o nível de rigor? Além disso, uma tabela de situações comuns com o comando
-para cada uma.
+auditar, com o aprovar em cada gate), as **bifurcações** que encurtam esse
+fluxo (há marcadores em aberto? qual o nível?), os **comandos de
+acompanhamento** (status, pendencias, retomar, backlog, sprint) e uma tabela de
+situações comuns com o comando para cada uma.
 
 ## Está funcionando se
 

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Aprovar"
+  short_description: "Registra a aprovação do gate atual"
+policy:
+  allow_implicit_invocation: false

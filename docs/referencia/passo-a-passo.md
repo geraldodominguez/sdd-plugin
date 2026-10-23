@@ -1,11 +1,14 @@
-# Passo a passo: uma feature do começo ao fim
+# Passo a passo: do pedido à entrega
 
 Este guia acompanha uma feature real, **redefinição de senha por e-mail**, num
-projeto existente, no nível 2 (fluxo completo). Os artefatos que ela produz
-estão em [exemplos/001-redefinicao-de-senha/](../../exemplos/001-redefinicao-de-senha/).
+projeto existente, no nível 2 (fluxo completo), desde o pedido do cliente até a
+auditoria. Os artefatos que ela produz estão em
+[exemplos/](../../exemplos/).
 
-> No nível 1 o caminho é o mesmo, sem o `/sdd:planejar` e com uma spec mais
-> curta. Ver [níveis de rigor](niveis-de-rigor.md).
+> No nível 1 o caminho é o mesmo, sem o `/sdd:planejar` e sem a auditoria
+> obrigatória. Ver [níveis de rigor](niveis-de-rigor.md). Para a rotina de
+> acompanhamento (o que olhar todo dia), ver o
+> [guia de acompanhamento](acompanhamento.md).
 
 ## 0. Preparar o repositório, uma vez
 
@@ -13,31 +16,52 @@ estão em [exemplos/001-redefinicao-de-senha/](../../exemplos/001-redefinicao-de
 /sdd:iniciar
 ```
 
-O agente pergunta o nível padrão e a proteção, cria a estrutura, lê o projeto e
-rascunha a constituição só com o que observou. **A sua parte:** revisar a
-constituição com calma, porque ela vale para todas as features. Depois, faça
-commit de `.sdd/`, `specs/`, `docs/adr/`, `CLAUDE.md` e `AGENTS.md`.
+O agente pergunta o nível padrão e a proteção, cria a estrutura (com backlog e
+sprints), lê o projeto e rascunha a constituição só com o que observou. **A sua
+parte:** revisar a constituição, porque ela vale para todas as features. Depois,
+faça commit de tudo (o `.sdd/estado`, pessoal, já fica fora do git).
 
-## 1. Especificar
+## 1. Registrar o pedido no backlog
+
+O cliente pediu redefinição de senha, mas você está no meio de outra coisa.
 
 ```
-/sdd:especificar permitir que o usuário redefina a senha por e-mail quando esquecer
+/sdd:backlog adicionar clientes precisam redefinir a senha sozinhos, hoje abrem chamado
 ```
 
-O agente classifica ("nível 2: segurança, contrato de API novo e tabela nova;
-confirma?"), cria `specs/001-redefinicao-de-senha/`, pede ao
-`mapeador-de-contexto` o mapa do código de autenticação, escreve a spec e marca o
-que não sabe:
+O agente reescreve como comportamento, propõe prioridade e nível, e registra:
+
+```
+- [ ] B-001 Redefinição de senha por e-mail (prioridade: alta; nivel: 2; origem: cliente ACME; criado: 2026-10-20)
+```
+
+## 2. Planejar a sprint
+
+```
+/sdd:sprint planejar
+```
+
+O agente pergunta o período e o objetivo ("clientes recuperam o acesso
+sozinhos"), propõe o compromisso a partir do backlog e explica o que ficou de
+fora. Com a sua aprovação, cria `.sdd/sprints/2026-S44.md` e a inicia.
+
+## 3. Especificar a partir do item
+
+```
+/sdd:especificar B-001
+```
+
+O agente lê o item, confirma o nível 2, cria `specs/001-redefinicao-de-senha/`
+(o item vira `[x]` no backlog e a spec registra `Origem: B-001`), pede ao
+`mapeador-de-contexto` o mapa do código de autenticação e escreve a spec,
+marcando o que não sabe:
 
 ```markdown
 - [PRECISA ESCLARECER: quanto tempo o link deve valer?]
 - [PRECISA ESCLARECER: o que responder quando o e-mail não está cadastrado?]
 ```
 
-**A sua parte:** ler a spec e responder à pergunta "é isso que eu quero?".
-Peça ajustes em linguagem natural.
-
-## 2. Clarificar
+## 4. Clarificar
 
 ```
 /sdd:clarificar
@@ -52,20 +76,38 @@ Peça ajustes em linguagem natural.
 > - **A mesma mensagem genérica (recomendado: evita enumeração de usuários)**
 > - "E-mail não encontrado"
 
-Você responde. A spec é atualizada e cada resposta vai para o histórico.
+Você responde. A spec é atualizada e cada resposta vai para o histórico de
+clarificação.
 
-## 3. Planejar
+## 5. Aprovar a spec
+
+```
+/sdd:aprovar
+```
+
+O agente resume (objetivo, 5 RFs, 3 RNFs, 9 CAs, fora do escopo, nenhuma
+dúvida em aberto) e pergunta: "Aprova a spec da 001?". Com o seu "sim", o
+histórico ganha:
+
+```
+- 2026-10-20T14:02:11Z | aprovacao | spec.md | hash=2533c54be22d | por: Geraldo Dominguez
+- 2026-10-20T14:02:11Z | fase | clarificacao para plano (spec.md aprovado) | por: Geraldo Dominguez
+```
+
+A partir daqui, se a spec mudar, o `/sdd:status` volta a mostrar "aguarda
+aprovação", e o `/sdd:planejar` se recusa a continuar até você aprovar de novo.
+
+## 6. Planejar e aprovar o plano
 
 ```
 /sdd:planejar
 ```
 
-O `arquiteto-de-contratos` decide os componentes, desenha os contratos em
-`contratos/` (entidade, interfaces, OpenAPI, DDL), preenche a checagem contra a
-constituição e propõe um ADR: "guardar só o hash SHA-256 do token". **A sua
-parte:** aprovar ou ajustar.
+O `arquiteto-de-contratos` decide os componentes, desenha os contratos (entidade,
+interfaces, OpenAPI, DDL), preenche a checagem contra a constituição e propõe um
+ADR: "guardar só o hash SHA-256 do token". Você revisa e roda `/sdd:aprovar`.
 
-## 4. Tarefas
+## 7. Tarefas e aprovação
 
 ```
 /sdd:tarefas
@@ -81,9 +123,9 @@ parte:** aprovar ou ajustar.
 - [ ] T-004 solicitar redefinição sem enumeração de usuários (atende: RF-001, CA-001, CA-002; depende de: T-001, T-002, T-003)
 ```
 
-O `sdd-rastrear` confirma que todo requisito tem tarefa.
+O `sdd-rastrear` confirma que todo requisito tem tarefa. Você roda `/sdd:aprovar`.
 
-## 5. Implementar
+## 8. Implementar: red, aprovar, green
 
 ```
 /sdd:implementar
@@ -97,7 +139,12 @@ escreve um teste por critério:
 it('recusa link de redefinição com mais de 30 minutos', async () => { ... })
 ```
 
-Os testes falham por falta de comportamento. O agente mostra a lista e pede um "ok".
+Os testes falham por falta de comportamento. O agente para. Você roda
+`/sdd:aprovar`: o hash dos testes fica registrado e a feature vai para o green.
+
+```
+/sdd:implementar
+```
 
 **Green.** O agente implementa tarefa por tarefa, com os testes congelados. Se
 tentar editar um teste, o hook bloqueia:
@@ -107,30 +154,47 @@ SDD (proteção leve) bloqueou a edição de 'tests/password-reset.test.ts' na f
 Na fase green os testes estão congelados: implemente o código para fazê-los passar.
 ```
 
+No meio do caminho, ele percebe que o rate limit global está mal configurado.
+Em vez de corrigir, registra no backlog:
+
+```
+- [ ] B-006 Rate limit global com chave errada (prioridade: media; nivel: ?; origem: pendência da 001; criado: 2026-10-22)
+```
+
 Cada tarefa vira um commit: `feat(001): T-004 solicitar redefinição sem enumeração`.
 
-## 6. Auditar
+## 9. Auditar e decidir
 
 ```
 /sdd:auditar main
 ```
 
-O `auditor-de-drift` recebe só a pasta da feature e a ref base, e grava a
-`auditoria.md`. Exemplo de achado:
+O `auditor-de-drift` recebe só a pasta da feature e a ref base. Ele confere o
+código contra a spec, os testes contra os critérios e o **processo** (spec,
+plano, tarefas e testes ainda batem com o hash aprovado). Exemplo de achado:
 
 > **Desvio #1 (média):** comportamento não especificado.
 > `src/auth/password-reset.service.ts:25` registra o IP da solicitação, e nenhum
-> requisito pede isso, com implicação de LGPD. **Delta spec proposta:** RNF-004,
-> registro de IP para auditoria de segurança, com retenção de 90 dias.
+> requisito pede isso, com implicação de LGPD. **Delta spec proposta** em
+> `delta-spec.md`: RNF-004, registro de IP para auditoria de segurança, com
+> retenção de 90 dias.
 
-**A sua decisão:** aprovar, aprovar a delta spec ou mandar corrigir o código.
+Você decide com `/sdd:aprovar`: aprovar, aprovar a delta spec (a spec absorve o
+RNF-004 e é reaprovada) ou mandar corrigir.
 
-## No dia a dia
+## 10. Acompanhar e fechar a sprint
 
-| Situação | O que fazer |
-|---|---|
-| Não sei onde parei | `/sdd:status` |
-| Pedi algo informal num projeto SDD | o agente classifica o nível e propõe `/sdd:especificar` |
-| Duas features ao mesmo tempo | `sdd-estado usar 002-outra-feature` |
-| A mudança cresceu no meio | `sdd-estado definir nivel=2` e siga para `/sdd:planejar` |
-| Revisar o trabalho | revise a spec, não o diff: duas páginas bem lidas valem mais que duas mil linhas passadas por cima |
+Ao longo da sprint:
+
+```
+/sdd:status
+```
+
+mostra o quadro, e `/sdd:pendencias` mostra o que espera você. No fim:
+
+```
+/sdd:sprint encerrar
+```
+
+grava "Entregue: 2 de 3 itens", pergunta o destino do que ficou e preenche a
+revisão com você.

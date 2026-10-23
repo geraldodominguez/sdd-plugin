@@ -13,9 +13,10 @@ contexto, e siga o `DECOMPOSICAO-DE-TAREFAS.md` dela.
 ## Processo
 
 1. **Pré-condições.** `sdd-estado ver`.
-   - Nível 2: `plano.md` precisa existir e estar aprovado. Se não existir,
-     diga ao usuário para rodar `/sdd:planejar` e pare.
-   - Nível 1: basta a `spec.md` sem marcadores em aberto.
+   - Nível 2: `sdd-estado aprovado plano.md` deve sair com 0. Sem plano, diga
+     ao usuário para rodar `/sdd:planejar`; com plano não aprovado ou alterado,
+     `/sdd:aprovar`. E pare.
+   - Nível 1: `sdd-estado aprovado spec.md` deve sair com 0. Senão, `/sdd:aprovar`.
    - Rode `sdd-estado definir fase=tarefas`.
 
 2. **Escreva `tarefas.md`** a partir do template (`sdd-estado template tarefas.md`),
@@ -33,8 +34,8 @@ contexto, e siga o `DECOMPOSICAO-DE-TAREFAS.md` dela.
    **teste** são esperadas nesta fase: somem no `/sdd:implementar`.
 
 4. **Gate.** Mostre a lista de tarefas (só IDs e descrições), as dependências
-   críticas e o que pode rodar em paralelo. Peça aprovação. Próximo:
-   `/sdd:implementar`.
+   críticas e o que pode rodar em paralelo. Próximo: `/sdd:aprovar`, para
+   aprovar as tarefas. Depois vem o `/sdd:implementar`.
 
 ## Não faça
 

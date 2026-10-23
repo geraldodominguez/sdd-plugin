@@ -6,6 +6,7 @@
 | Situação | rascunho |
 | Criada em | {{DATA}} |
 | Contexto | [contexto.md](./contexto.md) (projetos existentes) |
+| Origem | {{ORIGEM}} |
 
 > **Esta spec descreve O QUÊ e POR QUÊ, nunca o COMO.**
 > Tecnologia, arquitetura e estrutura de código ficam no `plano.md`.

@@ -25,13 +25,17 @@ base da comparação se não for `main`: `/sdd:auditar develop`.
 | Contrato alterado | um campo da API mudou de tipo |
 | Teste enfraquecido | o teste do CA-005 passa sem verificar o "Então" |
 
-Para cada desvio, a sua decisão:
+Além do código, ele audita o **processo**: confere se a spec, o plano, as
+tarefas e os testes ainda batem com o hash aprovado. Um teste alterado depois da
+aprovação da fase red é achado crítico.
+
+A sua decisão é registrada com `/sdd:aprovar`:
 
 | Decisão | O que acontece |
 |---|---|
-| Aprovar | a feature é encerrada |
-| Aprovar a delta spec | a spec é atualizada (ela é a fonte de verdade) e a feature é encerrada |
-| Corrigir o código | volta para a fase green, só para os desvios apontados, e audita de novo |
+| Aprovar | a feature é concluída |
+| Aprovar a delta spec | a spec absorve a mudança de `delta-spec.md`, é reaprovada, e a feature é concluída |
+| Corrigir o código | a feature volta ao green, só para os desvios apontados, e é auditada de novo |
 
 ## Perguntas frequentes
 
@@ -53,6 +57,6 @@ uma ordem. A sessão principal não deve "corrigir" o relatório.
 
 ## Onde se encaixa
 
-Último passo do fluxo principal, depois do [implementar](implementar.md). Uma
-delta spec aprovada leva de volta à spec; uma correção leva de volta à fase
-green. O mapa está na [ajuda](ajuda.md).
+Último passo do fluxo principal, depois do [implementar](implementar.md). A
+decisão passa pelo [aprovar](aprovar.md): uma delta spec aprovada atualiza a
+spec; uma correção leva de volta à fase green. O mapa está na [ajuda](ajuda.md).

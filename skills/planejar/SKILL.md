@@ -18,9 +18,11 @@ contexto.
 1. **Pré-condições.** `sdd-estado ver`.
    - Nível 1: explique que o nível 1 dispensa plano e sugira `/sdd:tarefas`.
      Se o usuário insistir, siga.
-   - A spec não pode ter `[PRECISA ESCLARECER]` em aberto. Se tiver, liste os
-     marcadores e recomende `/sdd:clarificar`. Só siga com autorização explícita.
-   - Rode `sdd-estado definir fase=plano`.
+   - A spec precisa estar **aprovada e inalterada**: `sdd-estado aprovado spec.md`
+     deve sair com 0. Saída 5 (nunca aprovada) ou 4 (alterada depois da
+     aprovação): diga ao usuário para rodar `/sdd:aprovar` e pare.
+   - Rode `sdd-estado definir fase=plano` (a aprovação da spec já costuma ter
+     deixado a feature nessa fase).
 
 2. **Chame a ferramenta Agent com o subagent `arquiteto-de-contratos`**,
    passando no prompt:
@@ -45,8 +47,9 @@ contexto.
    | Há regra de negócio nos contratos? | devolva ao subagent |
 
 4. **Gate.** Apresente a abordagem em três a cinco linhas, os contratos
-   principais, as dependências novas, os ADRs propostos e os riscos. Peça
-   aprovação. Com ela, mude os ADRs para "aceita". Próximo: `/sdd:tarefas`.
+   principais, as dependências novas, os ADRs propostos e os riscos. Próximo:
+   `/sdd:aprovar`, para aprovar o plano e os contratos. Quando o usuário
+   aprovar, mude os ADRs da feature para "aceita". Depois vêm as `/sdd:tarefas`.
 
 ## Não faça
 

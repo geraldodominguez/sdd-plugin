@@ -6,7 +6,9 @@
 # Cria, sem sobrescrever o que já existe (a menos que --forcar):
 #   .sdd/config.yml        configuração do projeto
 #   .sdd/constituicao.md   regras inegociáveis (a preencher)
-#   .sdd/estado            feature ativa, fase e nível
+#   .sdd/estado            ponteiros pessoais: feature ativa e sprint atual
+#   .sdd/backlog.md        itens ainda sem spec
+#   .sdd/sprints/          uma sprint por arquivo
 #   .sdd/templates/        cópia dos templates do plugin (customizável)
 #   specs/                 uma pasta por feature
 #   docs/adr/              decisões arquiteturais duráveis
@@ -25,7 +27,7 @@ while [ $# -gt 0 ]; do
     --forcar) FORCAR=1 ;;
     --nivel) NIVEL="${2:?--nivel exige um valor}"; shift ;;
     --protecao) PROTECAO="${2:?--protecao exige um valor}"; shift ;;
-    -h|--ajuda|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h|--ajuda|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "sdd-iniciar: opção desconhecida: $1" >&2; exit 1 ;;
   esac
   shift
@@ -78,9 +80,22 @@ else
 fi
 
 if [ ! -e "$RAIZ/.sdd/estado" ]; then
-  printf 'feature=\nfase=concluida\nnivel=\n' > "$RAIZ/.sdd/estado"
+  printf 'feature=\nsprint=\n' > "$RAIZ/.sdd/estado"
   criados+=(".sdd/estado")
 fi
+
+# O ponteiro de feature ativa é pessoal; o estado de cada feature é versionado.
+if [ ! -e "$RAIZ/.sdd/.gitignore" ]; then
+  printf '# Ponteiros pessoais (feature ativa e sprint atual) ficam fora do git.\nestado\n*.tmp.*\n' > "$RAIZ/.sdd/.gitignore"
+  criados+=(".sdd/.gitignore")
+fi
+
+if [ ! -e "$RAIZ/.sdd/backlog.md" ]; then
+  cp "$ORIGEM/backlog.md" "$RAIZ/.sdd/backlog.md"
+  criados+=(".sdd/backlog.md")
+fi
+mkdir -p "$RAIZ/.sdd/sprints"
+[ -e "$RAIZ/.sdd/sprints/.gitkeep" ] || touch "$RAIZ/.sdd/sprints/.gitkeep"
 
 [ -e "$RAIZ/specs/.gitkeep" ] || touch "$RAIZ/specs/.gitkeep"
 [ -e "$RAIZ/docs/adr/.gitkeep" ] || touch "$RAIZ/docs/adr/.gitkeep"

@@ -6,6 +6,7 @@
 | Situação | aprovada |
 | Criada em | 2026-10-20 |
 | Contexto | [contexto.md](./contexto.md) |
+| Origem | B-001 |
 
 ## 1. Contexto e objetivo
 
@@ -36,6 +37,7 @@ e-mail.
 - **RNF-001**: O SISTEMA DEVE limitar as solicitações a 5 por hora por e-mail e 20 por hora por IP.
 - **RNF-002**: O SISTEMA DEVE armazenar apenas o hash do token, nunca o token em claro.
 - **RNF-003**: A nova senha DEVE seguir a política vigente do cadastro (mínimo de 10 caracteres).
+- **RNF-004**: O SISTEMA DEVE registrar o IP de origem das solicitações de redefinição para auditoria de segurança, sem o e-mail em claro, com retenção máxima de 90 dias. *(Adicionado pela [delta spec](./delta-spec.md) da auditoria de 2026-10-22.)*
 
 ## 5. Critérios de aceitação
 
@@ -89,6 +91,17 @@ e-mail.
   - **Então** a resposta é 422 com o código `PASSWORD_POLICY`
   - **E** o link continua válido
 
+- **CA-010** (valida RNF-004)
+  - **Dado** uma solicitação de redefinição vinda do IP `203.0.113.7`
+  - **Quando** ela é processada
+  - **Então** o log `password_reset.requested` contém o IP
+  - **E** não contém o e-mail em claro
+
+- **CA-011** (valida RNF-001)
+  - **Dado** 20 solicitações do mesmo IP na última hora, para e-mails diferentes
+  - **Quando** é feita a 21ª solicitação
+  - **Então** a resposta é 429
+
 ## 6. Escopo
 
 **Dentro do escopo:** solicitação por e-mail, link de uso único, definição da
@@ -120,3 +133,4 @@ Nenhuma.
 | 2026-10-20 | Resposta para e-mail não cadastrado? | Mesma mensagem genérica (evita enumeração) | RF-001, CA-002 |
 | 2026-10-20 | Encerrar sessões abertas ao trocar a senha? | Sim, todas | RF-003, CA-004 |
 | 2026-10-20 | Nova solicitação invalida links anteriores? | Sim | RF-005, CA-006 (novo) |
+| 2026-10-22 | Delta da auditoria: manter o registro de IP? | Sim, com retenção de 90 dias (confirmado com o responsável por LGPD) | RNF-004, CA-010, CA-011 (novos) |

@@ -10,7 +10,8 @@ requisito sem tarefa, nenhuma tarefa sem requisito.
 ## Quando usar
 
 Você digita `/sdd:tarefas`; o agente não a usa por conta própria. Use depois do
-plano aprovado (nível 2) ou da spec pronta (nível 1).
+plano aprovado (nível 2) ou da spec aprovada (nível 1). Sem a aprovação, ela
+para e pede `/sdd:aprovar`.
 
 ## O formato da linha
 
@@ -37,5 +38,6 @@ tarefa.
 
 ## Onde se encaixa
 
-Quarto passo do fluxo principal, antes do [implementar](implementar.md). O mapa
-está na [ajuda](ajuda.md).
+Quarto passo do fluxo principal. Termina no [aprovar](aprovar.md); depois vem
+o [implementar](implementar.md). O progresso das tarefas aparece no
+[status](status.md) e na [sprint](sprint.md). O mapa está na [ajuda](ajuda.md).

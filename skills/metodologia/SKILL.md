@@ -14,16 +14,21 @@ dela. Mudança de comportamento começa na spec, nunca no código.
 |---|---|
 | `.sdd/constituicao.md` | Regras inegociáveis. Todo plano é checado contra ela. |
 | `.sdd/config.yml` | Nível padrão, proteção, globs de teste e de contrato, comandos. |
-| `.sdd/estado` | Feature ativa, fase e nível. Leia com `sdd-estado ver`. |
+| `.sdd/estado` | Ponteiros pessoais: feature ativa e sprint atual. Leia com `sdd-estado ver`. |
+| `.sdd/backlog.md` | Itens sem spec (`B-NNN`), por prioridade. |
+| `.sdd/sprints/<id>.md` | Uma sprint por arquivo: objetivo, datas, compromisso, revisão. |
 | `.sdd/templates/` | Templates do projeto. Caminho de cada um: `sdd-estado template <nome>`. |
-| `specs/NNN-slug/` | Uma pasta por feature: `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `auditoria.md`. |
+| `specs/NNN-slug/` | Uma pasta por feature: `estado`, `historico.md`, `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `auditoria.md`, `delta-spec.md`. |
 | `docs/adr/` | Decisões arquiteturais duráveis. |
 
 ## Utilitários no PATH
 
-- `sdd-estado ver | definir k=v | nova "título" --nivel N | usar NNN-slug | encerrar | caminho [arq] | template <nome>`
+- `sdd-estado ver | definir k=v | nova "título" --nivel N [--origem B-NNN] | usar NNN-slug | encerrar | aprovar | aprovado <artefato> | listar | historico | caminho [arq] | template <nome>`
 - `sdd-rastrear [NNN-slug]`: lacunas de rastreabilidade (saída 3 indica lacunas)
-- `sdd-status`: painel da feature ativa
+- `sdd-status [NNN-slug]`: quadro do projeto, ou detalhe de uma feature
+- `sdd-backlog listar | adicionar | ver | prioridade | promover | descartar | contar`
+- `sdd-sprint nova | incluir | remover | iniciar | encerrar | ver | listar | itens`
+- `sdd-pendencias [--contar]`: o que espera decisão humana
 - `sdd-iniciar`: prepara o projeto (usado por `/sdd:iniciar`)
 
 ## Fases
@@ -39,9 +44,23 @@ dela. Mudança de comportamento começa na spec, nunca no código.
 | `auditoria` | Bate com a spec? | `auditoria.md` | `auditor-de-drift` |
 | `concluida` | | | |
 
-Toda fase termina num **gate**: apresente o artefato, peça aprovação explícita
-e só então avance com `sdd-estado definir fase=<próxima>`. Nunca avance duas
-fases sem aprovação.
+Toda fase termina num **gate**: apresente o artefato e diga ao usuário para
+rodar `/sdd:aprovar`. É o `/sdd:aprovar` que registra a aprovação no
+`historico.md`, com o hash do artefato, e avança a fase. **Nunca registre uma
+aprovação nem avance a fase por conta própria.**
+
+Antes de começar uma fase, confira a aprovação da anterior com
+`sdd-estado aprovado <artefato>`: saída 0 é aprovado e inalterado; 4, alterado
+depois da aprovação; 5, nunca aprovado. Com 4 ou 5, pare e peça `/sdd:aprovar`.
+
+| Fase | Aprova-se | Leva a |
+|---|---|---|
+| `especificacao`, `clarificacao` | `spec.md` | `plano` (nível 2) ou `tarefas` (nível 1) |
+| `plano` | `plano.md` e `contratos/` | `tarefas` |
+| `tarefas` | `tarefas.md` | `red` |
+| `red` | os testes marcados `sdd:NNN:` | `green` |
+| `green` | a entrega (só nível 1) | `concluida` |
+| `auditoria` | a decisão: aprovar, delta ou corrigir | `concluida` ou `green` |
 
 ## Níveis de rigor
 
@@ -82,8 +101,17 @@ interfaces, schemas, OpenAPI, DDL). Ficam congelados durante a implementação.
    errado, pare e diga isso ao usuário. A correção começa pela spec, com aprovação.
 3. Não altere contratos em `red` ou `green` sem voltar ao plano, com aprovação.
 4. Não avance de fase sem aprovação humana explícita.
-5. Encontrou algo fora do escopo? Registre como pendência, não implemente.
+5. Encontrou algo fora do escopo? Registre no backlog
+   (`sdd-backlog adicionar "título" --nivel ? --origem "pendência da NNN"`), não implemente.
 6. Divergência entre código e spec se resolve **primeiro na spec**, com uma delta spec.
+
+## Backlog e sprint
+
+O **backlog** guarda o que ainda não tem spec: ideias, pedidos, bugs relatados,
+pendências fora do escopo. Um item vira feature com `/sdd:especificar B-NNN`.
+A **sprint** é um período com objetivo e compromisso (features e itens de
+backlog). Pedidos que são para depois vão para o backlog, não viram feature na
+hora.
 
 ## Pedidos fora dos comandos
 

@@ -31,17 +31,24 @@ diff mostram.
    (endpoints, campos, regras, efeitos colaterais), contratos alterados e
    testes mexidos depois da fase red (o `git log` ajuda).
 6. **Constituição:** confira cada regra aplicável.
-7. **Execute** o `comando_teste`, o `comando_lint` (se houver) e o `sdd-rastrear`.
-8. Grave `specs/NNN-slug/auditoria.md` pelo template.
-9. Se um desvio parecer **intencional e benéfico**, proponha uma delta spec na
-   seção 6 da auditoria, pelo template `delta-spec.md`. Só proponha.
+7. **Processo:** rode `sdd-estado aprovado <artefato> NNN-slug` para `spec.md`,
+   `plano.md` (nível 2), `tarefas.md` e `testes`. Saída 4 significa que o
+   artefato mudou depois de aprovado; saída 5, que nunca foi aprovado. Teste
+   alterado depois da aprovação da fase red é achado **crítico** até prova em
+   contrário. Leia também `sdd-estado historico NNN-slug` para conferir que
+   cada fase avançou com aprovação.
+8. **Execute** o `comando_teste`, o `comando_lint` (se houver) e o `sdd-rastrear`.
+9. Grave `specs/NNN-slug/auditoria.md` pelo template, com a seção de processo preenchida.
+10. Se um desvio parecer **intencional e benéfico**, proponha uma delta spec num
+   arquivo à parte, `specs/NNN-slug/delta-spec.md`, pelo template de mesmo nome,
+   com situação "proposta", e cite-o na seção 6 da auditoria. Só proponha.
 
 ## Gravidade
 
 | Gravidade | Casos |
 |---|---|
-| Crítica | requisito não atendido, violação de segurança ou da constituição, contrato público alterado sem aprovação, teste enfraquecido |
-| Média | comportamento não especificado com impacto, CA sem teste |
+| Crítica | requisito não atendido, violação de segurança ou da constituição, contrato público alterado sem aprovação, teste enfraquecido ou alterado depois da aprovação |
+| Média | comportamento não especificado com impacto, CA sem teste, fase que avançou sem aprovação registrada |
 | Baixa | divergência cosmética, documentação desatualizada |
 
 Veredito: **reprovada** com qualquer crítica; **aprovada com ressalvas** com
@@ -49,9 +56,10 @@ alguma média; **aprovada** com só baixas ou nada.
 
 ## Regras
 
-- O único arquivo que você escreve é a `auditoria.md` da feature.
+- Os únicos arquivos que você escreve são a `auditoria.md` e, se houver proposta, a `delta-spec.md` da feature.
 - Bash só para leitura e execução: `git diff`, `git log`, `git status`,
-  `git show`, `sdd-rastrear`, o comando de testes e o de lint. Nunca edite,
+  `git show`, `sdd-rastrear`, `sdd-estado aprovado`, `sdd-estado historico`, o
+  comando de testes e o de lint. Nunca edite,
   mova ou apague arquivo pelo shell.
 - Não corrija código nem spec. Não suavize achados.
 - Seja específico: todo achado tem `arquivo:linha` ou ID.

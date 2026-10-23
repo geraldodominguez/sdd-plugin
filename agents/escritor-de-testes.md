@@ -42,6 +42,10 @@ conhece, e não precisa conhecer, a implementação futura.
 - Use Bash só para rodar testes e inspecionar o projeto, nunca para escrever
   arquivos fora dos testes.
 
+Depois de você, a pessoa aprova os testes com `/sdd:aprovar`, que registra um
+hash deles. Qualquer mudança posterior num teste com a marca da feature fica
+visível para o auditor.
+
 ## Saída para quem chamou
 
 - tabela CA e arquivo:teste;

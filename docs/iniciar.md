@@ -2,8 +2,8 @@
 
 ## O que faz
 
-Prepara um repositório para o SDD: cria `.sdd/` (configuração, estado,
-templates), `specs/` e `docs/adr/`, injeta as regras do método no `CLAUDE.md` e
+Prepara um repositório para o SDD: cria `.sdd/` (configuração, backlog,
+sprints, templates), `specs/` e `docs/adr/`, injeta as regras do método no `CLAUDE.md` e
 no `AGENTS.md` e rascunha a **constituição**. Num projeto existente, ela
 preenche a constituição só com o que observa no código (stack, versões,
 camadas, comandos) e deixa como "a definir" o que não consegue confirmar. Não
@@ -46,9 +46,19 @@ ignorá-la.
 
 - A constituição cita versões e comandos que existem de verdade no projeto.
 - Nada nela soa como boa prática genérica ("código limpo", "boas práticas").
-- `/sdd:status` responde sem dizer que o projeto não usa SDD.
+- `/sdd:status` mostra o quadro (vazio), sem dizer que o projeto não usa SDD.
+
+## O que versionar
+
+| Caminho | Versionar? | Por quê |
+|---|---|---|
+| `.sdd/config.yml`, `constituicao.md`, `templates/`, `backlog.md`, `sprints/` | sim | são do time |
+| `specs/` (inclusive `estado` e `historico.md` de cada feature) | sim | o quadro e as aprovações são do time |
+| `.sdd/estado` | não (já vem no `.sdd/.gitignore`) | é o ponteiro pessoal: a feature ativa e a sprint atual de cada pessoa |
 
 ## Onde se encaixa
 
-Configuração de uma vez, antes do fluxo principal. Depois dela vem
-[especificar](especificar.md). O mapa completo está na [ajuda](ajuda.md).
+Configuração de uma vez, antes de tudo. Depois dela vêm o
+[especificar](especificar.md), para uma mudança imediata, ou o
+[backlog](backlog.md) e a [sprint](sprint.md), para organizar uma lista de
+trabalho. O mapa completo está na [ajuda](ajuda.md).

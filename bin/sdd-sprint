@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+# sdd-sprint: gerencia sprints (.sdd/sprints/<id>.md).
+#
+# Uso:
+#   sdd-sprint nova [id] --objetivo "texto" [--inicio AAAA-MM-DD] [--fim AAAA-MM-DD | --dias N]
+#                                         cria uma sprint planejada (id padrão: semana ISO, ex. 2026-S44)
+#   sdd-sprint incluir <id> <NNN-slug|B-NNN> [...]
+#   sdd-sprint remover <id> <NNN-slug|B-NNN>
+#   sdd-sprint iniciar <id>               marca como ativa e define como a sprint atual
+#   sdd-sprint encerrar <id>              marca como encerrada e grava o resumo de entrega
+#   sdd-sprint ver [id]                   andamento (padrão: a sprint atual)
+#   sdd-sprint listar                     todas as sprints
+#   sdd-sprint itens [id]                 os itens da sprint, um por linha
+#
+# Situações: planejada, ativa, encerrada.
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+[ -d "$RAIZ/.sdd" ] || { echo "sdd-sprint: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+DIR="$RAIZ/.sdd/sprints"
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
+HOJE="$(date +%Y-%m-%d)"
+
+arquivo() { printf '%s\n' "$DIR/$1.md"; }
+existe() { [ -f "$(arquivo "$1")" ] || { echo "sdd-sprint: a sprint '$1' não existe." >&2; exit 1; }; }
+atual() { sdd_kv_ler "$RAIZ/.sdd/estado" sprint; }
+id_ou_atual() {
+  local id="${1:-}"
+  [ -n "$id" ] || id="$(atual)"
+  [ -n "$id" ] || { echo "sdd-sprint: nenhuma sprint atual. Informe o id ou rode 'sdd-sprint iniciar <id>'." >&2; exit 1; }
+  existe "$id"
+  printf '%s\n' "$id"
+}
+
+campo() { # campo <id> <nome>
+  { grep -E "^\| $2 \|" "$(arquivo "$1")" || true; } | head -1 | sed -E "s/^\| $2 \| (.*) \|$/\1/"
+}
+gravar_campo() { # gravar_campo <id> <nome> <valor>
+  local arq tmp
+  arq="$(arquivo "$1")"; tmp="$arq.tmp.$$"
+  awk -v n="$2" -v v="$3" '$0 ~ ("^\\| " n " \\|") { print "| " n " | " v " |"; next } { print }' "$arq" > "$tmp"
+  mv "$tmp" "$arq"
+}
+
+itens() { # itens <id>
+  awk '/^## Compromisso/ { dentro = 1; next } /^## / { dentro = 0 } dentro && /^- / { sub(/^- /, ""); sub(/ .*/, ""); print }' "$(arquivo "$1")"
+}
+
+# reescrever_itens <id> <lista>: substitui a seção Compromisso pela lista (um item por linha).
+reescrever_itens() {
+  local arq tmp
+  arq="$(arquivo "$1")"; tmp="$arq.tmp.$$"
+  LISTA="$2" awk '
+    BEGIN { lista = ENVIRON["LISTA"] }
+    /^## Compromisso/ {
+      print; print ""
+      n = split(lista, a, "\n"); vazios = 1
+      for (i = 1; i <= n; i++) if (a[i] != "") { print "- " a[i]; vazios = 0 }
+      if (vazios) print "_Nenhum item ainda. Use /sdd:sprint para planejar._"
+      print ""; pular = 1; next
+    }
+    pular && /^## / { pular = 0 }
+    pular { next }
+    { print }
+  ' "$arq" > "$tmp"
+  mv "$tmp" "$arq"
+}
+
+item_valido() {
+  case "$1" in
+    B-[0-9][0-9][0-9])
+      grep -qE "^- \[[ xX-]\] $1 " "$RAIZ/.sdd/backlog.md" 2>/dev/null || { echo "sdd-sprint: $1 não está no backlog." >&2; exit 1; } ;;
+    [0-9][0-9][0-9]-*)
+      [ -d "$RAIZ/$PASTA_SPECS/$1" ] || { echo "sdd-sprint: a feature $1 não existe." >&2; exit 1; } ;;
+    *) echo "sdd-sprint: item inválido '$1' (use NNN-slug ou B-NNN)." >&2; exit 1 ;;
+  esac
+}
+
+# resolve <item>: feature correspondente (B promovido vira a feature) ou vazio.
+resolve() {
+  case "$1" in
+    B-*) grep -E "^- \[[xX]\] $1 " "$RAIZ/.sdd/backlog.md" 2>/dev/null | grep -oE 'feature: [0-9]{3}-[^;)]*' | sed 's/feature: //' | head -1 || true ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+descrever() { # descrever <item>: uma linha de andamento
+  local item="$1" f fase nivel prog feitas total extra=""
+  f="$(resolve "$item")"
+  if [ -z "$f" ]; then
+    local l
+    l="$(grep -E "^- \[[ -]\] $item " "$RAIZ/.sdd/backlog.md" 2>/dev/null | head -1 || true)"
+    case "$l" in
+      "- [-]"*) printf '  %-34s %s\n' "$item" "descartado" ;;
+      *) printf '  %-34s %s\n' "$item" "no backlog, ainda sem spec: $(printf '%s' "$l" | sed -E 's/^- \[.\] B-[0-9]{3} //; s/ \([^()]*\)$//')" ;;
+    esac
+    return
+  fi
+  fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+  nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
+  prog="$(sdd_tarefas_progresso "$RAIZ" "$f")"
+  feitas="${prog% *}"; total="${prog#* }"
+  [ "$total" -gt 0 ] && extra=" · tarefas $feitas/$total"
+  aguarda="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
+  [ -n "$aguarda" ] && extra="$extra · aguarda aprovação de $aguarda"
+  [ "$item" != "$f" ] && extra="$extra · origem $item"
+  printf '  %-34s %s (n%s)%s\n' "$f" "${fase:-?}" "${nivel:-?}" "$extra"
+}
+
+cmd="${1:-ver}"
+shift || true
+
+case "$cmd" in
+  nova)
+    id=""; objetivo=""; inicio="$HOJE"; fim=""; dias=14
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --objetivo) objetivo="${2:?}"; shift ;;
+        --inicio) inicio="${2:?}"; shift ;;
+        --fim) fim="${2:?}"; shift ;;
+        --dias) dias="${2:?}"; shift ;;
+        -*) echo "sdd-sprint nova: opção desconhecida $1" >&2; exit 1 ;;
+        *) id="$1" ;;
+      esac
+      shift
+    done
+    [ -n "$objetivo" ] || { echo "sdd-sprint nova: informe --objetivo." >&2; exit 1; }
+    [ -n "$id" ] || id="$(sdd_semana_iso "$inicio")"
+    [ -n "$fim" ] || fim="$(sdd_data_mais "$inicio" $((dias - 1)))"
+    [ -n "$id" ] && [ -n "$fim" ] || { echo "sdd-sprint nova: não consegui calcular datas; informe o id e --fim." >&2; exit 1; }
+    [ ! -f "$(arquivo "$id")" ] || { echo "sdd-sprint: a sprint '$id' já existe." >&2; exit 1; }
+    mkdir -p "$DIR"
+    t="$RAIZ/.sdd/templates/sprint.md"
+    [ -f "$t" ] || t="$(sdd_raiz_plugin)/skills/metodologia/templates/sprint.md"
+    obj_sed="$(printf '%s' "$objetivo" | sed 's/[\/&|]/\\&/g')"
+    sed -e "s/{{SPRINT}}/$id/g" -e "s/{{OBJETIVO}}/$obj_sed/g" -e "s/{{INICIO}}/$inicio/g" -e "s/{{FIM}}/$fim/g" "$t" > "$(arquivo "$id")"
+    sdd_registrar "$RAIZ" "" sprint "$id criada: $objetivo ($inicio a $fim)"
+    echo "Sprint $id criada ($inicio a $fim): .sdd/sprints/$id.md"
+    ;;
+
+  incluir)
+    id="${1:?uso: sdd-sprint incluir <id> <item> [...]}"; shift
+    existe "$id"
+    [ $# -gt 0 ] || { echo "sdd-sprint incluir: informe ao menos um item." >&2; exit 1; }
+    for item in "$@"; do
+      item_valido "$item"
+      if itens "$id" | grep -qx "$item"; then echo "$item já está na sprint $id."; continue; fi
+      reescrever_itens "$id" "$( { itens "$id"; printf '%s\n' "$item"; } )"
+      sdd_registrar "$RAIZ" "" sprint "$item incluído em $id"
+      echo "$item incluído na sprint $id."
+    done
+    ;;
+
+  remover)
+    id="${1:?uso: sdd-sprint remover <id> <item>}"; item="${2:?}"
+    existe "$id"
+    itens "$id" | grep -qx "$item" || { echo "sdd-sprint: $item não está na sprint $id." >&2; exit 1; }
+    reescrever_itens "$id" "$(itens "$id" | grep -vx "$item" || true)"
+    sdd_registrar "$RAIZ" "" sprint "$item removido de $id"
+    echo "$item removido da sprint $id."
+    ;;
+
+  iniciar)
+    id="${1:?uso: sdd-sprint iniciar <id>}"
+    existe "$id"
+    gravar_campo "$id" "Situação" "ativa"
+    sdd_kv_gravar "$RAIZ/.sdd/estado" sprint "$id"
+    sdd_registrar "$RAIZ" "" sprint "$id iniciada"
+    echo "Sprint $id ativa."
+    ;;
+
+  encerrar)
+    id="$(id_ou_atual "${1:-}")"
+    total=0; entregues=0; resumo=""
+    for item in $(itens "$id"); do
+      total=$((total + 1))
+      f="$(resolve "$item")"
+      fase=""; [ -n "$f" ] && fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+      if [ "$fase" = "concluida" ]; then
+        entregues=$((entregues + 1)); resumo="$resumo- ✓ ${f}"$'\n'
+      else
+        resumo="$resumo- ✗ ${f:-$item} (${fase:-sem spec})"$'\n'
+      fi
+    done
+    gravar_campo "$id" "Situação" "encerrada"
+    {
+      printf '\n### Resultado (gerado em %s)\n\n' "$HOJE"
+      printf 'Entregue: %s de %s itens.\n\n' "$entregues" "$total"
+      printf '%s' "$resumo"
+    } >> "$(arquivo "$id")"
+    [ "$(atual)" = "$id" ] && sdd_kv_gravar "$RAIZ/.sdd/estado" sprint ""
+    sdd_registrar "$RAIZ" "" sprint "$id encerrada: $entregues de $total entregues"
+    echo "Sprint $id encerrada: $entregues de $total itens entregues."
+    ;;
+
+  ver)
+    id="$(id_ou_atual "${1:-}")"
+    inicio="$(campo "$id" "Início")"; fim="$(campo "$id" "Fim")"; sit="$(campo "$id" "Situação")"
+    restam="$(sdd_dias_entre "$HOJE" "$fim" || true)"
+    echo "Sprint $id ($sit) · $inicio a $fim${restam:+ · faltam $restam dias}"
+    echo "Objetivo: $(campo "$id" "Objetivo")"
+    total=0; concl=0; tf=0; tt=0
+    for item in $(itens "$id"); do
+      total=$((total + 1))
+      f="$(resolve "$item")"
+      if [ -n "$f" ]; then
+        [ "$(sdd_feature_ler "$RAIZ" "$f" fase)" = "concluida" ] && concl=$((concl + 1))
+        p="$(sdd_tarefas_progresso "$RAIZ" "$f")"; tf=$((tf + ${p% *})); tt=$((tt + ${p#* }))
+      fi
+    done
+    echo "Progresso: $concl/$total itens concluídos · $tf/$tt tarefas"
+    echo
+    if [ "$total" -eq 0 ]; then
+      echo "  (nenhum item na sprint)"
+    else
+      for item in $(itens "$id"); do descrever "$item"; done
+    fi
+    ;;
+
+  listar)
+    [ -d "$DIR" ] || { echo "Nenhuma sprint."; exit 0; }
+    a="$(atual)"
+    for arq in "$DIR"/*.md; do
+      [ -f "$arq" ] || continue
+      id="$(basename "$arq" .md)"
+      m=" "; [ "$id" = "$a" ] && m="*"
+      printf '%s %-10s %-10s %s a %s · %s\n' "$m" "$id" "$(campo "$id" "Situação")" "$(campo "$id" "Início")" "$(campo "$id" "Fim")" "$(campo "$id" "Objetivo")"
+    done
+    ;;
+
+  itens)
+    id="$(id_ou_atual "${1:-}")"
+    itens "$id"
+    ;;
+
+  -h|--ajuda|--help|ajuda)
+    sed -n '2,15p' "$0"
+    ;;
+
+  *)
+    echo "sdd-sprint: comando desconhecido '$cmd'. Use --ajuda." >&2
+    exit 1
+    ;;
+esac

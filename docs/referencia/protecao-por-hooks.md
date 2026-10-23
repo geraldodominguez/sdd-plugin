@@ -28,8 +28,14 @@ protecao: leve   # desligada | leve | estrita
 
 Intercepta `Edit`, `Write`, `MultiEdit` e `NotebookEdit`.
 
-**Sempre editáveis**, em qualquer modo e fase: `.sdd/`, `specs/`, `docs/`,
-`CLAUDE.md`, `AGENTS.md`, `.claude/` e qualquer arquivo fora do projeto.
+**Nunca editáveis à mão**, em qualquer fase (proteção leve ou estrita): o
+`estado` e o `historico.md` de cada feature, e o `.sdd/estado` e o
+`.sdd/historico.md`. Eles são escritos só pelos utilitários. É isso que impede
+o agente de forjar uma aprovação ou de pular uma fase editando um arquivo.
+
+**Sempre editáveis**, em qualquer modo e fase: o resto de `.sdd/` e de `specs/`,
+`docs/`, `CLAUDE.md`, `AGENTS.md`, `.claude/` e qualquer arquivo fora do
+projeto.
 
 | Fase | `leve` | `estrita` |
 |---|---|---|
@@ -84,7 +90,7 @@ Os hooks são trilhos contra deslizes, não um sandbox:
 | Brecha | O que cobre |
 |---|---|
 | Edição pelo shell (`echo > tests/x.test.ts`) | as instruções das skills e dos subagents, e a auditoria, que procura testes mexidos depois da red |
-| O agente trocando a fase com `sdd-estado definir` | os gates: as skills mandam trocar de fase só com a sua aprovação |
+| O agente trocando a fase ou aprovando pelo shell (`sdd-estado definir`, `sdd-estado aprovar`) | as instruções (só o `/sdd:aprovar`, digitado por você, aprova), o autor registrado em cada aprovação e a auditoria, que confere as aprovações |
 | Subagent com ferramenta de escrita | as instruções dele e, na proteção estrita, o hook da fase |
 
 Para garantia determinística, rode o `sdd-rastrear` na CI (a saída 3 falha o

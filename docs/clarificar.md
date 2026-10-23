@@ -42,5 +42,5 @@ dividir em duas features menores.
 ## Onde se encaixa
 
 Segundo passo do fluxo principal, entre [especificar](especificar.md) e
-[planejar](planejar.md) ou [tarefas](tarefas.md). O mapa está na
-[ajuda](ajuda.md).
+[aprovar](aprovar.md). Se a spec já estava aprovada, qualquer mudança feita aqui
+exige uma nova aprovação. O mapa está na [ajuda](ajuda.md).

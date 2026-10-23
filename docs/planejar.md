@@ -16,7 +16,8 @@ diz que o plano é dispensável e sugere ir direto às [tarefas](tarefas.md).
 
 ## Pré-requisitos
 
-Uma spec sem `[PRECISA ESCLARECER]` em aberto e uma constituição preenchida.
+Uma spec **aprovada e inalterada** desde a aprovação (o comando confere com
+`sdd-estado aprovado spec.md`) e uma constituição preenchida.
 
 ## Contratos congelados
 
@@ -26,7 +27,9 @@ aprovação. Na proteção estrita, um hook impede a edição dos arquivos que c
 com `globs_de_contrato` na fase green.
 
 Toda decisão durável (tecnologia, padrão, trade-off) vira um ADR em `docs/adr/`,
-com situação "proposta" até você aprovar o plano.
+com situação "proposta" até você aprovar o plano com `/sdd:aprovar`. O hash
+registrado na aprovação cobre o `plano.md` e todos os arquivos de `contratos/`:
+mudar um contrato depois invalida a aprovação.
 
 ## Perguntas frequentes
 
@@ -44,6 +47,6 @@ desenho ser feito por alguém sem pressa de implementar. Ver o
 
 ## Onde se encaixa
 
-Terceiro passo do fluxo principal, só no nível 2. Vem depois do
-[clarificar](clarificar.md) e antes das [tarefas](tarefas.md). O mapa está na
-[ajuda](ajuda.md).
+Terceiro passo do fluxo principal, só no nível 2. Vem depois da spec aprovada e
+termina no [aprovar](aprovar.md); depois vêm as [tarefas](tarefas.md). O mapa
+está na [ajuda](ajuda.md).

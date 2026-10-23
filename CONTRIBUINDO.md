@@ -18,7 +18,8 @@ skills/metodologia/    a skill invocada pelo modelo, com as referências e os te
 agents/                os quatro subagents
 hooks/hooks.json       registra os hooks PreToolUse
 scripts/               guarda-edicoes.sh, guarda-commits.sh
-bin/                   sdd-iniciar, sdd-estado, sdd-rastrear, sdd-status (vão para o PATH)
+bin/                   sdd-iniciar, sdd-estado, sdd-backlog, sdd-sprint, sdd-status,
+                       sdd-pendencias, sdd-rastrear (vão para o PATH)
 lib/sdd-comum.sh       funções compartilhadas por bin/ e scripts/
 tests/                 testes dos utilitários e hooks, e a checagem de travessões
 docs/                  uma página por skill, e docs/referencia/ com os guias

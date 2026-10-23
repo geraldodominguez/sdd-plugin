@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# sdd-pendencias: tudo o que está esperando uma decisão humana, em todas as features.
+#
+# Uso: sdd-pendencias [--contar]
+#
+# Lista:
+#   1. artefatos esperando aprovação (ou alterados depois de aprovados);
+#   2. marcadores [PRECISA ESCLARECER] em aberto nas specs;
+#   3. ADRs em situação "proposta";
+#   4. delta specs em situação "proposta";
+#   5. itens de backlog a triar (sem nível estimado);
+#   6. itens da sprint atual que ainda não têm spec.
+#
+# Com --contar, imprime só o total. Código de saída sempre 0.
+set -uo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+if [ ! -d "$RAIZ/.sdd" ]; then
+  [ "${1:-}" = "--contar" ] && { echo 0; exit 0; }
+  echo "Este projeto ainda não usa SDD. Rode /sdd:iniciar."
+  exit 0
+fi
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
+
+aprov=(); duv=(); adrs=(); deltas=(); triar=(); semspec=()
+
+for f in $(sdd_features "$RAIZ"); do
+  fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+  [ "$fase" = "concluida" ] && continue
+  art="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
+  if [ -n "$art" ]; then
+    if [ -n "$(sdd_ultima_aprovacao "$RAIZ" "$f" "$art")" ]; then
+      aprov+=("$f: $art foi alterado depois de aprovado (fase $fase)")
+    else
+      aprov+=("$f: $art espera aprovação (fase $fase)")
+    fi
+  fi
+  n="$(sdd_duvidas_abertas "$RAIZ" "$f")"
+  [ "${n:-0}" -gt 0 ] && duv+=("$f: $n dúvida(s) em aberto na spec")
+  if [ -f "$RAIZ/$PASTA_SPECS/$f/delta-spec.md" ] && grep -qE '^\| Situação \| proposta \|' "$RAIZ/$PASTA_SPECS/$f/delta-spec.md"; then
+    deltas+=("$f: delta-spec.md proposta pela auditoria")
+  fi
+done
+
+for a in "$RAIZ"/docs/adr/*.md "$RAIZ/$PASTA_SPECS"/*/adr-*.md; do
+  [ -f "$a" ] || continue
+  if grep -qE '^\| Situação \| proposta \|' "$a"; then
+    adrs+=("${a#"$RAIZ"/}: $(head -1 "$a" | sed 's/^# //')")
+  fi
+done
+
+if [ -f "$RAIZ/.sdd/backlog.md" ]; then
+  while IFS= read -r l; do
+    id="$(printf '%s' "$l" | grep -oE 'B-[0-9]{3}' | head -1)"
+    t="$(printf '%s' "$l" | sed -E 's/^- \[.\] B-[0-9]{3} //; s/ \([^()]*\)$//')"
+    triar+=("$id: $t")
+  done < <(grep -E '^- \[ \] B-[0-9]{3} .*nivel: \?' "$RAIZ/.sdd/backlog.md" || true)
+fi
+
+sprint="$(sdd_kv_ler "$RAIZ/.sdd/estado" sprint)"
+if [ -n "$sprint" ] && [ -f "$RAIZ/.sdd/sprints/$sprint.md" ]; then
+  while IFS= read -r item; do
+    case "$item" in
+      B-*) grep -qE "^- \[ \] $item " "$RAIZ/.sdd/backlog.md" 2>/dev/null && semspec+=("$item está na sprint $sprint e ainda não tem spec") ;;
+    esac
+  done < <("$AQUI/sdd-sprint" itens "$sprint" 2>/dev/null || true)
+fi
+
+total=$(( ${#aprov[@]} + ${#duv[@]} + ${#adrs[@]} + ${#deltas[@]} + ${#triar[@]} + ${#semspec[@]} ))
+
+if [ "${1:-}" = "--contar" ]; then
+  echo "$total"
+  exit 0
+fi
+
+if [ "$total" -eq 0 ]; then
+  echo "Nada esperando por você."
+  exit 0
+fi
+
+secao() { # secao <título> <comando> <itens...>
+  local titulo="$1" comando="$2"; shift 2
+  [ $# -gt 0 ] || return 0
+  echo "$titulo ($#) · $comando"
+  printf '  - %s\n' "$@"
+  echo
+}
+
+echo "Esperando você: $total item(ns)"
+echo
+[ ${#aprov[@]} -gt 0 ] && secao "Aprovações" "/sdd:aprovar" "${aprov[@]}"
+[ ${#duv[@]} -gt 0 ] && secao "Dúvidas na spec" "/sdd:clarificar" "${duv[@]}"
+[ ${#deltas[@]} -gt 0 ] && secao "Delta specs propostas" "/sdd:aprovar" "${deltas[@]}"
+[ ${#adrs[@]} -gt 0 ] && secao "ADRs propostos" "revisar e mudar a situação para aceita" "${adrs[@]}"
+[ ${#triar[@]} -gt 0 ] && secao "Backlog a triar (sem nível)" "/sdd:backlog priorizar" "${triar[@]}"
+[ ${#semspec[@]} -gt 0 ] && secao "Sprint sem spec" "/sdd:especificar B-NNN" "${semspec[@]}"
+exit 0

@@ -17,6 +17,10 @@
 - [x] T-007 rate limit por e-mail e por IP (atende: RNF-001, CA-007; depende de: T-004)
 - [x] T-008 rotas HTTP e mapeamento de erros de domínio (atende: RF-004, CA-003, CA-005, CA-006; depende de: T-005, T-006)
 
+## Grupo 4: delta da auditoria
+
+- [x] T-009 testes do registro de IP e do limite por IP (atende: RNF-004, CA-010, CA-011; depende de: T-007)
+
 ## Definição de pronto da feature
 
 - [x] Todo CA tem teste com a marca `sdd:001:CA-XXX`, e todos estão verdes

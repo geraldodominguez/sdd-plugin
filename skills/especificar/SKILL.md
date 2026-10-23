@@ -1,9 +1,9 @@
 ---
 name: especificar
-description: Abre uma feature e escreve a spec (o quê e por quê). Classifica o nível de rigor, mapeia o código afetado e lista o que precisa ser esclarecido, sem decidir regra de negócio por você.
-argument-hint: "<descrição da mudança>"
+description: Abre uma feature e escreve a spec (o quê e por quê), a partir de um pedido ou de um item do backlog. Classifica o nível de rigor, mapeia o código afetado e lista o que precisa ser esclarecido, sem decidir regra de negócio por você.
+argument-hint: "<descrição da mudança> | B-NNN"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-status), Bash(sdd-rastrear *), Read, Glob, Grep, Edit, Write
+allowed-tools: Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-status *), Bash(sdd-rastrear *), Read, Glob, Grep, Edit, Write
 ---
 
 # /sdd:especificar
@@ -17,19 +17,25 @@ contexto.
 
 1. **Pré-condições.** Rode `sdd-estado ver`.
    - Sem `.sdd/`: diga ao usuário para rodar `/sdd:iniciar` e pare.
-   - Feature ativa fora da fase `concluida`: pergunte se ele quer encerrá-la
-     (`sdd-estado encerrar`), continuar nela ou abrir esta em paralelo.
-   - Pedido vazio: pergunte o que deve mudar e pare.
+   - Pedido vazio: pergunte o que deve mudar, ou mostre `sdd-backlog listar`
+     para ele escolher um item, e pare.
+   - Se o pedido é um item do backlog (`B-NNN`), leia-o com `sdd-backlog ver B-NNN`:
+     o título, os detalhes e o nível estimado são o ponto de partida. Se o item
+     já foi promovido, diga qual feature ele virou e pare.
+   - Se o pedido não é um item do backlog, mas parece algo para depois e não
+     para agora, ofereça registrá-lo com `/sdd:backlog adicionar` em vez de
+     abrir a feature.
 
 2. **Classifique o nível** com o `NIVEIS-DE-RIGOR.md` da skill metodologia.
    Apresente a classificação com uma linha de justificativa e confirme.
    - **Nível 0:** explique que não precisa de spec, faça a mudança se o usuário
-     quiser e encerre. Não crie feature.
+     quiser e encerre. Se veio do backlog, descarte o item com o motivo
+     "resolvido como nível 0". Não crie feature.
    - **Nível 1 ou 2:** siga.
 
-3. **Crie a feature** com `sdd-estado nova "<título curto>" --nivel <N>`. Isso
-   cria `specs/NNN-slug/spec.md` pelo template certo e põe a fase em
-   `especificacao`.
+3. **Crie a feature** com `sdd-estado nova "<título curto>" --nivel <N>`,
+   acrescentando `--origem B-NNN` quando vier do backlog (isso promove o item).
+   A feature nasce na fase `especificacao` e vira a feature ativa.
 
 4. **Contexto, em projeto existente.**
    - Nível 2: chame a ferramenta Agent com o subagent `mapeador-de-contexto`,
@@ -58,10 +64,9 @@ contexto.
      | Situação | Próximo |
      |---|---|
      | Há marcadores | `/sdd:clarificar` |
-     | Nível 2, sem marcadores | `/sdd:planejar` |
-     | Nível 1, sem marcadores | `/sdd:tarefas` |
+     | Sem marcadores | `/sdd:aprovar`, para aprovar a spec |
 
-   **Não avance a fase.** A próxima começa quando o usuário rodar o comando.
+   **Não aprove nem avance a fase.** Quem aprova é o usuário, com `/sdd:aprovar`.
 
 ## Não faça
 

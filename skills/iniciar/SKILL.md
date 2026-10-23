@@ -1,6 +1,6 @@
 ---
 name: iniciar
-description: Prepara o repositório para o SDD. Cria .sdd/, specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Rode uma vez por repositório.
+description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Rode uma vez por repositório.
 argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita]"
 disable-model-invocation: true
 allowed-tools: Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Read, Glob, Grep, Edit, Write
@@ -45,7 +45,12 @@ Argumentos: `$ARGUMENTS`
    em aberto. Peça ao usuário que revise e aprove a constituição: ela vale para
    todas as features.
 
-7. **Encerre** dizendo o próximo passo: `/sdd:especificar <primeira mudança>`.
+7. **Encerre** dizendo os próximos passos possíveis:
+
+   | O usuário tem | Próximo |
+   |---|---|
+   | uma mudança para fazer agora | `/sdd:especificar <mudança>` |
+   | uma lista de coisas para fazer | `/sdd:backlog adicionar` para cada uma, depois `/sdd:sprint planejar` |
 
 ## Não faça
 
@@ -56,7 +61,7 @@ Argumentos: `$ARGUMENTS`
 
 ## Pronto quando
 
-- `.sdd/`, `specs/` e `docs/adr/` existem.
+- `.sdd/` (com `backlog.md` e `sprints/`), `specs/` e `docs/adr/` existem.
 - A constituição tem só fatos observados ou campos marcados como a definir.
 - `comando_teste` está preenchido ou o usuário sabe que precisa preencher.
 - O usuário revisou a constituição.

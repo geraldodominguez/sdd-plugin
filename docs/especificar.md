@@ -9,10 +9,16 @@ não decide regra de negócio por você. Tudo que não sabe vira um marcador
 
 ## Quando usar
 
-Você digita `/sdd:especificar <a mudança>`; o agente não a usa por conta
-própria. Use sempre que for mudar comportamento observável. Ela começa
-classificando o **nível de rigor** e, se a mudança for nível 0 (typo,
-refatoração coberta por testes), diz que não precisa de spec.
+Você digita `/sdd:especificar`; o agente não a usa por conta própria. Use
+sempre que for mudar comportamento observável. Ela começa classificando o
+**nível de rigor** e, se a mudança for nível 0 (typo, refatoração coberta por
+testes), diz que não precisa de spec.
+
+| Ponto de partida | Digite |
+|---|---|
+| um pedido novo, para agora | `/sdd:especificar <a mudança>` |
+| um item do backlog | `/sdd:especificar B-NNN` (o item é promovido e a spec registra a origem) |
+| uma ideia para depois | não especifique: `/sdd:backlog adicionar <ideia>` |
 
 ## Pré-requisitos
 
@@ -46,9 +52,11 @@ estão em português; edite os seus em `.sdd/templates/`.
 - Nenhum requisito cita framework, tabela ou arquivo.
 - Cada critério de aceitação descreve algo que você conseguiria observar de fora.
 - "Fora do escopo" tem pelo menos um item.
+- Ela termina pedindo `/sdd:aprovar`, sem aprovar sozinha.
 
 ## Onde se encaixa
 
-Primeiro passo do fluxo principal. Depois dela vêm o [clarificar](clarificar.md)
-(se houver marcadores) e o [planejar](planejar.md) (nível 2) ou as
-[tarefas](tarefas.md) (nível 1). O mapa está na [ajuda](ajuda.md).
+Primeiro passo do fluxo principal, alimentado pelo [backlog](backlog.md).
+Depois dela vêm o [clarificar](clarificar.md), se houver marcadores, e o
+[aprovar](aprovar.md). Com a spec aprovada, seguem o [planejar](planejar.md)
+(nível 2) ou as [tarefas](tarefas.md) (nível 1). O mapa está na [ajuda](ajuda.md).

@@ -30,23 +30,27 @@ Ref base: `$ARGUMENTS`
    próprio julgamento a partir dos artefatos e do diff.
 
 4. **Apresente o veredito** da `auditoria.md`: o veredito, os desvios por
-   gravidade e a delta spec proposta, se houver.
+   gravidade, a seção de processo (aprovações e testes alterados) e a delta spec
+   proposta em `delta-spec.md`, se houver.
 
-5. **Decisão do usuário:**
+5. **Decisão do usuário**, registrada com `/sdd:aprovar`:
 
-   | Opção | O que fazer |
+   | Opção | Efeito |
    |---|---|
-   | Aprovar | `sdd-estado encerrar`; sugira o commit final e o merge |
-   | Aprovar a delta spec | aplique as alterações na `spec.md`, marque a delta como aprovada, rode `sdd-rastrear` e depois `sdd-estado encerrar` |
-   | Corrigir o código | `sdd-estado definir fase=green`, corrija só os desvios apontados e rode `/sdd:auditar` de novo |
+   | Aprovar | a feature é concluída; sugira o commit final e o merge |
+   | Aprovar a delta spec | a spec absorve a mudança, é reaprovada, e a feature é concluída |
+   | Corrigir o código | a feature volta ao green; depois, `/sdd:implementar` e `/sdd:auditar` de novo |
+
+   Diga ao usuário para rodar `/sdd:aprovar` com a decisão. Não registre a
+   decisão você mesmo.
 
 ## Não faça
 
-- Não aplique a delta spec sem aprovação explícita.
+- Não aplique a delta spec nem encerre a feature: isso é o `/sdd:aprovar`.
 - Não "corrija" o relatório do auditor. Se discordar, diga isso ao usuário e
   deixe a decisão com ele.
 
 ## Pronto quando
 
-- `auditoria.md` existe, com veredito.
-- O usuário escolheu uma das três saídas e ela foi aplicada.
+- `auditoria.md` existe, com veredito e a seção de processo preenchida.
+- O usuário sabe as três saídas e que a decisão se registra com `/sdd:aprovar`.

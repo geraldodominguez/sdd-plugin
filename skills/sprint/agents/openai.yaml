@@ -1,0 +1,5 @@
+interface:
+  display_name: "Sprint"
+  short_description: "Planejar, acompanhar e encerrar sprints"
+policy:
+  allow_implicit_invocation: false
