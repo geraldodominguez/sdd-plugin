@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# sdd-status: painel rápido do SDD no projeto.
+#
+# Uso: sdd-status
+#
+# Mostra a configuração, a feature ativa, a fase, os artefatos existentes, o
+# progresso das tarefas e um resumo de rastreabilidade (via sdd-rastrear).
+set -uo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+if [ ! -d "$RAIZ/.sdd" ]; then
+  echo "Este projeto ainda não usa SDD. Rode /sdd:iniciar para começar."
+  exit 0
+fi
+
+PASTA_SPECS="$(sdd_config "$RAIZ" pasta_specs specs)"
+FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
+FASE="$(sdd_estado_ler "$RAIZ" fase)"
+NIVEL="$(sdd_estado_ler "$RAIZ" nivel)"
+
+echo "SDD: $(basename "$RAIZ")"
+echo "  proteção: $(sdd_config "$RAIZ" protecao leve) | nível padrão: $(sdd_config "$RAIZ" nivel_padrao 1)"
+
+if [ -s "$RAIZ/.sdd/constituicao.md" ] && grep -q '{{' "$RAIZ/.sdd/constituicao.md"; then
+  echo "  ! a constituição ainda tem campos {{...}} por preencher"
+fi
+
+total=0
+for d in "$RAIZ/$PASTA_SPECS"/[0-9][0-9][0-9]-*; do [ -d "$d" ] && total=$((total + 1)); done
+echo "  features registradas: $total"
+
+if [ -z "$FEATURE" ] || [ "$FASE" = "concluida" ]; then
+  echo
+  echo "Nenhuma feature em andamento."
+  [ -n "$FEATURE" ] && echo "  última: $FEATURE (concluída)"
+  echo "  Para começar: /sdd:especificar <descrição da mudança>"
+  exit 0
+fi
+
+DIR="$RAIZ/$PASTA_SPECS/$FEATURE"
+echo
+echo "Feature ativa: $FEATURE (nível $NIVEL)"
+
+linha=""
+for f in $SDD_FASES; do
+  if [ "$f" = "$FASE" ]; then linha="$linha [${f}]"; else linha="$linha ${f}"; fi
+done
+echo "  fase:$linha"
+
+echo "  artefatos:"
+for f in contexto.md spec.md plano.md tarefas.md auditoria.md; do
+  if [ -f "$DIR/$f" ]; then echo "    ✓ $f"; else echo "    · $f"; fi
+done
+if [ -d "$DIR/contratos" ]; then echo "    ✓ contratos/ ($(find "$DIR/contratos" -type f | wc -l | tr -d ' ') arquivos)"; fi
+
+if [ -f "$DIR/tarefas.md" ]; then
+  feitas="$(grep -cE '^[[:space:]]*- \[[xX]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$DIR/tarefas.md" || true)"
+  abertas="$(grep -cE '^[[:space:]]*- \[ \][[:space:]]*\*{0,2}T-[0-9]{3}' "$DIR/tarefas.md" || true)"
+  echo "  tarefas: $feitas/$((feitas + abertas)) concluídas"
+  if [ "$abertas" -gt 0 ]; then
+    echo "  próxima: $(grep -E '^[[:space:]]*- \[ \][[:space:]]*\*{0,2}T-[0-9]{3}' "$DIR/tarefas.md" | head -1 | sed -E 's/^[[:space:]]*- \[ \][[:space:]]*//')"
+  fi
+fi
+
+echo
+"$AQUI/sdd-rastrear" "$FEATURE" 2>/dev/null || true

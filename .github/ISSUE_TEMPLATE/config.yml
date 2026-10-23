@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Perguntas e conversas
+    url: https://github.com/geraldodominguez/sdd-plugin/discussions
+    about: Dúvidas de uso e discussões vão para as Discussions, não para as issues.

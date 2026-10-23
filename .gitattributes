@@ -1,0 +1,9 @@
+# Scripts precisam de LF para rodar no bash (inclusive Git Bash no Windows).
+* text=auto
+*.sh   text eol=lf
+bin/*  text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.png  binary

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Planejar"
+  short_description: "Plano técnico e contratos da feature"
+policy:
+  allow_implicit_invocation: false

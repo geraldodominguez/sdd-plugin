@@ -1,0 +1,5 @@
+interface:
+  display_name: "Auditar"
+  short_description: "Auditoria independente contra a spec"
+policy:
+  allow_implicit_invocation: false

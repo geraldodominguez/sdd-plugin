@@ -1,0 +1,5 @@
+interface:
+  display_name: "Tarefas"
+  short_description: "Quebra a feature em tarefas rastreáveis"
+policy:
+  allow_implicit_invocation: false

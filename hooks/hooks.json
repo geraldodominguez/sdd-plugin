@@ -1,0 +1,27 @@
+{
+  "description": "SDD: protege testes e contratos conforme a fase da feature e exige a tarefa nas mensagens de commit. Fica inativo em projetos sem .sdd/.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/guarda-edicoes.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/guarda-commits.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

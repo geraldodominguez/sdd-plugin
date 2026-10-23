@@ -1,0 +1,5 @@
+interface:
+  display_name: "Status do SDD"
+  short_description: "Onde o projeto está e o próximo passo"
+policy:
+  allow_implicit_invocation: false

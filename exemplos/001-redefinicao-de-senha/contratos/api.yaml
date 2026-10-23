@@ -1,0 +1,66 @@
+openapi: 3.1.0
+info:
+  title: Redefinição de senha, feature 001
+  version: 1.0.0
+paths:
+  /auth/password-reset:
+    post:
+      summary: Solicita link de redefinição (RF-001, RF-005, RNF-001)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "202":
+          description: Sempre a mesma resposta, exista ou não a conta (CA-001, CA-002)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Se houver uma conta com este e-mail, enviaremos um link de redefinição.
+        "429":
+          description: Limite de solicitações excedido (CA-007)
+  /auth/password-reset/confirm:
+    post:
+      summary: Define a nova senha com um link válido (RF-003, RF-004)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string }
+                newPassword: { type: string, minLength: 10 }
+      responses:
+        "204":
+          description: Senha alterada e sessões encerradas (CA-004)
+        "410":
+          description: Link expirado, usado ou substituído (CA-003, CA-005, CA-006)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: Senha fora da política (CA-009)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum: [RESET_LINK_EXPIRED, RESET_LINK_USED, RESET_LINK_SUPERSEDED, RESET_LINK_INVALID, PASSWORD_POLICY]
+        message: { type: string }

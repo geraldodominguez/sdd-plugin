@@ -1,0 +1,5 @@
+interface:
+  display_name: "Clarificar"
+  short_description: "Perguntas que resolvem ambiguidades da spec"
+policy:
+  allow_implicit_invocation: false

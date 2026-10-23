@@ -1,0 +1,46 @@
+# metodologia
+
+## O que faz
+
+Guarda a disciplina do SDD: as fases, os níveis de rigor, as regras de
+rastreabilidade e como escrever cada artefato (requisitos em EARS, critérios em
+Dado, Quando, Então, planos, tarefas, ADRs). É uma referência, não um comando:
+ela não conduz o fluxo, ensina o agente a seguir o fluxo bem.
+
+## Quando usar
+
+Digite `/sdd:metodologia`, ou o agente recorre a ela quando a tarefa pede: num
+projeto com `.sdd/`, ao escrever ou revisar specs e planos, ou quando você pede
+uma mudança de comportamento sem usar um comando. Todos os comandos de fase a
+carregam no início.
+
+## O que ela carrega
+
+| Arquivo | Assunto |
+|---|---|
+| `EARS.md` | os cinco padrões de frase para requisitos sem ambiguidade |
+| `CRITERIOS-DE-ACEITACAO.md` | Dado, Quando, Então, cobertura mínima e a marca de teste |
+| `DECOMPOSICAO-DE-TAREFAS.md` | o tamanho certo, a ordem e o formato da linha |
+| `NIVEIS-DE-RIGOR.md` | como classificar uma mudança e o que cada nível exige |
+| `QUALIDADE-DA-SPEC.md` | o checklist antes de entregar uma spec |
+| `templates/` | constituição, spec, contexto, plano, tarefas, ADR, auditoria, delta spec |
+
+Os templates são copiados para `.sdd/templates/` pelo `/sdd:iniciar`, para
+cada projeto poder adaptar os seus.
+
+## Invariantes
+
+Seis regras que ela impõe em qualquer fase: não implementar fora das tarefas,
+não editar teste na green, não mexer em contrato na implementação, não avançar
+fase sem aprovação, registrar o que está fora do escopo, e resolver divergência
+primeiro na spec.
+
+## Está funcionando se
+
+- Num projeto com `.sdd/`, um pedido informal ("adiciona o campo X") recebe uma classificação de nível antes de virar código.
+- Os requisitos que o agente escreve seguem os padrões EARS.
+
+## Onde se encaixa
+
+Camada de vocabulário por baixo de todos os comandos. O mapa dos comandos está
+na [ajuda](ajuda.md), e os termos estão no [glossário](../GLOSSARIO.md).

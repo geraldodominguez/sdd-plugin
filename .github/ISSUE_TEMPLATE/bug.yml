@@ -1,0 +1,48 @@
+name: Problema
+description: Um comando fez a coisa errada numa sessão real.
+labels: ["problema"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Leia o [ESCOPO.md](https://github.com/geraldodominguez/sdd-plugin/blob/main/ESCOPO.md) antes. Issues sem uma falha observada são fechadas.
+  - type: input
+    id: comando
+    attributes:
+      label: Comando ou componente
+      description: Por exemplo `/sdd:especificar`, `auditor-de-drift`, `guarda-edicoes`, `sdd-rastrear`.
+    validations:
+      required: true
+  - type: input
+    id: ambiente
+    attributes:
+      label: Harness, versão e sistema
+      description: Por exemplo Claude Code 2.1.309 no Windows 11 com Git Bash. Diga a versão do plugin.
+    validations:
+      required: true
+  - type: input
+    id: modelo
+    attributes:
+      label: Modelo e esforço
+      description: Por exemplo Opus, esforço alto. Quanto do contexto estava ocupado quando aconteceu?
+    validations:
+      required: true
+  - type: input
+    id: configuracao
+    attributes:
+      label: Nível e proteção
+      description: O nível da feature e o valor de `protecao` no `.sdd/config.yml`.
+  - type: textarea
+    id: aconteceu
+    attributes:
+      label: O que aconteceu
+      description: O que você rodou e o que o comando fez. Cole o trecho relevante da sessão.
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que você esperava
+      description: O que deveria ter acontecido, e qual linha do SKILL.md (se houver) diz isso.
+    validations:
+      required: true

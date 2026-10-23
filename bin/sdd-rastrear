@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# sdd-rastrear: verifica a rastreabilidade de uma feature.
+#
+# Uso: sdd-rastrear [NNN-slug] [--silencioso]
+#
+# Para a feature ativa (ou a informada), verifica se:
+#   1. todo RF e RNF da spec é atendido por ao menos uma tarefa em tarefas.md;
+#   2. todo CA (critério de aceitação) é coberto por ao menos uma tarefa;
+#   3. todo CA tem ao menos um teste com a marca  sdd:NNN:CA-XXX;
+#   4. toda tarefa referencia ao menos um requisito ou critério;
+#   5. as tarefas só citam IDs que existem na spec.
+#
+# Código de saída: 0 sem lacunas, 3 com lacunas, 1 erro de uso.
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+[ -d "$RAIZ/.sdd" ] || { echo "sdd-rastrear: projeto sem .sdd/. Rode /sdd:iniciar." >&2; exit 1; }
+
+SILENCIOSO=0
+FEATURE=""
+for a in "$@"; do
+  case "$a" in
+    --silencioso) SILENCIOSO=1 ;;
+    *) FEATURE="$a" ;;
+  esac
+done
+[ -n "$FEATURE" ] || FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
+[ -n "$FEATURE" ] || { echo "sdd-rastrear: nenhuma feature ativa nem informada." >&2; exit 1; }
+
+PASTA_SPECS="$(sdd_config "$RAIZ" pasta_specs specs)"
+DIR="$RAIZ/$PASTA_SPECS/$FEATURE"
+SPEC="$DIR/spec.md"
+TAREFAS="$DIR/tarefas.md"
+NUM="${FEATURE%%-*}"
+
+[ -f "$SPEC" ] || { echo "sdd-rastrear: $PASTA_SPECS/$FEATURE/spec.md não existe." >&2; exit 1; }
+
+ids_em() { grep -oE "$2-[0-9]{3}" "$1" 2>/dev/null | sort -u || true; }
+
+REQS="$( { ids_em "$SPEC" RF; ids_em "$SPEC" RNF; } | sort -u)"
+CAS="$(ids_em "$SPEC" CA)"
+
+lacunas=0
+relato=()
+anotar() { relato+=("$1"); }
+
+if [ ! -f "$TAREFAS" ]; then
+  anotar "! tarefas.md ainda não existe: a ligação requisito → tarefa não pode ser verificada."
+  lacunas=$((lacunas + 1))
+else
+  REFS="$( { ids_em "$TAREFAS" RF; ids_em "$TAREFAS" RNF; ids_em "$TAREFAS" CA; } | sort -u)"
+  for id in $REQS $CAS; do
+    if ! printf '%s\n' "$REFS" | grep -qx "$id"; then
+      anotar "✗ $id está na spec, mas nenhuma tarefa o atende."
+      lacunas=$((lacunas + 1))
+    fi
+  done
+  for id in $REFS; do
+    if ! printf '%s\n%s\n' "$REQS" "$CAS" | grep -qx "$id"; then
+      anotar "✗ tarefas.md cita $id, que não existe na spec."
+      lacunas=$((lacunas + 1))
+    fi
+  done
+  while IFS= read -r linha; do
+    t="$(printf '%s' "$linha" | grep -oE 'T-[0-9]{3}' | head -1)"
+    if ! printf '%s' "$linha" | grep -qE '(RF|RNF|CA)-[0-9]{3}'; then
+      anotar "✗ $t não referencia nenhum requisito ou critério."
+      lacunas=$((lacunas + 1))
+    fi
+  done < <(grep -E '^[[:space:]]*- \[[ xX]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$TAREFAS" || true)
+fi
+
+# CA → teste (marca NNN:CA-XXX em arquivos de teste).
+GLOBS_TESTE="$(sdd_config "$RAIZ" globs_de_teste "$SDD_GLOBS_TESTE_PADRAO")"
+listar_arquivos() {
+  if git -C "$RAIZ" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$RAIZ" ls-files --cached --others --exclude-standard
+  else
+    (cd "$RAIZ" && find . -type f -not -path './.git/*' -not -path './node_modules/*' | sed 's#^\./##')
+  fi
+}
+TESTES=()
+while IFS= read -r f; do
+  case "$f" in "$PASTA_SPECS"/*|.sdd/*) continue ;; esac
+  if sdd_casa_glob "$f" "$GLOBS_TESTE"; then TESTES+=("$f"); fi
+done < <(listar_arquivos)
+
+if [ -n "$CAS" ]; then
+  if [ ${#TESTES[@]} -eq 0 ]; then
+    anotar "! Nenhum arquivo de teste encontrado (globs_de_teste: $GLOBS_TESTE)."
+    lacunas=$((lacunas + 1))
+  else
+    for id in $CAS; do
+      if ! (cd "$RAIZ" && grep -lE "${NUM}:${id}" "${TESTES[@]}" >/dev/null 2>&1); then
+        anotar "✗ $id não tem teste com a marca ${NUM}:${id}."
+        lacunas=$((lacunas + 1))
+      fi
+    done
+  fi
+fi
+
+if [ "$SILENCIOSO" -eq 0 ]; then
+  echo "Rastreabilidade: $PASTA_SPECS/$FEATURE"
+  echo "  requisitos: $(printf '%s\n' "$REQS" | grep -c . || true) | critérios: $(printf '%s\n' "$CAS" | grep -c . || true) | arquivos de teste: ${#TESTES[@]}"
+  if [ "$lacunas" -eq 0 ]; then
+    echo "  ✓ Nenhuma lacuna encontrada."
+  else
+    printf '  %s\n' "${relato[@]}"
+    echo "  Total de lacunas: $lacunas"
+  fi
+fi
+
+[ "$lacunas" -eq 0 ] || exit 3

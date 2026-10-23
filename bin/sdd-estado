@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+# sdd-estado: lê e altera o estado SDD do projeto (.sdd/estado).
+#
+# Uso:
+#   sdd-estado ver [chave]                mostra o estado inteiro ou uma chave
+#   sdd-estado definir chave=valor [...]  altera fase, nivel ou feature
+#   sdd-estado nova "título" [--nivel N]  cria specs/NNN-slug/ e ativa a feature
+#   sdd-estado usar <NNN-slug>            ativa uma feature existente
+#   sdd-estado encerrar                   encerra a feature ativa (fase=concluida)
+#   sdd-estado caminho [arquivo]          caminho da pasta da feature ativa
+#   sdd-estado template <nome.md>         caminho do template (local ou do plugin)
+#
+# Fases: especificacao clarificacao plano tarefas red green auditoria concluida
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+if [ ! -d "$RAIZ/.sdd" ]; then
+  echo "sdd-estado: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2
+  exit 1
+fi
+
+PASTA_SPECS="$(sdd_config "$RAIZ" pasta_specs specs)"
+
+carimbar() { sdd_estado_gravar "$RAIZ" atualizado "$(date -u +%Y-%m-%dT%H:%M:%SZ)"; }
+
+# Transliteração explícita: não depende de locale nem de iconv.
+slug() {
+  printf '%s' "$1" \
+    | sed -e 's/á/a/g; s/à/a/g; s/â/a/g; s/ã/a/g; s/ä/a/g' \
+          -e 's/Á/a/g; s/À/a/g; s/Â/a/g; s/Ã/a/g; s/Ä/a/g' \
+          -e 's/é/e/g; s/è/e/g; s/ê/e/g; s/ë/e/g; s/É/e/g; s/È/e/g; s/Ê/e/g' \
+          -e 's/í/i/g; s/ì/i/g; s/î/i/g; s/ï/i/g; s/Í/i/g; s/Î/i/g' \
+          -e 's/ó/o/g; s/ò/o/g; s/ô/o/g; s/õ/o/g; s/ö/o/g; s/Ó/o/g; s/Ô/o/g; s/Õ/o/g' \
+          -e 's/ú/u/g; s/ù/u/g; s/û/u/g; s/ü/u/g; s/Ú/u/g; s/Ü/u/g' \
+          -e 's/ç/c/g; s/Ç/c/g; s/ñ/n/g; s/Ñ/n/g' \
+    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
+    | LC_ALL=C sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' \
+    | cut -c1-50 \
+    | sed -E 's/-+$//'
+}
+
+proximo_numero() {
+  local maior=0 d n
+  if [ -d "$RAIZ/$PASTA_SPECS" ]; then
+    for d in "$RAIZ/$PASTA_SPECS"/[0-9][0-9][0-9]-*; do
+      [ -d "$d" ] || continue
+      n="$(basename "$d" | cut -c1-3)"
+      n=$((10#$n))
+      [ "$n" -gt "$maior" ] && maior="$n"
+    done
+  fi
+  printf '%03d' $((maior + 1))
+}
+
+template() {
+  # Prefere o template local do projeto e cai para o do plugin.
+  local nome="$1"
+  if [ -f "$RAIZ/.sdd/templates/$nome" ]; then
+    printf '%s\n' "$RAIZ/.sdd/templates/$nome"
+  else
+    printf '%s\n' "$(sdd_raiz_plugin)/skills/metodologia/templates/$nome"
+  fi
+}
+
+cmd="${1:-ver}"
+shift || true
+
+case "$cmd" in
+  ver)
+    if [ $# -gt 0 ]; then
+      sdd_estado_ler "$RAIZ" "$1"
+    else
+      cat "$RAIZ/.sdd/estado" 2>/dev/null || true
+    fi
+    ;;
+
+  definir)
+    [ $# -gt 0 ] || { echo "uso: sdd-estado definir chave=valor [...]" >&2; exit 1; }
+    for kv in "$@"; do
+      chave="${kv%%=*}"; valor="${kv#*=}"
+      case "$chave" in
+        fase)
+          sdd_fase_valida "$valor" || { echo "sdd-estado: fase inválida '$valor'. Fases: $SDD_FASES" >&2; exit 1; } ;;
+        nivel)
+          case "$valor" in 1|2) ;; *) echo "sdd-estado: nível deve ser 1 ou 2" >&2; exit 1 ;; esac ;;
+        feature)
+          if [ -n "$valor" ] && [ ! -d "$RAIZ/$PASTA_SPECS/$valor" ]; then
+            echo "sdd-estado: a feature '$valor' não existe em $PASTA_SPECS/" >&2; exit 1
+          fi ;;
+        *) echo "sdd-estado: chave desconhecida '$chave' (use fase, nivel ou feature)" >&2; exit 1 ;;
+      esac
+      sdd_estado_gravar "$RAIZ" "$chave" "$valor"
+    done
+    carimbar
+    cat "$RAIZ/.sdd/estado"
+    ;;
+
+  nova)
+    titulo="${1:-}"; shift || true
+    [ -n "$titulo" ] || { echo "uso: sdd-estado nova \"título\" [--nivel N]" >&2; exit 1; }
+    nivel="$(sdd_config "$RAIZ" nivel_padrao 1)"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --nivel) nivel="${2:?}"; shift ;;
+        *) echo "sdd-estado nova: opção desconhecida $1" >&2; exit 1 ;;
+      esac
+      shift
+    done
+    case "$nivel" in 1|2) ;; *) echo "sdd-estado nova: nível deve ser 1 ou 2 (o nível 0 não abre feature)" >&2; exit 1 ;; esac
+    s="$(slug "$titulo")"
+    [ -n "$s" ] || s="feature"
+    id="$(proximo_numero)-$s"
+    dir="$RAIZ/$PASTA_SPECS/$id"
+    mkdir -p "$dir"
+    if [ "$nivel" = "1" ]; then origem="$(template spec-leve.md)"; else origem="$(template spec.md)"; fi
+    titulo_sed="$(printf '%s' "$titulo" | sed 's/[\/&]/\\&/g')"
+    sed -e "s/{{FEATURE}}/$id/g" \
+        -e "s/{{TITULO}}/$titulo_sed/g" \
+        -e "s/{{DATA}}/$(date +%Y-%m-%d)/g" \
+        -e "s/{{NIVEL}}/$nivel/g" \
+        "$origem" > "$dir/spec.md"
+    sdd_estado_gravar "$RAIZ" feature "$id"
+    sdd_estado_gravar "$RAIZ" fase especificacao
+    sdd_estado_gravar "$RAIZ" nivel "$nivel"
+    carimbar
+    echo "Feature criada: $PASTA_SPECS/$id (nível $nivel)"
+    echo "Arquivo: $PASTA_SPECS/$id/spec.md"
+    ;;
+
+  usar)
+    id="${1:?uso: sdd-estado usar <NNN-slug>}"
+    [ -d "$RAIZ/$PASTA_SPECS/$id" ] || { echo "sdd-estado: '$id' não existe em $PASTA_SPECS/" >&2; exit 1; }
+    sdd_estado_gravar "$RAIZ" feature "$id"
+    carimbar
+    cat "$RAIZ/.sdd/estado"
+    ;;
+
+  encerrar)
+    sdd_estado_gravar "$RAIZ" fase "concluida"
+    carimbar
+    echo "Feature $(sdd_estado_ler "$RAIZ" feature) encerrada (fase=concluida)."
+    ;;
+
+  caminho)
+    id="$(sdd_estado_ler "$RAIZ" feature)"
+    [ -n "$id" ] || { echo "sdd-estado: nenhuma feature ativa" >&2; exit 1; }
+    if [ $# -gt 0 ]; then
+      printf '%s\n' "$PASTA_SPECS/$id/$1"
+    else
+      printf '%s\n' "$PASTA_SPECS/$id"
+    fi
+    ;;
+
+  template)
+    template "${1:?uso: sdd-estado template <nome.md>}"
+    ;;
+
+  -h|--ajuda|--help|ajuda)
+    sed -n '2,14p' "$0"
+    ;;
+
+  *)
+    echo "sdd-estado: comando desconhecido '$cmd'. Use --ajuda." >&2
+    exit 1
+    ;;
+esac

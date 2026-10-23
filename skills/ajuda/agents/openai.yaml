@@ -1,0 +1,5 @@
+interface:
+  display_name: "Ajuda do SDD"
+  short_description: "Qual comando serve para a sua situação"
+policy:
+  allow_implicit_invocation: false

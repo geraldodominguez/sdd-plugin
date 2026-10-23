@@ -1,0 +1,5 @@
+interface:
+  display_name: "Especificar"
+  short_description: "Abre uma feature e escreve a spec"
+policy:
+  allow_implicit_invocation: false

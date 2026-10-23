@@ -1,0 +1,27 @@
+name: Ideia
+description: Uma mudança num comando existente, motivada por uma falha observada.
+labels: ["ideia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propostas de comandos novos estão fora do escopo (ver `.fora-do-escopo/novos-comandos.md`). Uma ideia fica aberta só se descrever uma falha observada e couber na filosofia do [ESCOPO.md](https://github.com/geraldodominguez/sdd-plugin/blob/main/ESCOPO.md).
+  - type: input
+    id: comando
+    attributes:
+      label: Comando ou componente
+    validations:
+      required: true
+  - type: textarea
+    id: falha
+    attributes:
+      label: A falha que você observou
+      description: O que deu errado numa sessão real. Uma melhoria hipotética não basta.
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: O que você propõe
+    validations:
+      required: true

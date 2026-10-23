@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# sdd-iniciar: prepara um projeto para usar SDD.
+#
+# Uso: sdd-iniciar [--forcar] [--nivel 1|2] [--protecao desligada|leve|estrita]
+#
+# Cria, sem sobrescrever o que já existe (a menos que --forcar):
+#   .sdd/config.yml        configuração do projeto
+#   .sdd/constituicao.md   regras inegociáveis (a preencher)
+#   .sdd/estado            feature ativa, fase e nível
+#   .sdd/templates/        cópia dos templates do plugin (customizável)
+#   specs/                 uma pasta por feature
+#   docs/adr/              decisões arquiteturais duráveis
+# E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente).
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+FORCAR=0
+NIVEL=1
+PROTECAO=leve
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --forcar) FORCAR=1 ;;
+    --nivel) NIVEL="${2:?--nivel exige um valor}"; shift ;;
+    --protecao) PROTECAO="${2:?--protecao exige um valor}"; shift ;;
+    -h|--ajuda|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    *) echo "sdd-iniciar: opção desconhecida: $1" >&2; exit 1 ;;
+  esac
+  shift
+done
+
+case "$NIVEL" in 1|2) ;; *) echo "sdd-iniciar: --nivel deve ser 1 ou 2" >&2; exit 1 ;; esac
+case "$PROTECAO" in desligada|leve|estrita) ;; *) echo "sdd-iniciar: --protecao deve ser desligada, leve ou estrita" >&2; exit 1 ;; esac
+
+RAIZ_PLUGIN="$(sdd_raiz_plugin)"
+RAIZ="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+ORIGEM="$RAIZ_PLUGIN/skills/metodologia/templates"
+
+if [ ! -d "$ORIGEM" ]; then
+  echo "sdd-iniciar: templates não encontrados em $ORIGEM" >&2
+  exit 1
+fi
+
+criados=()
+mantidos=()
+
+copiar() {
+  local de="$1" para="$2"
+  if [ -e "$para" ] && [ "$FORCAR" -ne 1 ]; then
+    mantidos+=("${para#"$RAIZ"/}")
+    return
+  fi
+  mkdir -p "$(dirname "$para")"
+  cp "$de" "$para"
+  criados+=("${para#"$RAIZ"/}")
+}
+
+mkdir -p "$RAIZ/.sdd/templates" "$RAIZ/specs" "$RAIZ/docs/adr"
+
+# Templates: cópia local, para o projeto customizar sem afetar o plugin.
+for f in "$ORIGEM"/*.md; do
+  [ "$(basename "$f")" = "bloco-agentes.md" ] && continue
+  copiar "$f" "$RAIZ/.sdd/templates/$(basename "$f")"
+done
+
+copiar "$ORIGEM/constituicao.md" "$RAIZ/.sdd/constituicao.md"
+
+CONFIG="$RAIZ/.sdd/config.yml"
+if [ ! -e "$CONFIG" ] || [ "$FORCAR" -eq 1 ]; then
+  sed -e "s/^nivel_padrao: .*/nivel_padrao: $NIVEL/" \
+      -e "s/^protecao: [a-z]*/protecao: $PROTECAO/" \
+      "$ORIGEM/config.yml" > "$CONFIG"
+  criados+=(".sdd/config.yml")
+else
+  mantidos+=(".sdd/config.yml")
+fi
+
+if [ ! -e "$RAIZ/.sdd/estado" ]; then
+  printf 'feature=\nfase=concluida\nnivel=\n' > "$RAIZ/.sdd/estado"
+  criados+=(".sdd/estado")
+fi
+
+[ -e "$RAIZ/specs/.gitkeep" ] || touch "$RAIZ/specs/.gitkeep"
+[ -e "$RAIZ/docs/adr/.gitkeep" ] || touch "$RAIZ/docs/adr/.gitkeep"
+
+# Bloco de regras em CLAUDE.md e AGENTS.md, entre marcadores.
+BLOCO="$ORIGEM/bloco-agentes.md"
+injetar_bloco() {
+  local alvo="$1"
+  local ini='<!-- sdd:inicio -->' fim='<!-- sdd:fim -->'
+  if [ -f "$alvo" ] && grep -qF "$ini" "$alvo"; then
+    local tmp="$alvo.tmp.$$"
+    awk -v b="$ini" -v e="$fim" -v bf="$BLOCO" '
+      $0 == b { while ((getline linha < bf) > 0) print linha; pular = 1; next }
+      $0 == e { pular = 0; next }
+      !pular { print }
+    ' "$alvo" > "$tmp"
+    mv "$tmp" "$alvo"
+    criados+=("${alvo#"$RAIZ"/} (bloco SDD atualizado)")
+  else
+    { [ -f "$alvo" ] && [ -s "$alvo" ] && printf '\n'; cat "$BLOCO"; } >> "$alvo"
+    criados+=("${alvo#"$RAIZ"/} (bloco SDD adicionado)")
+  fi
+}
+injetar_bloco "$RAIZ/CLAUDE.md"
+injetar_bloco "$RAIZ/AGENTS.md"
+
+echo "SDD iniciado em: $RAIZ"
+echo "  nível padrão: $NIVEL | proteção: $PROTECAO"
+if [ ${#criados[@]} -gt 0 ]; then
+  echo "Criado ou atualizado:"
+  printf '  + %s\n' "${criados[@]}"
+fi
+if [ ${#mantidos[@]} -gt 0 ]; then
+  echo "Mantido (já existia; use --forcar para sobrescrever):"
+  printf '  = %s\n' "${mantidos[@]}"
+fi
+echo
+echo "Próximo passo: preencher .sdd/constituicao.md e revisar .sdd/config.yml."

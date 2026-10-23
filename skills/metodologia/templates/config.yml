@@ -1,0 +1,29 @@
+# Configuração do SDD neste projeto.
+# Formato: uma chave por linha ("chave: valor"). Comentários começam com #.
+
+# Nível de rigor sugerido para novas features: 1 (leve) ou 2 (completo).
+# O nível 0 (direto) não abre feature. Ver docs/referencia/niveis-de-rigor.md.
+nivel_padrao: 1
+
+# Quanto os hooks impõem o fluxo:
+#   desligada  hooks inativos, só orientação
+#   leve       protege os testes na fase green e exige T-XXX nos commits
+#   estrita    leve, mais: bloqueia código antes do plano, código fora dos
+#              testes na fase red e qualquer edição de código na auditoria
+protecao: leve
+
+# Pasta das especificações, relativa à raiz do projeto.
+pasta_specs: specs
+
+# Globs, separados por vírgula, que identificam arquivos de teste.
+# Ajuste para a convenção do seu projeto.
+globs_de_teste: tests/**,test/**,__tests__/**,spec/**,**/*.test.*,**/*.spec.*,**/*_test.*,**/test_*.py,**/*Test.java,**/*Tests.cs
+
+# Globs de contratos em código (tipos, interfaces, schemas, migrations) que o
+# arquiteto-de-contratos pode materializar nas fases plano e red, na proteção
+# estrita. Vazio mantém os contratos apenas em specs/NNN/contratos/.
+globs_de_contrato:
+
+# Comandos do projeto, usados pelo escritor-de-testes e pelo auditor-de-drift.
+comando_teste:
+comando_lint:

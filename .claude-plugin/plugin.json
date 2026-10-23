@@ -1,0 +1,34 @@
+{
+  "name": "sdd",
+  "displayName": "SDD: Specification-Driven Development",
+  "version": "0.1.0",
+  "description": "Specification-Driven Development para agentes de código: a spec versionada é a fonte de verdade, o rigor acompanha o risco da mudança, subagents isolados separam quem testa, quem implementa e quem audita, e hooks protegem o fluxo.",
+  "author": {
+    "name": "Geraldo Dominguez (OUTCODE)"
+  },
+  "homepage": "https://github.com/geraldodominguez/sdd-plugin",
+  "repository": "https://github.com/geraldodominguez/sdd-plugin",
+  "license": "MIT",
+  "keywords": [
+    "sdd",
+    "spec-driven-development",
+    "especificacao",
+    "tdd",
+    "rastreabilidade",
+    "adr",
+    "portugues"
+  ],
+  "icon": "./.claude-plugin/icon.png",
+  "skills": [
+    "./skills/ajuda",
+    "./skills/iniciar",
+    "./skills/especificar",
+    "./skills/clarificar",
+    "./skills/planejar",
+    "./skills/tarefas",
+    "./skills/implementar",
+    "./skills/auditar",
+    "./skills/status",
+    "./skills/metodologia"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "sdd-plugin",
+  "description": "Marketplace do plugin SDD, Specification-Driven Development para agentes de código.",
+  "owner": {
+    "name": "Geraldo Dominguez (OUTCODE)"
+  },
+  "plugins": [
+    {
+      "name": "sdd",
+      "source": ".",
+      "description": "Specification-Driven Development: spec como fonte de verdade, níveis de rigor, subagents isolados e hooks de proteção."
+    }
+  ]
+}
