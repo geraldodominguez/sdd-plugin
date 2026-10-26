@@ -1,0 +1,392 @@
+#!/usr/bin/env bash
+# sdd-release: conduz uma release, do agrupamento das features prontas à produção.
+#
+# Situações da release, em ordem:
+#   preparacao -> homologacao -> aceita -> implantacao -> producao
+#   e, fora da ordem: cancelada, revertida
+#
+# Uso:
+#   sdd-release proxima [major|minor|patch]     sugere a próxima versão SemVer
+#   sdd-release nova <versão> [--objetivo "texto"] [--hotfix]
+#   sdd-release incluir <versão> <NNN-slug> [...]   só features prontas, na preparação
+#   sdd-release remover <versão> <NNN-slug>         só na preparação
+#   sdd-release homologar <versão>              preparacao -> homologacao (exige testes.md aprovado
+#                                               e homologacao.md com o roteiro)
+#   sdd-release aceitar <versão> --por "Nome e papel" [--nota "texto"]
+#                                               registra o aceite do negócio (roteiro sem pendências)
+#   sdd-release reprovar <versão> <NNN-slug> --motivo "texto"
+#                                               devolve a feature ao green e a release à preparação
+#   sdd-release autorizar <versão> [--nota "texto"]
+#                                               o go/no-go: aceita -> implantacao (exige
+#                                               implantacao.md e notas.md completos)
+#   sdd-release pode-implantar <versão>         saída 0 se autorizada (para o pipeline)
+#   sdd-release concluir <versão> --verificacao "texto"
+#                                               implantacao -> producao; features em produção
+#   sdd-release reverter <versão> --motivo "texto"
+#                                               rollback: features voltam a pronta
+#   sdd-release cancelar <versão> --motivo "texto"
+#   sdd-release ver [versão] | listar | atual
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+[ -d "$RAIZ/.sdd" ] || { echo "sdd-release: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+PASTA="$(sdd_pasta_releases "$RAIZ")"
+DIR="$RAIZ/$PASTA"
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
+HOJE="$(date +%Y-%m-%d)"
+
+dir_de() { printf '%s\n' "$DIR/$1"; }
+existe() { [ -f "$DIR/$1/release.md" ] || { echo "sdd-release: a release '$1' não existe em $PASTA/." >&2; exit 1; }; }
+situacao() { sdd_kv_ler "$DIR/$1/estado" fase; }
+
+historico() { # historico <versão> <evento> <detalhe>
+  local arq="$DIR/$1/historico.md"
+  if [ ! -s "$arq" ]; then
+    printf '# Histórico da release %s\n\n> Gerado pelos utilitários do SDD. Não edite à mão.\n\n' "$1" > "$arq"
+  fi
+  printf -- '- %s | %s | %s | por: %s\n' "$(sdd_agora)" "$2" "$3" "$(sdd_autor)" >> "$arq"
+  sdd_registrar "$RAIZ" "" release "$1 $2: $3"
+}
+
+mudar_situacao() { # mudar_situacao <versão> <nova> <nota>
+  local antiga
+  antiga="$(situacao "$1")"
+  sdd_kv_gravar "$DIR/$1/estado" fase "$2"
+  sdd_kv_gravar "$DIR/$1/estado" atualizado "$(sdd_agora)"
+  sdd_md_gravar_campo "$DIR/$1/release.md" "Situação" "$2"
+  historico "$1" situacao "$antiga para $2${3:+ ($3)}"
+}
+
+exige() { # exige <versão> <situação esperada...>
+  local v="$1" atual s; shift
+  atual="$(situacao "$v")"
+  for s in "$@"; do [ "$atual" = "$s" ] && return 0; done
+  echo "sdd-release: a release $v está em '$atual'. Esta ação exige: $*." >&2
+  exit 1
+}
+
+features() { # features <versão>: uma por linha
+  awk '/^## Features/ { dentro = 1; next } /^## / { dentro = 0 } dentro && /^- / { sub(/^- /, ""); sub(/ .*/, ""); print }' "$DIR/$1/release.md"
+}
+
+reescrever_features() { # reescrever_features <versão> <lista>
+  local arq tmp
+  arq="$DIR/$1/release.md"; tmp="$arq.tmp.$$"
+  LISTA="$2" awk '
+    BEGIN { lista = ENVIRON["LISTA"] }
+    /^## Features/ {
+      print; print ""
+      n = split(lista, a, "\n"); vazio = 1
+      for (i = 1; i <= n; i++) if (a[i] != "") { print "- " a[i]; vazio = 0 }
+      if (vazio) print "_Nenhuma feature ainda. Use /sdd:release para incluir as prontas._"
+      print ""; pular = 1; next
+    }
+    pular && /^## / { pular = 0 }
+    pular { next }
+    { print }
+  ' "$arq" > "$tmp"
+  mv "$tmp" "$arq"
+}
+
+versoes() { # versões existentes, em ordem SemVer crescente
+  [ -d "$DIR" ] || return 0
+  local d
+  for d in "$DIR"/*/; do
+    [ -f "$d/release.md" ] && basename "$d"
+  done | sort -t. -k1,1n -k2,2n -k3,3n
+}
+
+ultima_em_producao() {
+  local v ult=""
+  for v in $(versoes); do [ "$(situacao "$v")" = "producao" ] && ult="$v"; done
+  printf '%s\n' "$ult"
+}
+
+roteiro_ok() { # roteiro_ok <versão>: imprime o problema, se houver
+  local arq="$DIR/$1/homologacao.md" linhas
+  linhas="$( { grep -E '^\| H-[0-9]+ ' "$arq" || true; } )"
+  if [ -z "$linhas" ]; then echo "homologacao.md não tem passos (linhas | H-NNN |)"; return; fi
+  if printf '%s\n' "$linhas" | grep -qE '\| *pendente *\|[[:space:]]*$'; then echo "há passos pendentes no roteiro de homologação"; return; fi
+  if printf '%s\n' "$linhas" | grep -qE '\| *reprovado *\|[[:space:]]*$'; then echo "há passos reprovados no roteiro de homologação (use 'sdd-release reprovar')"; return; fi
+  if grep -q '{{' "$arq"; then echo "homologacao.md ainda tem campos {{...}}"; fi
+  return 0
+}
+
+transicionar_features() { # transicionar_features <versão> <fase> <nota>
+  local f
+  for f in $(features "$1"); do
+    "$AQUI/sdd-estado" transicionar "$f" "$2" "$3" >/dev/null
+  done
+}
+
+cmd="${1:-listar}"
+shift || true
+
+case "$cmd" in
+  proxima)
+    tipo="${1:-minor}"
+    ult="$(ultima_em_producao)"
+    if [ -z "$ult" ]; then
+      case "$tipo" in major) echo "1.0.0" ;; *) echo "0.1.0" ;; esac
+      exit 0
+    fi
+    base="${ult%%-*}"
+    IFS=. read -r ma mi pa <<< "$base"
+    case "$tipo" in
+      major) echo "$((ma + 1)).0.0" ;;
+      minor) echo "$ma.$((mi + 1)).0" ;;
+      patch) echo "$ma.$mi.$((pa + 1))" ;;
+      *) echo "sdd-release proxima: use major, minor ou patch" >&2; exit 1 ;;
+    esac
+    ;;
+
+  nova)
+    v=""; objetivo=""; tipo=normal
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --objetivo) objetivo="${2:?}"; shift ;;
+        --hotfix) tipo=hotfix ;;
+        -*) echo "sdd-release nova: opção desconhecida $1" >&2; exit 1 ;;
+        *) v="$1" ;;
+      esac
+      shift
+    done
+    [ -n "$v" ] || { echo "uso: sdd-release nova <versão> [--objetivo texto] [--hotfix]" >&2; exit 1; }
+    sdd_semver_valida "$v" || { echo "sdd-release: '$v' não é uma versão SemVer (ex.: 1.4.0)" >&2; exit 1; }
+    [ ! -d "$DIR/$v" ] || { echo "sdd-release: a release $v já existe." >&2; exit 1; }
+    mkdir -p "$DIR/$v"
+    obj_sed="$(printf '%s' "${objetivo:-a definir}" | sed 's/[\/&|]/\\&/g')"
+    for t in release testes homologacao implantacao notas; do
+      sed -e "s/{{VERSAO}}/$v/g" -e "s/{{TIPO}}/$tipo/g" -e "s/{{OBJETIVO}}/$obj_sed/g" -e "s/{{DATA}}/$HOJE/g" \
+        "$(sdd_template "$RAIZ" "release/$t.md")" > "$DIR/$v/$t.md"
+    done
+    printf 'fase=preparacao\ntipo=%s\natualizado=%s\n' "$tipo" "$(sdd_agora)" > "$DIR/$v/estado"
+    historico "$v" criada "$tipo${objetivo:+: $objetivo}"
+    echo "Release $v criada em $PASTA/$v/ (situação: preparacao)."
+    ;;
+
+  incluir)
+    v="${1:?uso: sdd-release incluir <versão> <NNN-slug> [...]}"; shift
+    existe "$v"; exige "$v" preparacao
+    [ $# -gt 0 ] || { echo "sdd-release incluir: informe ao menos uma feature." >&2; exit 1; }
+    for f in "$@"; do
+      [ -d "$RAIZ/$PASTA_SPECS/$f" ] || { echo "sdd-release: a feature $f não existe." >&2; exit 1; }
+      fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+      [ "$fase" = "pronta" ] || { echo "sdd-release: a feature $f está em '$fase'. Só entram features prontas." >&2; exit 1; }
+      outra="$(sdd_feature_ler "$RAIZ" "$f" release)"
+      if [ -n "$outra" ] && [ "$outra" != "$v" ]; then
+        echo "sdd-release: a feature $f já está na release $outra." >&2; exit 1
+      fi
+      if features "$v" | grep -qx "$f"; then echo "$f já está na release $v."; continue; fi
+      reescrever_features "$v" "$( { features "$v"; printf '%s\n' "$f"; } )"
+      sdd_feature_gravar "$RAIZ" "$f" release "$v"
+      sdd_registrar "$RAIZ" "$f" release "incluída na release $v"
+      historico "$v" inclusao "$f"
+      echo "$f incluída na release $v."
+    done
+    ;;
+
+  remover)
+    v="${1:?uso: sdd-release remover <versão> <NNN-slug>}"; f="${2:?}"
+    existe "$v"; exige "$v" preparacao
+    features "$v" | grep -qx "$f" || { echo "sdd-release: $f não está na release $v." >&2; exit 1; }
+    reescrever_features "$v" "$(features "$v" | grep -vx "$f" || true)"
+    sdd_feature_gravar "$RAIZ" "$f" release ""
+    sdd_registrar "$RAIZ" "$f" release "removida da release $v"
+    historico "$v" remocao "$f"
+    echo "$f removida da release $v."
+    ;;
+
+  homologar)
+    v="${1:?uso: sdd-release homologar <versão>}"
+    existe "$v"; exige "$v" preparacao
+    lista="$(features "$v")"
+    [ -n "$lista" ] || { echo "sdd-release: a release $v não tem features." >&2; exit 1; }
+    problemas=()
+    for f in $lista; do
+      fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+      [ "$fase" = "pronta" ] || problemas+=("$f está em '$fase', não em 'pronta'")
+      pend="$(sdd_pendencias_para_pronta "$RAIZ" "$f")"
+      [ -z "$pend" ] || problemas+=("$f: $(printf '%s' "$pend" | head -1)")
+    done
+    t="$DIR/$v/testes.md"
+    sdd_md_sem_lacunas "$t" || problemas+=("testes.md ainda tem campos {{...}} (rode os testes de sistema)")
+    [ "$(sdd_md_campo "$t" Resultado)" = "aprovado" ] || problemas+=("testes.md não está com 'Resultado | aprovado'")
+    grep -qE '^\| H-[0-9]+ ' "$DIR/$v/homologacao.md" || problemas+=("homologacao.md não tem o roteiro (linhas | H-NNN |)")
+    if [ ${#problemas[@]} -gt 0 ]; then
+      echo "sdd-release: a release $v ainda não pode ir para homologação:" >&2
+      printf '  - %s\n' "${problemas[@]}" >&2
+      exit 1
+    fi
+    historico "$v" testes "testes de sistema aprovados | hash=$(sdd_hash_stdin < "$t")"
+    mudar_situacao "$v" homologacao ""
+    transicionar_features "$v" homologacao "release $v em homologação"
+    echo "Release $v em homologação. Quem homologa executa o roteiro em $PASTA/$v/homologacao.md."
+    ;;
+
+  aceitar)
+    v="${1:?uso: sdd-release aceitar <versão> --por \"Nome e papel\" [--nota texto]}"; shift
+    por=""; nota=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --por) por="${2:?}"; shift ;;
+        --nota) nota="${2:?}"; shift ;;
+        *) echo "sdd-release aceitar: opção desconhecida $1" >&2; exit 1 ;;
+      esac
+      shift
+    done
+    [ -n "$por" ] || { echo "sdd-release aceitar: informe --por (quem homologou)." >&2; exit 1; }
+    existe "$v"; exige "$v" homologacao
+    problema="$(roteiro_ok "$v")"
+    [ -z "$problema" ] || { echo "sdd-release: $problema." >&2; exit 1; }
+    h="$(sdd_hash_stdin < "$DIR/$v/homologacao.md")"
+    historico "$v" aceite "por: $por | hash=$h${nota:+ | nota: $nota}"
+    mudar_situacao "$v" aceita "aceite de $por"
+    echo "Aceite registrado (por $por). Próximo: plano de implantação e go/no-go (sdd-release autorizar $v)."
+    ;;
+
+  reprovar)
+    v="${1:?uso: sdd-release reprovar <versão> <NNN-slug> --motivo texto}"; f="${2:?}"; shift 2
+    motivo=""
+    while [ $# -gt 0 ]; do
+      case "$1" in --motivo) motivo="${2:?}"; shift ;; *) echo "sdd-release reprovar: opção desconhecida $1" >&2; exit 1 ;; esac
+      shift
+    done
+    [ -n "$motivo" ] || { echo "sdd-release reprovar: informe --motivo." >&2; exit 1; }
+    existe "$v"; exige "$v" homologacao aceita
+    features "$v" | grep -qx "$f" || { echo "sdd-release: $f não está na release $v." >&2; exit 1; }
+    "$AQUI/sdd-estado" reabrir "$f" --fase green --motivo "reprovada na homologação da $v: $motivo" >/dev/null
+    reescrever_features "$v" "$(features "$v" | grep -vx "$f" || true)"
+    for g in $(features "$v"); do "$AQUI/sdd-estado" transicionar "$g" pronta "release $v voltou à preparação" >/dev/null; done
+    historico "$v" reprovacao "$f: $motivo"
+    mudar_situacao "$v" preparacao "feature $f reprovada"
+    echo "$f reprovada e reaberta no green. A release $v voltou à preparação: refaça os testes de sistema e a homologação."
+    ;;
+
+  autorizar)
+    v="${1:?uso: sdd-release autorizar <versão> [--nota texto]}"; shift
+    nota=""
+    while [ $# -gt 0 ]; do
+      case "$1" in --nota) nota="${2:?}"; shift ;; *) echo "sdd-release autorizar: opção desconhecida $1" >&2; exit 1 ;; esac
+      shift
+    done
+    existe "$v"; exige "$v" aceita
+    problemas=()
+    sdd_md_sem_lacunas "$DIR/$v/implantacao.md" || problemas+=("implantacao.md ainda tem campos {{...}} (passos, verificação e rollback)")
+    grep -q '^## Rollback' "$DIR/$v/implantacao.md" || problemas+=("implantacao.md não tem a seção Rollback")
+    sdd_md_sem_lacunas "$DIR/$v/notas.md" || problemas+=("notas.md ainda tem campos {{...}}")
+    if [ ${#problemas[@]} -gt 0 ]; then
+      echo "sdd-release: a release $v ainda não pode ser autorizada:" >&2
+      printf '  - %s\n' "${problemas[@]}" >&2
+      exit 1
+    fi
+    h="$(sdd_hash_stdin < "$DIR/$v/implantacao.md")"
+    historico "$v" autorizacao "go | hash=$h${nota:+ | nota: $nota}"
+    mudar_situacao "$v" implantacao "go"
+    echo "Implantação da $v autorizada (go). Siga $PASTA/$v/implantacao.md e, ao terminar a verificação, rode 'sdd-release concluir $v'."
+    ;;
+
+  pode-implantar)
+    v="${1:?uso: sdd-release pode-implantar <versão>}"
+    v="${v#v}"
+    [ -f "$DIR/$v/release.md" ] || { echo "release $v não existe"; exit 1; }
+    s="$(situacao "$v")"
+    case "$s" in
+      implantacao|producao) echo "release $v autorizada ($s)"; exit 0 ;;
+      *) echo "release $v não autorizada (situação: $s)"; exit 1 ;;
+    esac
+    ;;
+
+  concluir)
+    v="${1:?uso: sdd-release concluir <versão> --verificacao texto}"; shift
+    verif=""
+    while [ $# -gt 0 ]; do
+      case "$1" in --verificacao) verif="${2:?}"; shift ;; *) echo "sdd-release concluir: opção desconhecida $1" >&2; exit 1 ;; esac
+      shift
+    done
+    [ -n "$verif" ] || { echo "sdd-release concluir: informe --verificacao (o resultado da verificação pós-implantação)." >&2; exit 1; }
+    existe "$v"; exige "$v" implantacao
+    historico "$v" verificacao "$verif"
+    mudar_situacao "$v" producao "em produção em $HOJE"
+    transicionar_features "$v" producao "release $v em produção"
+    echo "Release $v em produção. Sugestão: git tag v$v && git push origin v$v"
+    pend="$("$AQUI/sdd-sistema" pendentes 2>/dev/null || true)"
+    if [ -n "$pend" ]; then
+      echo "Atenção: features ainda não consolidadas na spec do sistema:"
+      printf '%s\n' "$pend" | cut -f1 | sed 's/^/  - /'
+    fi
+    ;;
+
+  reverter|cancelar)
+    v="${1:?uso: sdd-release $cmd <versão> --motivo texto}"; shift
+    motivo=""
+    while [ $# -gt 0 ]; do
+      case "$1" in --motivo) motivo="${2:?}"; shift ;; *) echo "sdd-release $cmd: opção desconhecida $1" >&2; exit 1 ;; esac
+      shift
+    done
+    [ -n "$motivo" ] || { echo "sdd-release $cmd: informe --motivo." >&2; exit 1; }
+    existe "$v"
+    if [ "$cmd" = "reverter" ]; then
+      exige "$v" implantacao producao
+      nova=revertida
+    else
+      exige "$v" preparacao homologacao aceita
+      nova=cancelada
+    fi
+    for f in $(features "$v"); do
+      "$AQUI/sdd-estado" transicionar "$f" pronta "release $v $nova: $motivo" >/dev/null
+      sdd_feature_gravar "$RAIZ" "$f" release ""
+    done
+    mudar_situacao "$v" "$nova" "$motivo"
+    echo "Release $v $nova. As features voltaram a 'pronta' e podem entrar numa próxima release."
+    ;;
+
+  ver)
+    v="${1:-}"
+    [ -n "$v" ] || v="$("$0" atual 2>/dev/null || true)"
+    [ -n "$v" ] || { echo "Nenhuma release em andamento."; exit 0; }
+    existe "$v"
+    echo "Release $v ($(situacao "$v"), $(sdd_kv_ler "$DIR/$v/estado" tipo)) · objetivo: $(sdd_md_campo "$DIR/$v/release.md" Objetivo)"
+    for f in $(features "$v"); do
+      printf '  %-34s %s\n' "$f" "$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    done
+    echo "  documentos:"
+    for d in testes homologacao implantacao notas; do
+      if sdd_md_sem_lacunas "$DIR/$v/$d.md"; then echo "    ✓ $d.md"; else echo "    · $d.md (a preencher)"; fi
+    done
+    case "$(situacao "$v")" in
+      preparacao) echo "  próximo: testes de sistema e roteiro de homologação, depois 'sdd-release homologar $v'" ;;
+      homologacao) echo "  próximo: executar o roteiro e 'sdd-release aceitar $v --por \"Nome\"'" ;;
+      aceita) echo "  próximo: plano de implantação, notas e 'sdd-release autorizar $v' (go/no-go)" ;;
+      implantacao) echo "  próximo: implantar, verificar e 'sdd-release concluir $v --verificacao \"...\"'" ;;
+    esac
+    ;;
+
+  listar)
+    for v in $(versoes); do
+      printf '%-12s %-12s %s · %s feature(s)\n' "$v" "$(situacao "$v")" "$(sdd_md_campo "$DIR/$v/release.md" Objetivo)" "$(features "$v" | grep -c . || true)"
+    done
+    ;;
+
+  atual)
+    ult=""
+    for v in $(versoes); do
+      case "$(situacao "$v")" in preparacao|homologacao|aceita|implantacao) ult="$v" ;; esac
+    done
+    [ -n "$ult" ] || exit 1
+    printf '%s\n' "$ult"
+    ;;
+
+  -h|--ajuda|--help|ajuda)
+    sed -n '2,31p' "$0"
+    ;;
+
+  *)
+    echo "sdd-release: comando desconhecido '$cmd'. Use --ajuda." >&2
+    exit 1
+    ;;
+esac

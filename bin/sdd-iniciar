@@ -10,7 +10,9 @@
 #   .sdd/backlog.md        itens ainda sem spec
 #   .sdd/sprints/          uma sprint por arquivo
 #   .sdd/templates/        cópia dos templates do plugin (customizável)
-#   specs/                 uma pasta por feature
+#   specs/                 uma pasta por feature (o que cada mudança alterou)
+#   sistema/               a spec viva do sistema, por capacidade (o que ele faz hoje)
+#   releases/, incidentes/ criadas sob demanda por /sdd:release e /sdd:incidente
 #   docs/adr/              decisões arquiteturais duráveis
 # E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente).
 set -euo pipefail
@@ -27,7 +29,7 @@ while [ $# -gt 0 ]; do
     --forcar) FORCAR=1 ;;
     --nivel) NIVEL="${2:?--nivel exige um valor}"; shift ;;
     --protecao) PROTECAO="${2:?--protecao exige um valor}"; shift ;;
-    -h|--ajuda|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--ajuda|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) echo "sdd-iniciar: opção desconhecida: $1" >&2; exit 1 ;;
   esac
   shift
@@ -59,12 +61,19 @@ copiar() {
   criados+=("${para#"$RAIZ"/}")
 }
 
-mkdir -p "$RAIZ/.sdd/templates" "$RAIZ/specs" "$RAIZ/docs/adr"
+mkdir -p "$RAIZ/.sdd/templates/release" "$RAIZ/specs" "$RAIZ/docs/adr" "$RAIZ/sistema"
+if [ ! -e "$RAIZ/sistema/README.md" ]; then
+  cp "$ORIGEM/sistema-readme.md" "$RAIZ/sistema/README.md"
+  criados+=("sistema/README.md")
+fi
 
 # Templates: cópia local, para o projeto customizar sem afetar o plugin.
 for f in "$ORIGEM"/*.md; do
   [ "$(basename "$f")" = "bloco-agentes.md" ] && continue
   copiar "$f" "$RAIZ/.sdd/templates/$(basename "$f")"
+done
+for f in "$ORIGEM"/release/*.md; do
+  copiar "$f" "$RAIZ/.sdd/templates/release/$(basename "$f")"
 done
 
 copiar "$ORIGEM/constituicao.md" "$RAIZ/.sdd/constituicao.md"

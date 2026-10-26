@@ -10,6 +10,12 @@ conhecimento e disparam as fases. Ficam quatro subagents:
 `mapeador-de-contexto`, `arquiteto-de-contratos`, `escritor-de-testes` e
 `auditor-de-drift`.
 
+> **Atualização:** o [ADR 0013](0013-go-no-go-no-pipeline-e-revisao-de-seguranca.md)
+> acrescentou o `revisor-de-seguranca`, e o ciclo da release
+> ([ADR 0010](0010-ciclo-da-feature-e-ciclo-da-release.md)) acrescentou o
+> `testador-de-sistema`, pelo mesmo motivo: quem testa ou revisa não pode ser
+> quem implementou.
+
 ## Por quê
 
 Uma skill é carregada na sessão de quem a invoca. Várias skills na mesma sessão

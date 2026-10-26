@@ -12,9 +12,11 @@ Este projeto usa SDD. As especificações em `specs/` são a fonte de verdade.
 5. Os contratos (`specs/NNN/contratos/`) ficam congelados durante a implementação.
 6. Commits citam a tarefa: `tipo(NNN): T-XXX descrição`.
 7. Na dúvida sobre um requisito, pergunte. Não suponha.
-8. Aprovações são do usuário, pelo `/sdd:aprovar`. Nunca registre uma aprovação nem avance a fase por conta própria. Antes de cada fase, confira a anterior com `sdd-estado aprovado <artefato>`.
+8. Aprovações são do usuário, pelo `/sdd:aprovar` e pelo `/sdd:release`. Nunca registre uma aprovação nem avance a fase por conta própria. Antes de cada fase, confira a anterior com `sdd-estado aprovado <artefato>`.
+
+9. Mudança em área sensível (`areas_sensiveis` no `.sdd/config.yml`) exige revisão de segurança, mesmo no nível 1.
 
 **Níveis de rigor:** 0, direto (typo, ajuste visual, refatoração sem mudar comportamento); 1, leve (correção de bug ou feature pequena); 2, completo (feature nova, domínio, schema, contrato público).
 
-**Fluxo:** especificacao, clarificacao, plano, tarefas, red, green, auditoria, concluida. Cada feature guarda a própria fase em `specs/NNN/estado` e o histórico em `specs/NNN/historico.md`. Ideias para depois vão para `.sdd/backlog.md`; a sprint atual fica em `.sdd/sprints/`. Situação geral: `sdd-status`.
+**Fluxo da feature:** especificacao, clarificacao, plano, tarefas, red, green, seguranca, auditoria, pronta. **Da release:** pronta, homologacao, producao. Cada feature guarda a própria fase em `specs/NNN/estado` e o histórico em `specs/NNN/historico.md`. Ideias para depois vão para `.sdd/backlog.md`; a sprint atual fica em `.sdd/sprints/`. O que o sistema faz hoje está em `sistema/` (spec viva, por capacidade): leia antes de mudar uma área. Incidentes em produção seguem `/sdd:incidente`. Situação geral: `sdd-status`.
 <!-- sdd:fim -->

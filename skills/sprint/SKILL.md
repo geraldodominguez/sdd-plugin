@@ -31,7 +31,7 @@ backlog) e a **revisão**. O id padrão é a semana ISO do início (`2026-S44`).
    **objetivo**, uma frase que diga o resultado, não a lista de tarefas
    ("clientes conseguem recuperar o acesso sozinhos").
 3. **Monte a proposta de compromisso** a partir de:
-   - features em andamento (`sdd-estado listar`, fases diferentes de `concluida`);
+   - features em andamento (`sdd-estado listar`, fases antes de `pronta`);
    - itens de prioridade alta do backlog (`sdd-backlog listar`);
    - o que serve ao objetivo.
 
@@ -59,7 +59,9 @@ backlog) e a **revisão**. O id padrão é a semana ISO do início (`2026-S44`).
 ## Não faça
 
 - Não inclua item na sprint sem a concordância do usuário.
-- Não marque como concluído o que não chegou à fase `concluida`.
+- Não conte como entregue o que não chegou a `pronta` (ou além). Combine com o
+  time se "entregue" na sprint significa pronta ou em produção, e diga isso no
+  objetivo.
 
 ## Pronto quando
 

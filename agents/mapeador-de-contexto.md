@@ -16,7 +16,9 @@ sem carregar o sistema inteiro.
 
 ## Processo
 
-1. Extraia do pedido os conceitos-chave: entidades, ações, telas, endpoints.
+1. Leia primeiro a spec do sistema em `sistema/` (as capacidades que o pedido
+   parece tocar): ela diz o que o sistema faz hoje, com a origem de cada item.
+   Depois extraia do pedido os conceitos-chave: entidades, ações, telas, endpoints.
 2. Localize-os com Grep e Glob: nomes de domínio, rotas, tabelas, eventos.
    Comece amplo e afunile.
 3. Leia **só os trechos relevantes**: assinaturas, schemas, definições de rota,

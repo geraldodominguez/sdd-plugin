@@ -10,6 +10,12 @@ atrasa tudo. **Só o que muda ganha spec.** Em poucos meses, as partes mais
 mexidas do sistema, que são justamente as que mais importam, estarão
 especificadas.
 
+O mesmo vale para a spec do sistema (`sistema/`): a capacidade nasce quando a
+primeira feature mexe nela, e cresce a cada consolidação. Se quiser um ponto de
+partida, `/sdd:sistema mapear <capacidade>` descreve o comportamento atual a
+partir do código e dos testes, marcando cada item com a origem no código (`origem: código, caminho:linha`), para
+você revisar. Mapeie só a capacidade que vai mudar, não o sistema inteiro.
+
 ## Adoção em quatro passos
 
 | Passo | O quê | Por quê |
@@ -18,6 +24,12 @@ especificadas.
 | 2 | comece com `protecao: leve` | a estrita exige disciplina de fases desde o primeiro dia; suba quando o fluxo estiver natural |
 | 3 | use o `mapeador-de-contexto` em toda feature de nível 2 | é ele que impede a spec de ignorar o que já existe |
 | 4 | ajuste os `globs_de_teste` à convenção do projeto | sem isso, os hooks e o `sdd-rastrear` não reconhecem os seus testes |
+| 5 | preencha `areas_sensiveis` e os comandos de entrega no `config.yml` | a revisão de segurança e a release dependem deles |
+| 6 | `/sdd:pipeline` para acrescentar o `sdd-verificar` e o go/no-go ao CI que já existe | o pipeline passa a respeitar os gates sem ser reescrito |
+
+Se o projeto já tem um processo de deploy, a release do SDD não o substitui: ela
+registra as decisões (aceite, go) e o pipeline consulta `sdd-release
+pode-implantar` antes do passo de produção que já existe.
 
 Regra que o projeto já descumpre vai para "Exceções aprovadas" na constituição,
 com o plano de saída. Não finja que cumpre.

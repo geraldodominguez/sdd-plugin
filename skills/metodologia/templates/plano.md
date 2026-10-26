@@ -58,10 +58,30 @@ exige voltar à spec ou ao plano, com aprovação.
 - **Integração:** {{...}}
 - **Dados de teste:** {{...}}
 
-## 9. Decisões (ADRs)
+## 9. Ameaças e mitigação (segurança desde o desenho)
+
+| Ameaça | Onde | Mitigação no desenho |
+|---|---|---|
+| {{ex.: enumeração de usuários}} | {{rota}} | {{resposta genérica}} |
+
+Dados pessoais tratados: {{quais, com finalidade e retenção, ou "nenhum"}}
+
+## 10. Implantação e rollback
+
+- **Migrations:** {{quais, e como revertê-las}}
+- **Configuração e segredos novos:** {{...}}
+- **Ordem de implantação:** {{ex.: migration antes do código; feature flag desligada}}
+- **Rollback:** {{como voltar atrás sem perda de dados}}
+
+## 11. Observabilidade
+
+- **Logs:** {{eventos novos, sem dados pessoais em claro}}
+- **Métricas e alertas:** {{o que medir para saber que está funcionando em produção}}
+
+## 12. Decisões (ADRs)
 
 - {{ADR-NNNN: título}}, ou "nenhuma decisão durável nesta feature"
 
-## 10. Riscos técnicos e mitigação
+## 13. Riscos técnicos e mitigação
 
 - {{...}}

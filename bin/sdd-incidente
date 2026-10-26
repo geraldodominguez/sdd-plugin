@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# sdd-incidente: incidentes em produção, do registro ao post-mortem.
+#
+# Situações: aberto -> mitigado -> resolvido -> encerrado
+#
+# Uso:
+#   sdd-incidente abrir "título" --severidade S1|S2|S3|S4 [--feature NNN-slug] [--release X.Y.Z]
+#                                         cria incidentes/INC-NNN.md
+#   sdd-incidente situacao INC-NNN mitigado|resolvido [--nota "texto"]
+#   sdd-incidente nota INC-NNN "texto"    acrescenta um evento à linha do tempo
+#   sdd-incidente hotfix INC-NNN "título" [--capacidade nome]
+#                                         abre a feature de correção (tipo hotfix, nível 1,
+#                                         começa na fase red, spec retroativa obrigatória)
+#   sdd-incidente encerrar INC-NNN        exige situação resolvido e post-mortem completo
+#   sdd-incidente listar [--abertos]
+#   sdd-incidente ver INC-NNN
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+[ -d "$RAIZ/.sdd" ] || { echo "sdd-incidente: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+PASTA="$(sdd_pasta_incidentes "$RAIZ")"
+DIR="$RAIZ/$PASTA"
+
+arquivo() { printf '%s\n' "$DIR/$1.md"; }
+existe() { [ -f "$(arquivo "$1")" ] || { echo "sdd-incidente: o incidente '$1' não existe em $PASTA/." >&2; exit 1; }; }
+situacao() { sdd_md_campo "$(arquivo "$1")" "Situação"; }
+
+linha_do_tempo() { # linha_do_tempo <id> <texto>
+  local arq tmp agora
+  arq="$(arquivo "$1")"; tmp="$arq.tmp.$$"; agora="$(sdd_agora)"
+  # Insere o evento logo depois do último item da seção "Linha do tempo".
+  TEXTO="- $agora $2" awk '
+    BEGIN { t = ENVIRON["TEXTO"] }
+    /^## / {
+      if (dentro && !feito) { print t; feito = 1 }
+      for (i = 0; i < brancos; i++) print ""
+      brancos = 0
+      dentro = ($0 ~ /^## Linha do tempo/)
+      print; next
+    }
+    dentro && /^[[:space:]]*$/ { brancos++; next }
+    {
+      for (i = 0; i < brancos; i++) print ""
+      brancos = 0
+      print
+    }
+    END {
+      if (dentro && !feito) print t
+      for (i = 0; i < brancos; i++) print ""
+    }
+  ' "$arq" > "$tmp"
+  mv "$tmp" "$arq"
+}
+
+proximo_id() {
+  local maior=0 n a
+  if [ -d "$DIR" ]; then
+    for a in "$DIR"/INC-[0-9][0-9][0-9].md; do
+      [ -f "$a" ] || continue
+      n="$(basename "$a" .md | cut -c5-7)"; n=$((10#$n))
+      [ "$n" -gt "$maior" ] && maior="$n"
+    done
+  fi
+  printf 'INC-%03d' $((maior + 1))
+}
+
+cmd="${1:-listar}"
+shift || true
+
+case "$cmd" in
+  abrir)
+    titulo="${1:-}"; shift || true
+    [ -n "$titulo" ] || { echo "uso: sdd-incidente abrir \"título\" --severidade S1|S2|S3|S4 [--feature F] [--release V]" >&2; exit 1; }
+    sev=""; feat=""; rel=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --severidade) sev="${2:?}"; shift ;;
+        --feature) feat="${2:?}"; shift ;;
+        --release) rel="${2:?}"; shift ;;
+        *) echo "sdd-incidente abrir: opção desconhecida $1" >&2; exit 1 ;;
+      esac
+      shift
+    done
+    case "$sev" in S1|S2|S3|S4) ;; *) echo "sdd-incidente: --severidade deve ser S1, S2, S3 ou S4" >&2; exit 1 ;; esac
+    if [ -n "$feat" ] && [ ! -d "$RAIZ/$(sdd_pasta_specs "$RAIZ")/$feat" ]; then
+      echo "sdd-incidente: a feature $feat não existe." >&2; exit 1
+    fi
+    mkdir -p "$DIR"
+    id="$(proximo_id)"
+    agora="$(sdd_agora)"
+    titulo_sed="$(printf '%s' "$titulo" | sed 's/[\/&|]/\\&/g')"
+    sed -e "s/{{INCIDENTE}}/$id/g" -e "s/{{TITULO}}/$titulo_sed/g" -e "s/{{SEVERIDADE}}/$sev/g" \
+        -e "s/{{AGORA}}/$agora/g" -e "s/{{FEATURE}}/${feat:-não identificada}/g" -e "s/{{RELEASE}}/${rel:-não identificada}/g" \
+        "$(sdd_template "$RAIZ" incidente.md)" > "$(arquivo "$id")"
+    sdd_registrar "$RAIZ" "" incidente "$id aberto ($sev): $titulo"
+    [ -n "$feat" ] && sdd_registrar "$RAIZ" "$feat" incidente "$id ($sev): $titulo"
+    echo "$id aberto ($sev): $PASTA/$id.md"
+    case "$sev" in S1|S2) echo "Severidade $sev: mitigue primeiro (rollback, desligar a função, contorno), depois corrija." ;; esac
+    ;;
+
+  situacao)
+    id="${1:?uso: sdd-incidente situacao INC-NNN mitigado|resolvido [--nota texto]}"; nova="${2:?}"; shift 2
+    nota=""
+    while [ $# -gt 0 ]; do
+      case "$1" in --nota) nota="${2:?}"; shift ;; *) echo "sdd-incidente situacao: opção desconhecida $1" >&2; exit 1 ;; esac
+      shift
+    done
+    existe "$id"
+    case "$nova" in mitigado|resolvido) ;; *) echo "sdd-incidente: situação deve ser mitigado ou resolvido (para encerrar, use 'encerrar')" >&2; exit 1 ;; esac
+    atual="$(situacao "$id")"
+    [ "$atual" != "encerrado" ] || { echo "sdd-incidente: $id já está encerrado." >&2; exit 1; }
+    sdd_md_gravar_campo "$(arquivo "$id")" "Situação" "$nova"
+    linha_do_tempo "$id" "$nova${nota:+: $nota}"
+    sdd_registrar "$RAIZ" "" incidente "$id $atual para $nova${nota:+: $nota}"
+    echo "$id agora está $nova."
+    [ "$nova" = "resolvido" ] && echo "Próximo: preencher o post-mortem e 'sdd-incidente encerrar $id'."
+    ;;
+
+  nota)
+    id="${1:?uso: sdd-incidente nota INC-NNN \"texto\"}"; texto="${2:?}"
+    existe "$id"
+    linha_do_tempo "$id" "$texto"
+    echo "Evento registrado na linha do tempo de $id."
+    ;;
+
+  hotfix)
+    id="${1:?uso: sdd-incidente hotfix INC-NNN \"título\" [--capacidade nome]}"; titulo="${2:?informe o título da correção}"; shift 2
+    cap=()
+    while [ $# -gt 0 ]; do
+      case "$1" in --capacidade) cap=(--capacidade "${2:?}"); shift ;; *) echo "sdd-incidente hotfix: opção desconhecida $1" >&2; exit 1 ;; esac
+      shift
+    done
+    existe "$id"
+    [ "$(situacao "$id")" != "encerrado" ] || { echo "sdd-incidente: $id já está encerrado." >&2; exit 1; }
+    saida="$("$AQUI/sdd-estado" nova "$titulo" --tipo hotfix --origem "$id" ${cap[@]+"${cap[@]}"})"
+    printf '%s\n' "$saida"
+    f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
+    sdd_md_gravar_campo "$(arquivo "$id")" "Correção" "$f (hotfix)"
+    linha_do_tempo "$id" "hotfix aberto: $f"
+    sdd_registrar "$RAIZ" "" incidente "$id hotfix $f"
+    echo "Próximo: teste de regressão do incidente (fase red), /sdd:aprovar, correção (green), spec retroativa e /sdd:aprovar."
+    ;;
+
+  encerrar)
+    id="${1:?uso: sdd-incidente encerrar INC-NNN}"
+    existe "$id"
+    [ "$(situacao "$id")" = "resolvido" ] || { echo "sdd-incidente: $id está '$(situacao "$id")'. Só se encerra um incidente resolvido." >&2; exit 1; }
+    arq="$(arquivo "$id")"
+    pm="$(awk '/^## Post-mortem/ { d = 1 } d' "$arq")"
+    if printf '%s' "$pm" | grep -q '{{'; then
+      echo "sdd-incidente: o post-mortem de $id ainda tem campos {{...}}. Preencha causa raiz, o que o processo deixou passar e as ações." >&2
+      exit 1
+    fi
+    printf '%s' "$pm" | grep -qE '^\| [0-9]+ \|' || { echo "sdd-incidente: o post-mortem de $id não tem ações. Registre ao menos uma (ou explique por que não há)." >&2; exit 1; }
+    sdd_md_gravar_campo "$arq" "Situação" "encerrado"
+    linha_do_tempo "$id" "encerrado (post-mortem concluído)"
+    sdd_registrar "$RAIZ" "" incidente "$id encerrado"
+    echo "$id encerrado."
+    ;;
+
+  listar)
+    so_abertos=0; [ "${1:-}" = "--abertos" ] && so_abertos=1
+    [ -d "$DIR" ] || { echo "Nenhum incidente."; exit 0; }
+    n=0
+    for a in "$DIR"/INC-[0-9][0-9][0-9].md; do
+      [ -f "$a" ] || continue
+      id="$(basename "$a" .md)"; s="$(situacao "$id")"
+      [ "$so_abertos" -eq 1 ] && [ "$s" = "encerrado" ] && continue
+      n=$((n + 1))
+      printf '%s  %s  %-10s %s\n' "$id" "$(sdd_md_campo "$a" Severidade)" "$s" "$(head -1 "$a" | sed -E 's/^# INC-[0-9]+: //')"
+    done
+    [ "$n" -gt 0 ] || echo "Nenhum incidente${so_abertos:+ em aberto}."
+    ;;
+
+  ver)
+    id="${1:?uso: sdd-incidente ver INC-NNN}"
+    existe "$id"
+    cat "$(arquivo "$id")"
+    ;;
+
+  -h|--ajuda|--help|ajuda)
+    sed -n '2,17p' "$0"
+    ;;
+
+  *)
+    echo "sdd-incidente: comando desconhecido '$cmd'. Use --ajuda." >&2
+    exit 1
+    ;;
+esac

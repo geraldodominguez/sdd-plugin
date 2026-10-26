@@ -31,6 +31,16 @@ com situação "proposta" até você aprovar o plano com `/sdd:aprovar`. O hash
 registrado na aprovação cobre o `plano.md` e todos os arquivos de `contratos/`:
 mudar um contrato depois invalida a aprovação.
 
+## Além da arquitetura
+
+O plano também traz três seções que antecipam as etapas seguintes:
+
+| Seção | Antecipa |
+|---|---|
+| Ameaças e mitigação | a [revisão de segurança](seguranca.md): problema de arquitetura é barato no plano e caro depois |
+| Implantação e rollback | o plano de implantação da [release](release.md): migrations reversíveis, ordem, configuração |
+| Observabilidade | a operação: o que logar e medir para saber, em produção, que funciona |
+
 ## Perguntas frequentes
 
 **Por que um subagent, e não a própria sessão?**

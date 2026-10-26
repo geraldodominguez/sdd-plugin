@@ -7,7 +7,7 @@ deve parar e explicar a situação a você.
 Nos dois hooks, valem as mesmas regras de base:
 
 - **Só agem em projetos com `.sdd/`.** O plugin pode ficar instalado de forma global sem afetar quem não usa SDD.
-- **Sem feature ativa, ou com a fase `concluida`, não bloqueiam nada.**
+- **Sem feature ativa, ou com ela pronta, em homologação, em produção ou cancelada, a fase não bloqueia nada.**
 - **Fail-open:** qualquer erro inesperado permite a ação.
 
 ## Modos
@@ -29,13 +29,13 @@ protecao: leve   # desligada | leve | estrita
 Intercepta `Edit`, `Write`, `MultiEdit` e `NotebookEdit`.
 
 **Nunca editáveis à mão**, em qualquer fase (proteção leve ou estrita): o
-`estado` e o `historico.md` de cada feature, e o `.sdd/estado` e o
-`.sdd/historico.md`. Eles são escritos só pelos utilitários. É isso que impede
+`estado` e o `historico.md` de cada feature e de cada release, e o
+`.sdd/estado` e o `.sdd/historico.md`. Eles são escritos só pelos utilitários. É isso que impede
 o agente de forjar uma aprovação ou de pular uma fase editando um arquivo.
 
-**Sempre editáveis**, em qualquer modo e fase: o resto de `.sdd/` e de `specs/`,
-`docs/`, `CLAUDE.md`, `AGENTS.md`, `.claude/` e qualquer arquivo fora do
-projeto.
+**Sempre editáveis**, em qualquer modo e fase: o resto de `.sdd/`, `specs/`,
+`sistema/`, `releases/` e `incidentes/`, e também `docs/`, `CLAUDE.md`,
+`AGENTS.md`, `.claude/` e qualquer arquivo fora do projeto.
 
 | Fase | `leve` | `estrita` |
 |---|---|---|
@@ -43,7 +43,8 @@ projeto.
 | `plano` | livre | artefatos e `globs_de_contrato` |
 | `red` | livre | artefatos, testes e `globs_de_contrato` |
 | `green` | **testes bloqueados** | **testes e `globs_de_contrato` bloqueados** |
-| `auditoria` | livre | só artefatos |
+| `seguranca`, `auditoria` | **testes bloqueados** | **só artefatos** |
+| `pronta`, `homologacao`, `producao`, `cancelada` | livre | livre |
 
 ### O que conta como teste
 
@@ -71,7 +72,7 @@ Intercepta `Bash`, e só age quando:
 
 - o comando tem `git commit` com mensagem inline (`-m`, `-am`, `--message`, `-F`);
 - a proteção não é `desligada`;
-- há feature ativa nas fases `red`, `green` ou `auditoria`.
+- há feature ativa nas fases `red`, `green`, `seguranca` ou `auditoria`.
 
 A mensagem precisa citar `T-NNN` ou `(NNN)`:
 
@@ -90,13 +91,17 @@ Os hooks são trilhos contra deslizes, não um sandbox:
 | Brecha | O que cobre |
 |---|---|
 | Edição pelo shell (`echo > tests/x.test.ts`) | as instruções das skills e dos subagents, e a auditoria, que procura testes mexidos depois da red |
-| O agente trocando a fase ou aprovando pelo shell (`sdd-estado definir`, `sdd-estado aprovar`) | as instruções (só o `/sdd:aprovar`, digitado por você, aprova), o autor registrado em cada aprovação e a auditoria, que confere as aprovações |
+| O agente trocando a fase ou aprovando pelo shell (`sdd-estado definir`, `sdd-estado aprovar`, `sdd-release aceitar`) | as instruções (só o `/sdd:aprovar`, digitado por você, aprova), o autor registrado em cada aprovação e a auditoria, que confere as aprovações |
 | Subagent com ferramenta de escrita | as instruções dele e, na proteção estrita, o hook da fase |
 
-Para garantia determinística, rode o `sdd-rastrear` na CI (a saída 3 falha o
-pipeline). Ver [utilitários](utilitarios.md#na-ci) e o
+Para garantia determinística, rode o `sdd-verificar` na CI (a saída 3 falha o
+pipeline): ele roda o `sdd-rastrear` em cada feature e confere as aprovações e
+as releases. Ver [utilitários](utilitarios.md#sdd-verificar), o
+[/sdd:pipeline](../pipeline.md) e o
 [ADR 0003](../../.agents/adr/0003-hooks-fail-open.md).
 
 ## Desligar por um momento
 
-`protecao: desligada` no config, ou `sdd-estado encerrar` para sair da feature ativa.
+`protecao: desligada` no config, ou `sdd-estado definir feature=` para ficar sem
+feature ativa (os hooks só restringem quando há uma). Para voltar,
+`sdd-estado usar NNN-slug`.

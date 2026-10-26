@@ -8,7 +8,7 @@
     {
       "name": "sdd",
       "source": ".",
-      "description": "Specification-Driven Development: spec como fonte de verdade, níveis de rigor, subagents isolados e hooks de proteção."
+      "description": "Specification-Driven Development do pedido à manutenção: specs como fonte de verdade, gates registrados, segurança, releases e incidentes."
     }
   ]
 }

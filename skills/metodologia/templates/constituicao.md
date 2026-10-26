@@ -50,12 +50,39 @@ Dependências novas exigem justificativa no plano (seção "Dependências").
 - **Branches:** {{ex.: feat/NNN-slug}}
 - **Nomenclatura:** {{ex.: código em inglês, documentação em português}}
 
-## 7. Observabilidade e operação
+## 7. Segurança (exigências da revisão)
+
+- **Autenticação e autorização:** {{ex.: toda rota exige autenticação, salvo as listadas como públicas}}
+- **Dependências:** {{ex.: nenhuma vulnerabilidade alta ou crítica conhecida em produção}}
+- **Segredos:** {{ex.: varredura de segredos sem achados em todo commit}}
+- **Dados pessoais:** {{ex.: todo dado pessoal tem finalidade, base legal e retenção documentadas}}
+- **Áreas sensíveis:** {{as mesmas de areas_sensiveis no .sdd/config.yml, com o porquê}}
+
+## 8. Ambientes e entrega
+
+| Ambiente | Para quê | Como se implanta | Quem aprova |
+|---|---|---|---|
+| desenvolvimento | {{...}} | {{...}} | ninguém |
+| homologação | aceite do negócio | {{ex.: push na main}} | {{ex.: tech lead}} |
+| produção | usuários reais | {{ex.: tag vX.Y.Z, depois do go/no-go}} | {{ex.: PO e tech lead}} |
+
+- **Versionamento:** {{ex.: SemVer; versão maior quando um contrato público quebra}}
+- **Janela de implantação:** {{ex.: terça a quinta, das 10h às 16h}}
+- **Rollback:** {{ex.: toda release tem rollback testado em homologação}}
+
+## 9. Operação e manutenção
+
+- **Níveis de serviço:** {{ex.: disponibilidade de 99,5% no mês; p95 abaixo de 500 ms}}
+- **Alertas:** {{ex.: erro 5xx acima de 2% por 5 minutos aciona o plantão}}
+- **Backup:** {{ex.: diário, com restauração testada todo mês}}
+- **Incidentes:** {{ex.: S1 e S2 têm post-mortem em até 5 dias úteis}}
+
+### Observabilidade
 
 - {{ex.: Logs estruturados em JSON, com correlation id.}}
 - {{ex.: Toda falha de integração externa é registrada e tem retry com backoff.}}
 
-## 8. Exceções aprovadas
+## 10. Exceções aprovadas
 
 | Regra | Exceção | Motivo | ADR |
 |---|---|---|---|

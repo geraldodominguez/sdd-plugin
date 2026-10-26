@@ -6,8 +6,15 @@
 # bash 3.2 do macOS e com o Git Bash do Windows. jq ou python3 são usados para
 # ler JSON quando presentes, e há uma reserva por expressão regular.
 
-# Fases do ciclo SDD, em ordem.
-SDD_FASES="especificacao clarificacao plano tarefas red green auditoria concluida"
+# Fases do ciclo de uma feature, em ordem. "cancelada" fica fora da ordem.
+#   construção: especificacao clarificacao plano tarefas red green
+#   revisão:    seguranca auditoria
+#   entrega:    pronta homologacao producao  (as duas últimas, pela release)
+SDD_FASES="especificacao clarificacao plano tarefas red green seguranca auditoria pronta homologacao producao cancelada"
+
+# Fases que só os utilitários alcançam (aprovação, release, cancelamento):
+# "sdd-estado definir fase=" recusa estas.
+SDD_FASES_PROTEGIDAS="pronta homologacao producao cancelada"
 
 # Globs padrão de arquivos de teste, usados quando a config não define outros.
 # shellcheck disable=SC2034  # usado por quem carrega este arquivo
@@ -79,7 +86,10 @@ sdd_config() {
 # ---------------------------------------------------------------------------
 
 # Chaves que pertencem à feature, não aos ponteiros.
-SDD_CHAVES_DA_FEATURE="fase nivel origem atualizado"
+#   fase, nivel, origem (B-NNN ou INC-NNN), tipo (normal ou hotfix),
+#   seguranca (obrigatoria ou dispensada), capacidade (da spec do sistema),
+#   release (versão em que entrou), atualizado
+SDD_CHAVES_DA_FEATURE="fase nivel origem tipo seguranca capacidade release atualizado"
 
 sdd_e_chave_da_feature() {
   local c="$1" x
@@ -107,6 +117,9 @@ sdd_kv_gravar() {
 
 # sdd_pasta_specs <raiz>
 sdd_pasta_specs() { sdd_config "$1" pasta_specs specs; }
+sdd_pasta_sistema() { sdd_config "$1" pasta_sistema sistema; }
+sdd_pasta_releases() { sdd_config "$1" pasta_releases releases; }
+sdd_pasta_incidentes() { sdd_config "$1" pasta_incidentes incidentes; }
 
 # sdd_arquivo_estado_feature <raiz> <feature>
 sdd_arquivo_estado_feature() { printf '%s\n' "$1/$(sdd_pasta_specs "$1")/$2/estado"; }
@@ -236,6 +249,21 @@ sdd_testes_da_feature() {
   done
 }
 
+# sdd_blocos_de_teste <arquivo> <NNN>: só as linhas dos testes da feature.
+# Um bloco começa na linha que tem a marca sdd:NNN: e vai até a linha com a
+# marca de outra feature (exclusive) ou o fim do arquivo. Assim, testes que
+# outra feature acrescenta no mesmo arquivo não mudam o hash desta.
+sdd_blocos_de_teste() {
+  awk -v n="$2" '
+    {
+      if (match($0, /sdd:[0-9][0-9][0-9]:/)) {
+        dentro = (substr($0, RSTART + 4, 3) == n)
+      }
+      if (dentro) print
+    }
+  ' "$1"
+}
+
 # sdd_hash_artefato <raiz> <feature> <artefato>
 # Artefatos: spec.md, plano.md (inclui contratos/), tarefas.md, testes, auditoria.md
 sdd_hash_artefato() {
@@ -247,7 +275,10 @@ sdd_hash_artefato() {
       local num="${feature%%-*}" f lista
       lista="$(sdd_testes_da_feature "$raiz" "$num")"
       [ -n "$lista" ] || return 1
-      printf '%s\n' "$lista" | while IFS= read -r f; do printf '== %s\n' "$f"; cat "$raiz/$f"; done | sdd_hash_stdin
+      printf '%s\n' "$lista" | while IFS= read -r f; do
+        printf '== %s\n' "$f"
+        sdd_blocos_de_teste "$raiz/$f" "$num"
+      done | sdd_hash_stdin
       ;;
     plano.md)
       [ -f "$dir/plano.md" ] || return 1
@@ -264,37 +295,120 @@ sdd_hash_artefato() {
   esac
 }
 
+# sdd_indice_fase <fase>: posição na ordem (cancelada fica de fora).
+sdd_indice_fase() {
+  local i=0 x
+  for x in $SDD_FASES; do
+    [ "$x" = "$1" ] && { echo "$i"; return; }
+    i=$((i + 1))
+  done
+  echo 99
+}
+
+# sdd_fase_do_artefato <artefato>: a fase em que o artefato é aprovado.
+sdd_fase_do_artefato() {
+  case "$1" in
+    spec.md) echo especificacao ;;
+    plano.md) echo plano ;;
+    tarefas.md) echo tarefas ;;
+    testes) echo red ;;
+    entrega) echo green ;;
+    seguranca.md) echo seguranca ;;
+    auditoria.md) echo auditoria ;;
+    *) echo especificacao ;;
+  esac
+}
+
 # sdd_ultima_aprovacao <raiz> <feature> <artefato>: imprime o hash aprovado.
+# Uma reabertura ("| reabertura | fase=X |") invalida as aprovações dos
+# artefatos da fase X em diante.
 sdd_ultima_aprovacao() {
-  local arquivo
+  local arquivo alvo idx_art
   arquivo="$(sdd_arquivo_historico "$1" "$2")"
   [ -f "$arquivo" ] || return 0
-  { grep -F "| aprovacao | $3 | hash=" "$arquivo" || true; } | tail -1 | sed -E 's/.*\| hash=([0-9a-f]+).*/\1/'
+  alvo="$3"
+  idx_art="$(sdd_indice_fase "$(sdd_fase_do_artefato "$alvo")")"
+  local ordem="$SDD_FASES"
+  awk -v alvo="$alvo" -v idx_art="$idx_art" -v ordem="$ordem" '
+    BEGIN { n = split(ordem, f, " "); for (i = 1; i <= n; i++) pos[f[i]] = i - 1 }
+    index($0, "| aprovacao | " alvo " | hash=") {
+      # A decisão "corrigir" registra a leitura, mas não aprova: anula a anterior.
+      if (index($0, "| decisao: corrigir")) { hash = ""; next }
+      h = $0; sub(/.*\| hash=/, "", h); sub(/[^0-9a-f].*/, "", h); hash = h; next
+    }
+    index($0, "| reabertura | fase=") {
+      r = $0; sub(/.*\| reabertura \| fase=/, "", r); sub(/[^a-z].*/, "", r)
+      if ((r in pos) && pos[r] <= idx_art) hash = ""
+    }
+    END { if (hash != "") print hash }
+  ' "$arquivo"
+}
+
+# sdd_aprovado_ok <raiz> <feature> <artefato>: 0 se aprovado e inalterado.
+sdd_aprovado_ok() {
+  local atual aprovado
+  aprovado="$(sdd_ultima_aprovacao "$1" "$2" "$3")"
+  [ -n "$aprovado" ] || return 1
+  [ "$3" = "entrega" ] && return 0
+  atual="$(sdd_hash_artefato "$1" "$2" "$3" 2>/dev/null || true)"
+  [ "$aprovado" = "$atual" ]
+}
+
+# sdd_pendencias_para_pronta <raiz> <feature>: imprime o que impede a feature
+# de ficar pronta (uma linha por motivo). Nada impresso significa liberada.
+sdd_pendencias_para_pronta() {
+  local raiz="$1" f="$2" nivel seg art
+  nivel="$(sdd_feature_ler "$raiz" "$f" nivel)"
+  seg="$(sdd_feature_ler "$raiz" "$f" seguranca)"
+  for art in spec.md testes; do
+    sdd_aprovado_ok "$raiz" "$f" "$art" || echo "$art não está aprovado ou mudou depois da aprovação"
+  done
+  if [ "$nivel" = "2" ]; then
+    sdd_aprovado_ok "$raiz" "$f" plano.md || echo "plano.md não está aprovado ou mudou depois da aprovação"
+  fi
+  if [ "$seg" = "obrigatoria" ]; then
+    sdd_aprovado_ok "$raiz" "$f" seguranca.md || echo "seguranca.md não está aprovado (a revisão de segurança é obrigatória nesta feature)"
+  fi
+  return 0
 }
 
 # sdd_artefato_da_fase <fase>: o que /sdd:aprovar aprova em cada fase.
+# (Na fase green, a aprovação é da "entrega", tratada à parte.)
 sdd_artefato_da_fase() {
   case "$1" in
     especificacao|clarificacao) echo spec.md ;;
     plano) echo plano.md ;;
     tarefas) echo tarefas.md ;;
     red) echo testes ;;
+    seguranca) echo seguranca.md ;;
     auditoria) echo auditoria.md ;;
     *) echo "" ;;
   esac
 }
 
-# sdd_proxima_fase <fase> <nivel>: para onde a aprovação leva.
+# sdd_proxima_fase <fase> <nivel> [tipo]: para onde a aprovação leva.
+# Depois da revisão de segurança: auditoria no nível 2, pronta no nível 1.
 sdd_proxima_fase() {
   case "$1" in
-    especificacao|clarificacao) if [ "$2" = "2" ]; then echo plano; else echo tarefas; fi ;;
+    especificacao|clarificacao)
+      if [ "${3:-}" = "hotfix" ]; then echo ""; elif [ "$2" = "2" ]; then echo plano; else echo tarefas; fi ;;
     plano) echo tarefas ;;
     tarefas) echo red ;;
     red) echo green ;;
-    green|auditoria) echo concluida ;;
+    seguranca) if [ "$2" = "2" ]; then echo auditoria; else echo pronta; fi ;;
+    auditoria) echo pronta ;;
     *) echo "" ;;
   esac
 }
+
+sdd_fase_protegida() {
+  local x
+  for x in $SDD_FASES_PROTEGIDAS; do [ "$x" = "$1" ] && return 0; done
+  return 1
+}
+
+# Fases em que a feature já saiu da construção (entregue ou a caminho).
+sdd_fase_entregue() { case "$1" in pronta|homologacao|producao) return 0 ;; esac; return 1; }
 
 sdd_fase_valida() {
   local f="$1" x
@@ -461,9 +575,66 @@ sdd_aguarda_aprovacao() {
   local raiz="$1" f="$2" fase art atual aprovado
   fase="$(sdd_feature_ler "$raiz" "$f" fase)"
   art="$(sdd_artefato_da_fase "$fase")"
+  # Hotfix: a spec é retroativa e precisa ser aprovada antes da entrega.
+  if [ "$(sdd_feature_ler "$raiz" "$f" tipo)" = "hotfix" ] && [ "$fase" = "green" ]; then
+    sdd_aprovado_ok "$raiz" "$f" spec.md || { printf 'spec.md\n'; return 0; }
+  fi
   [ -n "$art" ] || return 0
   atual="$(sdd_hash_artefato "$raiz" "$f" "$art" 2>/dev/null || true)"
   [ -n "$atual" ] || return 0
   aprovado="$(sdd_ultima_aprovacao "$raiz" "$f" "$art")"
   [ "$aprovado" = "$atual" ] || printf '%s\n' "$art"
 }
+
+# ---------------------------------------------------------------------------
+# Áreas sensíveis
+# ---------------------------------------------------------------------------
+
+# sdd_arquivos_sensiveis <raiz> [ref]: arquivos alterados (desde ref, ou só os
+# não commitados) que casam com areas_sensiveis do config.
+sdd_arquivos_sensiveis() {
+  local raiz="$1" ref="${2:-}" globs f
+  globs="$(sdd_config "$raiz" areas_sensiveis "")"
+  [ -n "$globs" ] || return 0
+  git -C "$raiz" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+  {
+    [ -n "$ref" ] && git -C "$raiz" diff --name-only "$ref...HEAD" 2>/dev/null
+    git -C "$raiz" diff --name-only HEAD 2>/dev/null
+    git -C "$raiz" ls-files --others --exclude-standard 2>/dev/null
+  } | sort -u | while IFS= read -r f; do
+    [ -n "$f" ] && sdd_casa_glob "$f" "$globs" && printf '%s\n' "$f"
+  done
+  return 0
+}
+
+# ---------------------------------------------------------------------------
+# Campos de tabela em markdown ("| Campo | valor |")
+# ---------------------------------------------------------------------------
+
+# sdd_md_campo <arquivo> <campo>
+sdd_md_campo() {
+  [ -f "$1" ] || return 0
+  { grep -E "^\| $2 \|" "$1" || true; } | head -1 | sed -E "s/^\| $2 \| (.*) \|$/\1/"
+}
+
+# sdd_md_gravar_campo <arquivo> <campo> <valor>
+sdd_md_gravar_campo() {
+  local tmp="$1.tmp.$$"
+  awk -v n="$2" -v v="$3" '$0 ~ ("^\\| " n " \\|") && !feito { print "| " n " | " v " |"; feito = 1; next } { print }' "$1" > "$tmp"
+  mv "$tmp" "$1"
+}
+
+# sdd_md_sem_lacunas <arquivo>: 0 se não há campos {{...}} por preencher.
+sdd_md_sem_lacunas() { [ -f "$1" ] && ! grep -q '{{' "$1"; }
+
+# sdd_template <raiz> <nome>: template local do projeto ou o do plugin.
+sdd_template() {
+  if [ -f "$1/.sdd/templates/$2" ]; then
+    printf '%s\n' "$1/.sdd/templates/$2"
+  else
+    printf '%s\n' "$(sdd_raiz_plugin)/skills/metodologia/templates/$2"
+  fi
+}
+
+# sdd_semver_valida <versão>
+sdd_semver_valida() { printf '%s' "$1" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; }

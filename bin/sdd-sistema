@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# sdd-sistema: a spec viva do sistema (sistema/<capacidade>.md).
+#
+# As specs das features (specs/NNN/) contam o que MUDOU. A spec do sistema diz
+# o que o sistema FAZ HOJE, organizada por capacidade (cadastro, autenticação,
+# faturamento...). Quando uma feature fica pronta, os requisitos dela são
+# consolidados na capacidade que ela toca.
+#
+# Uso:
+#   sdd-sistema listar                         capacidades, com a última feature consolidada
+#   sdd-sistema nova <capacidade> "título"     cria sistema/<capacidade>.md
+#   sdd-sistema ver <capacidade>               mostra o arquivo
+#   sdd-sistema consolidar <NNN-slug> [--sem-mudanca] [--nota "texto"]
+#                                              registra que a feature foi consolidada nas suas
+#                                              capacidades (o texto é escrito antes, pelo agente)
+#   sdd-sistema pendentes                      features prontas (ou além) ainda não consolidadas
+#   sdd-sistema consolidada <NNN-slug>         saída 0 se a feature já foi consolidada
+set -euo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+RAIZ="$(sdd_raiz_projeto)"
+[ -d "$RAIZ/.sdd" ] || { echo "sdd-sistema: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+PASTA="$(sdd_pasta_sistema "$RAIZ")"
+DIR="$RAIZ/$PASTA"
+
+valida_nome() {
+  printf '%s' "$1" | grep -qE '^[a-z0-9][a-z0-9-]*$' || {
+    echo "sdd-sistema: nome de capacidade inválido '$1' (use minúsculas, números e hífen, ex.: cadastro-de-clientes)" >&2; exit 1; }
+}
+
+consolidada() { # consolidada <feature>
+  local h
+  h="$(sdd_arquivo_historico "$RAIZ" "$1")"
+  [ -f "$h" ] && grep -q '| consolidacao |' "$h"
+}
+
+cmd="${1:-listar}"
+shift || true
+
+case "$cmd" in
+  listar)
+    [ -d "$DIR" ] || { echo "Nenhuma capacidade registrada ainda ($PASTA/ não existe)."; exit 0; }
+    n=0
+    for arq in "$DIR"/*.md; do
+      [ -f "$arq" ] || continue
+      [ "$(basename "$arq")" = "README.md" ] && continue
+      n=$((n + 1))
+      cap="$(basename "$arq" .md)"
+      ult="$(sdd_md_campo "$arq" "Última feature")"
+      printf '%-28s %s · última feature: %s\n' "$cap" "$(head -1 "$arq" | sed 's/^# //')" "${ult:-nenhuma}"
+    done
+    [ "$n" -gt 0 ] || echo "Nenhuma capacidade registrada ainda."
+    ;;
+
+  nova)
+    cap="${1:?uso: sdd-sistema nova <capacidade> \"título\"}"; titulo="${2:?informe o título}"
+    valida_nome "$cap"
+    mkdir -p "$DIR"
+    [ ! -f "$DIR/$cap.md" ] || { echo "sdd-sistema: $PASTA/$cap.md já existe." >&2; exit 1; }
+    t="$(sdd_template "$RAIZ" capacidade.md)"
+    titulo_sed="$(printf '%s' "$titulo" | sed 's/[\/&|]/\\&/g')"
+    sed -e "s/{{CAPACIDADE}}/$cap/g" -e "s/{{TITULO}}/$titulo_sed/g" -e "s/{{DATA}}/$(date +%Y-%m-%d)/g" "$t" > "$DIR/$cap.md"
+    if [ ! -f "$DIR/README.md" ]; then
+      cp "$(sdd_template "$RAIZ" sistema-readme.md)" "$DIR/README.md"
+    fi
+    sdd_registrar "$RAIZ" "" sistema "capacidade $cap criada: $titulo"
+    echo "Capacidade criada: $PASTA/$cap.md"
+    ;;
+
+  ver)
+    cap="${1:?uso: sdd-sistema ver <capacidade>}"
+    [ -f "$DIR/$cap.md" ] || { echo "sdd-sistema: $PASTA/$cap.md não existe." >&2; exit 1; }
+    cat "$DIR/$cap.md"
+    ;;
+
+  consolidar)
+    f="${1:?uso: sdd-sistema consolidar <NNN-slug> [--sem-mudanca] [--nota texto]}"; shift
+    sem_mudanca=0; nota=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --sem-mudanca) sem_mudanca=1 ;;
+        --nota) nota="${2:?}"; shift ;;
+        *) echo "sdd-sistema consolidar: opção desconhecida $1" >&2; exit 1 ;;
+      esac
+      shift
+    done
+    [ -d "$RAIZ/$(sdd_pasta_specs "$RAIZ")/$f" ] || { echo "sdd-sistema: a feature $f não existe." >&2; exit 1; }
+    fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    sdd_fase_entregue "$fase" || { echo "sdd-sistema: a feature $f está em '$fase'. Só se consolida uma feature pronta (ou além)." >&2; exit 1; }
+    num="${f%%-*}"
+    if [ "$sem_mudanca" -eq 1 ]; then
+      sdd_registrar "$RAIZ" "$f" consolidacao "nenhuma mudança na spec do sistema${nota:+ | nota: $nota}"
+      echo "Registrado: a feature $f não muda a spec do sistema."
+      exit 0
+    fi
+    caps="$(sdd_feature_ler "$RAIZ" "$f" capacidade)"
+    [ -n "$caps" ] || { echo "sdd-sistema: a feature $f não tem capacidade definida. Use 'sdd-estado definir capacidade=nome' (com a feature ativa) ou --sem-mudanca." >&2; exit 1; }
+    IFS=',' read -r -a lista <<< "$caps"
+    for cap in "${lista[@]}"; do
+      arq="$DIR/$cap.md"
+      [ -f "$arq" ] || { echo "sdd-sistema: $PASTA/$cap.md não existe. Crie com 'sdd-sistema nova $cap \"título\"'." >&2; exit 1; }
+      grep -qE "(origem: |\| )$num(/| \|)" "$arq" || {
+        echo "sdd-sistema: $PASTA/$cap.md não cita a feature $num. Consolide os requisitos (com 'origem: $num/RF-NNN') antes de registrar." >&2; exit 1; }
+    done
+    for cap in "${lista[@]}"; do
+      arq="$DIR/$cap.md"
+      if ! grep -qE "^\| [0-9-]+ \| $num \|" "$arq"; then
+        tit="$(head -1 "$RAIZ/$(sdd_pasta_specs "$RAIZ")/$f/spec.md" 2>/dev/null | sed 's/^# *//; s/^Spec [0-9][0-9][0-9][^:]*: *//; s/|/-/g')"
+        case "$tit" in ""|Spec|"Spec "*) tit="$f" ;; esac
+        printf '| %s | %s | %s |\n' "$(date +%Y-%m-%d)" "$num" "$tit" >> "$arq"
+      fi
+      sdd_md_gravar_campo "$arq" "Última feature" "$f"
+      sdd_md_gravar_campo "$arq" "Atualizada em" "$(date +%Y-%m-%d)"
+      h="$(sdd_hash_stdin < "$arq")"
+      sdd_registrar "$RAIZ" "$f" consolidacao "$PASTA/$cap.md | hash=$h${nota:+ | nota: $nota}"
+      echo "Consolidada: $f em $PASTA/$cap.md"
+    done
+    ;;
+
+  consolidada)
+    f="${1:?uso: sdd-sistema consolidada <NNN-slug>}"
+    consolidada "$f"
+    ;;
+
+  pendentes)
+    for f in $(sdd_features "$RAIZ"); do
+      fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+      sdd_fase_entregue "$fase" || continue
+      consolidada "$f" || printf '%s\t%s\n' "$f" "$fase"
+    done
+    ;;
+
+  -h|--ajuda|--help|ajuda)
+    sed -n '2,19p' "$0"
+    ;;
+
+  *)
+    echo "sdd-sistema: comando desconhecido '$cmd'. Use --ajuda." >&2
+    exit 1
+    ;;
+esac

@@ -4,8 +4,9 @@
 
 Mostra a situação do projeto num **quadro**: a sprint atual com o progresso e os
 dias restantes, as features em cada coluna (especificação, planejamento,
-implementação, auditoria), quantas estão concluídas, o topo do backlog e quanto
-está esperando por você. Termina recomendando um único próximo comando. Não
+implementação, revisão, pronta, homologação), quantas estão em produção, a
+release em andamento, os incidentes abertos, o topo do backlog e quanto está
+esperando por você. Termina recomendando um único próximo comando. Não
 altera nada.
 
 ## Quando usar
@@ -26,7 +27,7 @@ terminal com `sdd-status`.
 ```
 Sprint 2026-S44 (ativa) · 2026-10-26 a 2026-11-06 · faltam 4 dias
 Objetivo: clientes recuperam o acesso sozinhos
-Progresso: 1/3 itens concluídos · 11/19 tarefas
+Progresso: 1/3 itens entregues · 11/19 tarefas
 
 QUADRO   ▶ feature ativa   ★ na sprint atual
 Especificação
@@ -34,16 +35,27 @@ Especificação
 Planejamento
   ★ 004-convite-de-membros             n2 · plano · aguarda aprovação
 Implementação
-  ▶ 001-redefinicao-de-senha           n2 · green · 6/8 tarefas
-Auditoria
-    (vazia)
-Concluída: 2 feature(s)
+  ▶ 005-exportar-csv                   n1 · green · 3/5 tarefas
+Revisão
+  ★ 006-limite-de-tentativas           n2 · seguranca · aguarda aprovação
+Pronta
+    002-ultimo-acesso                  n1 · pronta · não consolidada
+Homologação
+    001-redefinicao-de-senha           n2 · homologacao · release 1.2.0
+Produção: 14 feature(s) · Cancelada: 1
+
+RELEASE
+  Release 1.2.0 (homologacao, normal) · objetivo: autoatendimento de senha
+  próximo: executar o roteiro e 'sdd-release aceitar 1.2.0 --por "Nome"'
+
+INCIDENTES ABERTOS: 1
+  INC-003  S3  mitigado   Exportação lenta para relatórios grandes
 
 BACKLOG: 5 item(ns) aberto(s)
-  B-014  alta   n2  Exportar relatório de vendas em CSV
+  B-014  alta   n2  Login com conta Google
   ...
 
-ESPERANDO VOCÊ: 4 item(ns) (/sdd:pendencias)
+ESPERANDO VOCÊ: 6 item(ns) (/sdd:pendencias)
 ```
 
 Cada feature guarda a própria fase, então o quadro mostra todas ao mesmo tempo,

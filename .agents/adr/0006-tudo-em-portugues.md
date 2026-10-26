@@ -16,5 +16,5 @@ passa a falar duas línguas.
 
 ## Consequências
 
-- Os nomes de fase não levam acento (`especificacao`, `concluida`) para funcionar em qualquer shell e sistema de arquivos.
+- Os nomes de fase não levam acento (`especificacao`, `seguranca`, `homologacao`, `producao`) para funcionar em qualquer shell e sistema de arquivos.
 - Mudar qualquer nome é mudança de contrato público (versão maior). Ver `CLAUDE.md`.

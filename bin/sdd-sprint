@@ -180,7 +180,7 @@ case "$cmd" in
       total=$((total + 1))
       f="$(resolve "$item")"
       fase=""; [ -n "$f" ] && fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
-      if [ "$fase" = "concluida" ]; then
+      if sdd_fase_entregue "$fase"; then
         entregues=$((entregues + 1)); resumo="$resumo- ✓ ${f}"$'\n'
       else
         resumo="$resumo- ✗ ${f:-$item} (${fase:-sem spec})"$'\n'
@@ -208,7 +208,7 @@ case "$cmd" in
       total=$((total + 1))
       f="$(resolve "$item")"
       if [ -n "$f" ]; then
-        [ "$(sdd_feature_ler "$RAIZ" "$f" fase)" = "concluida" ] && concl=$((concl + 1))
+        sdd_fase_entregue "$(sdd_feature_ler "$RAIZ" "$f" fase)" && concl=$((concl + 1))
         p="$(sdd_tarefas_progresso "$RAIZ" "$f")"; tf=$((tf + ${p% *})); tt=$((tt + ${p#* }))
       fi
     done

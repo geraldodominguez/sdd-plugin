@@ -24,6 +24,15 @@ testes), diz que não precisa de spec.
 
 O [`/sdd:iniciar`](iniciar.md) rodado no repositório.
 
+## Capacidade e segurança
+
+Antes de escrever, ela decide duas coisas com você:
+
+| Decisão | Para quê |
+|---|---|
+| **Capacidade** (cadastro, autenticação, faturamento...) | ler o comportamento vigente em `sistema/<capacidade>.md` e, quando a feature ficar pronta, consolidar nela |
+| **Revisão de segurança** obrigatória ou dispensada | sempre obrigatória no nível 2; no nível 1, quando a mudança toca autenticação, dados pessoais, pagamentos ou as áreas sensíveis do projeto |
+
 ## A spec é a fonte de verdade
 
 Tudo que vem depois deriva dela: o plano, as tarefas, os testes, a auditoria.

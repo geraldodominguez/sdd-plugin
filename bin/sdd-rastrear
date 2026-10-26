@@ -9,6 +9,7 @@
 #   3. todo CA tem ao menos um teste com a marca  sdd:NNN:CA-XXX;
 #   4. toda tarefa referencia ao menos um requisito ou critério;
 #   5. as tarefas só citam IDs que existem na spec.
+# Num hotfix sem tarefas.md, as verificações de tarefa (1, 2, 4, 5) não se aplicam.
 #
 # Código de saída: 0 sem lacunas, 3 com lacunas, 1 erro de uso.
 set -euo pipefail
@@ -48,7 +49,9 @@ lacunas=0
 relato=()
 anotar() { relato+=("$1"); }
 
-if [ ! -f "$TAREFAS" ]; then
+if [ ! -f "$TAREFAS" ] && [ "$(sdd_feature_ler "$RAIZ" "$FEATURE" tipo)" = "hotfix" ]; then
+  : # Hotfix: sem tarefas; vale a ligação critério -> teste de regressão.
+elif [ ! -f "$TAREFAS" ]; then
   anotar "! tarefas.md ainda não existe: a ligação requisito → tarefa não pode ser verificada."
   lacunas=$((lacunas + 1))
 else

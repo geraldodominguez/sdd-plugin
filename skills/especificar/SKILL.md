@@ -3,7 +3,7 @@ name: especificar
 description: Abre uma feature e escreve a spec (o quê e por quê), a partir de um pedido ou de um item do backlog. Classifica o nível de rigor, mapeia o código afetado e lista o que precisa ser esclarecido, sem decidir regra de negócio por você.
 argument-hint: "<descrição da mudança> | B-NNN"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-status *), Bash(sdd-rastrear *), Read, Glob, Grep, Edit, Write
+allowed-tools: Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-sistema *), Bash(sdd-status *), Bash(sdd-rastrear *), Read, Glob, Grep, Edit, Write
 ---
 
 # /sdd:especificar
@@ -33,30 +33,42 @@ contexto.
      "resolvido como nível 0". Não crie feature.
    - **Nível 1 ou 2:** siga.
 
-3. **Crie a feature** com `sdd-estado nova "<título curto>" --nivel <N>`,
-   acrescentando `--origem B-NNN` quando vier do backlog (isso promove o item).
-   A feature nasce na fase `especificacao` e vira a feature ativa.
+3. **Defina a capacidade e a segurança.**
+   - **Capacidade:** qual parte do sistema esta mudança toca? Veja as que
+     existem com `sdd-sistema listar` e leia a capacidade escolhida em
+     `sistema/<capacidade>.md`: ela diz o que o sistema faz **hoje**, e a spec
+     vai descrever a diferença. Sem capacidade adequada, proponha um nome novo.
+   - **Revisão de segurança:** obrigatória no nível 2. No nível 1, proponha
+     `obrigatoria` se a mudança toca autenticação, autorização, dados pessoais,
+     pagamentos, criptografia ou as `areas_sensiveis` do `.sdd/config.yml`.
 
-4. **Contexto, em projeto existente.**
+4. **Crie a feature** com `sdd-estado nova "<título curto>" --nivel <N>
+   --capacidade <nome> [--seguranca obrigatoria]`, acrescentando
+   `--origem B-NNN` quando vier do backlog (isso promove o item). A feature
+   nasce na fase `especificacao` e vira a feature ativa.
+
+5. **Contexto, em projeto existente.**
    - Nível 2: chame a ferramenta Agent com o subagent `mapeador-de-contexto`,
      passando o pedido e o destino `specs/NNN-slug/contexto.md`. Ele grava o
      mapa e devolve um resumo curto.
    - Nível 1: uma busca sua (Grep, Glob) basta. Cite os arquivos afetados no
      objetivo.
 
-5. **Escreva a spec** seguindo a metodologia:
+6. **Escreva a spec** seguindo a metodologia:
    - só o quê e por quê, sem tecnologia;
    - requisitos em EARS, com IDs `RF-NNN` e `RNF-NNN`;
    - critérios em Dado, Quando, Então, com IDs `CA-NNN`, cobrindo caminho
      feliz, erro e borda de cada RF;
    - fora do escopo explícito;
+   - no nível 2, a seção "Impacto na spec do sistema" (o que acrescenta, muda ou
+     remove do comportamento vigente da capacidade);
    - **tudo que você não sabe vira `[PRECISA ESCLARECER: ...]`**; não presuma
      regra de negócio;
    - apague os campos `{{...}}` e os exemplos não usados.
 
-6. **Revise** com o `QUALIDADE-DA-SPEC.md` e corrija o que falhar.
+7. **Revise** com o `QUALIDADE-DA-SPEC.md` e corrija o que falhar.
 
-7. **Gate.** Apresente:
+8. **Gate.** Apresente:
    - um resumo de três a cinco linhas (objetivo, quantos RFs e CAs, escopo);
    - os marcadores em aberto;
    - o próximo comando:

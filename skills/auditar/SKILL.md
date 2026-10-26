@@ -12,8 +12,12 @@ Ref base: `$ARGUMENTS`
 
 ## Processo
 
-1. **Pré-condições.** `sdd-estado ver`. A feature precisa ter passado pela
-   fase green. Rode `sdd-estado definir fase=auditoria`.
+1. **Pré-condições.** `sdd-estado ver`.
+   - A feature precisa ter terminado a fase green (todas as tarefas concluídas).
+   - Se a revisão de segurança é obrigatória (`seguranca=obrigatoria`, sempre no
+     nível 2), ela precisa estar aprovada: `sdd-estado aprovado seguranca.md`
+     deve sair com 0. Senão, diga ao usuário para rodar `/sdd:seguranca` e pare.
+   - Rode `sdd-estado definir fase=auditoria`.
 
 2. **Defina a base da comparação.** Use `$ARGUMENTS`, se veio. Senão, tente
    `git merge-base HEAD main` (ou `master`). Sem resultado, pergunte ao usuário.
@@ -37,8 +41,8 @@ Ref base: `$ARGUMENTS`
 
    | Opção | Efeito |
    |---|---|
-   | Aprovar | a feature é concluída; sugira o commit final e o merge |
-   | Aprovar a delta spec | a spec absorve a mudança, é reaprovada, e a feature é concluída |
+   | Aprovar | a feature fica pronta e é consolidada na spec do sistema; sugira o commit final e o merge |
+   | Aprovar a delta spec | a spec absorve a mudança, é reaprovada, e a feature fica pronta |
    | Corrigir o código | a feature volta ao green; depois, `/sdd:implementar` e `/sdd:auditar` de novo |
 
    Diga ao usuário para rodar `/sdd:aprovar` com a decisão. Não registre a

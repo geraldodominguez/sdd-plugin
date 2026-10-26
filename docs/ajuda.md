@@ -3,8 +3,8 @@
 ## O que faz
 
 Diz qual comando ou fluxo do SDD serve para a situação em que você está, entre
-os comandos de fluxo (que levam uma feature do pedido à entrega) e os de
-acompanhamento (que mostram a situação e organizam o trabalho). Ela
+os comandos do fluxo da feature, da entrega, da manutenção em produção e do
+acompanhamento do trabalho. Ela
 lê o estado do projeto antes de recomendar e confere o `SKILL.md` de um comando
 antes de afirmar o que ele faz, em vez de responder de memória.
 
@@ -23,11 +23,11 @@ que parece errado, mudança que cresceu no meio) ou para ver o mapa inteiro.
 
 ## O mapa que ela carrega
 
-O **fluxo principal** (especificar, clarificar, planejar, tarefas, implementar,
-auditar, com o aprovar em cada gate), as **bifurcações** que encurtam esse
-fluxo (há marcadores em aberto? qual o nível?), os **comandos de
-acompanhamento** (status, pendencias, retomar, backlog, sprint) e uma tabela de
-situações comuns com o comando para cada uma.
+Quatro grupos de comandos: o **fluxo da feature** (especificar, clarificar,
+planejar, tarefas, implementar, segurança, auditar, com o aprovar em cada
+gate), a **entrega** (sistema e release), a **manutenção** (incidente) e o
+**acompanhamento** (status, pendências, retomar, backlog, sprint), mais o
+pipeline. E uma tabela de situações comuns com o comando para cada uma.
 
 ## Está funcionando se
 

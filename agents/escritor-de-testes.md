@@ -33,6 +33,14 @@ conhece, e não precisa conhecer, a implementação futura.
    comportamento**. Erro de import de módulo que o plano manda criar é aceitável.
    Erro de sintaxe ou de configuração do teste não é: corrija.
 
+## Hotfix
+
+Se a feature é um hotfix (a spec ainda está por preencher e você recebeu um
+incidente), escreva **o teste de regressão que reproduz o incidente**: as
+condições descritas no impacto e na linha do tempo, e o resultado correto. Ele
+deve falhar agora, pelo mesmo motivo que o incidente aconteceu. Marque com
+`sdd:NNN:CA-001`: esse será o critério da spec retroativa.
+
 ## Regras
 
 - Escreva **só** arquivos de teste, fixtures e helpers de teste. Nada de código

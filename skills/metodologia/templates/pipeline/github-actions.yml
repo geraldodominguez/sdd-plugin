@@ -1,0 +1,65 @@
+# Pipeline SDD para GitHub Actions. Gerado a partir do template do plugin SDD
+# (/sdd:pipeline). Ajuste a instalação da stack e os comandos ao seu projeto.
+#
+# Estágios: verificar e seguranca (todo push e PR), homologacao (push na main),
+# producao (tag vX.Y.Z, só se a release tiver o go registrado).
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+
+env:
+  SDD_VERSAO: v0.1.0   # versão fixa do plugin SDD usada no CI
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # {{instalação da stack, ex.: actions/setup-node@v4 e npm ci}}
+      - name: Lint
+        run: {{comando_lint}}
+      - name: Testes
+        run: {{comando_teste}}
+      - name: Processo SDD (rastreabilidade e aprovações)
+        run: |
+          git clone --depth 1 --branch "$SDD_VERSAO" https://github.com/geraldodominguez/sdd-plugin /tmp/sdd
+          /tmp/sdd/bin/sdd-verificar
+
+  seguranca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Varreduras de segurança
+        run: {{comando_seguranca}}
+
+  homologacao:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [verificar, seguranca]
+    runs-on: ubuntu-latest
+    environment: homologacao
+    steps:
+      - uses: actions/checkout@v4
+      - name: Implantar em homologação
+        run: {{comando_deploy_homologacao}}
+
+  producao:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [verificar, seguranca]
+    runs-on: ubuntu-latest
+    environment: producao   # configure revisores obrigatórios neste ambiente
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferir o go/no-go da release
+        run: |
+          git clone --depth 1 --branch "$SDD_VERSAO" https://github.com/geraldodominguez/sdd-plugin /tmp/sdd
+          /tmp/sdd/bin/sdd-release pode-implantar "${GITHUB_REF_NAME#v}"
+      - name: Implantar em produção
+        run: {{comando_deploy_producao}}
+      - name: Verificação pós-implantação
+        run: {{comando_verificacao_producao}}

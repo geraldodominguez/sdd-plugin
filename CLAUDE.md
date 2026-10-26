@@ -34,14 +34,22 @@ comando que não existe, ou ignora um que existe, mente.
 
 Ficam em `agents/<nome>.md`. Todo subagent aparece no `README.md` (seção
 Subagents), na tabela do modo de falha #5 e na página da skill que o chama.
+Hoje são seis: `mapeador-de-contexto` (especificar), `arquiteto-de-contratos`
+(planejar), `escritor-de-testes` (implementar), `revisor-de-seguranca`
+(seguranca), `auditor-de-drift` (auditar) e `testador-de-sistema` (release).
 
 ## Formatos rastreáveis
 
 A linha de tarefa, a linha de item de backlog, a marca de teste
-`sdd:NNN:CA-XXX`, os IDs (`RF`, `RNF`, `CA`, `T`, `B`), as fases, a linha do
-histórico, a estrutura do arquivo de sprint e as chaves de `.sdd/config.yml`,
-`.sdd/estado` e `specs/NNN/estado` são **contrato público**. Mudar qualquer um exige atualizar, juntos: `bin/`, `lib/`,
-`scripts/`, `tests/`, templates, skills, documentação e `CHANGELOG.md`. É uma
+`sdd:NNN:CA-XXX`, os IDs (`RF`, `RNF`, `CA`, `T`, `B`, `H`, `INC`, `S`), as
+fases da feature e as situações da release e do incidente, a linha do
+histórico, a origem na spec do sistema (`origem: NNN/RF-NNN`), a linha do
+roteiro de homologação, a estrutura do arquivo de sprint, de release e de
+incidente, e as chaves de `.sdd/config.yml`, `.sdd/estado`, `specs/NNN/estado`
+e `releases/<versão>/estado` são **contrato público**. Mudar qualquer um exige atualizar, juntos: `bin/`, `lib/`,
+`scripts/`, `tests/` (inclusive o `simular-ciclo.sh`), templates, skills,
+documentação (em especial `docs/referencia/ciclo-de-vida.md` e
+`docs/referencia/utilitarios.md`) e `CHANGELOG.md`. É uma
 mudança incompatível (versão maior).
 
 ## Scripts

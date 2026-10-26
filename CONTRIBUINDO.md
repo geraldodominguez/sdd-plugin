@@ -15,13 +15,16 @@ skills/<nome>/
   SKILL.md             uma skill por pasta
   agents/openai.yaml   metadados para o Codex
 skills/metodologia/    a skill invocada pelo modelo, com as referências e os templates
-agents/                os quatro subagents
+                       (inclusive os de release, incidente e pipeline)
+agents/                os seis subagents
 hooks/hooks.json       registra os hooks PreToolUse
 scripts/               guarda-edicoes.sh, guarda-commits.sh
-bin/                   sdd-iniciar, sdd-estado, sdd-backlog, sdd-sprint, sdd-status,
-                       sdd-pendencias, sdd-rastrear (vão para o PATH)
+bin/                   sdd-iniciar, sdd-estado, sdd-sistema, sdd-release, sdd-incidente,
+                       sdd-backlog, sdd-sprint, sdd-status, sdd-pendencias, sdd-rastrear,
+                       sdd-verificar (vão para o PATH)
 lib/sdd-comum.sh       funções compartilhadas por bin/ e scripts/
-tests/                 testes dos utilitários e hooks, e a checagem de travessões
+tests/                 testes dos utilitários e hooks, a simulação do ciclo inteiro
+                       e a checagem de travessões
 docs/                  uma página por skill, e docs/referencia/ com os guias
 exemplos/              os artefatos de uma feature completa
 .agents/               convenções do repositório e ADRs do próprio plugin
@@ -35,6 +38,7 @@ git clone https://github.com/geraldodominguez/sdd-plugin.git
 cd sdd-plugin
 
 tests/rodar-testes.sh                    # utilitários e hooks
+tests/simular-ciclo.sh                   # o ciclo inteiro num projeto descartável (--manter para inspecionar)
 tests/sem-travessoes.sh                  # prosa sem travessões
 shellcheck -x -S warning bin/* scripts/*.sh lib/*.sh tests/*.sh
 claude plugin validate .                 # estrutura do plugin (ver CLAUDE.md sobre o --strict)
@@ -59,8 +63,16 @@ Toda mudança em `bin/`, `lib/` ou `scripts/` vem com teste em
 `tests/rodar-testes.sh`. O arquivo já roda os testes de hook com os três
 leitores de JSON (jq, python e expressão regular).
 
+Se a mudança mexe em fases, transições ou gates, rode também o
+`tests/simular-ciclo.sh`: ele percorre o processo inteiro (backlog, spec,
+plano, TDD, segurança, auditoria, consolidação, release, incidente com hotfix,
+sprint) e falha se alguma etapa não chegar ao estado esperado. Atualize a
+simulação, o [ciclo de vida](docs/referencia/ciclo-de-vida.md) e a
+[referência dos utilitários](docs/referencia/utilitarios.md) junto.
+
 ## Publicando uma versão
 
 1. Atualize `version` em `.claude-plugin/plugin.json` e o `CHANGELOG.md`.
 2. Rode os testes e o `claude plugin validate .`.
-3. Faça o commit e rode `claude plugin tag . --push`, que cria a tag `sdd--vX.Y.Z`.
+3. Atualize a versão fixada nos modelos de pipeline (`SDD_VERSAO` em `skills/metodologia/templates/pipeline/`).
+4. Faça o commit, crie a tag `vX.Y.Z` (`git tag vX.Y.Z && git push origin vX.Y.Z`) e publique a release no GitHub com o trecho do changelog. Os pipelines dos projetos clonam o plugin por essa tag.

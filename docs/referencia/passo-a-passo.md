@@ -2,13 +2,15 @@
 
 Este guia acompanha uma feature real, **redefinição de senha por e-mail**, num
 projeto existente, no nível 2 (fluxo completo), desde o pedido do cliente até a
-auditoria. Os artefatos que ela produz estão em
-[exemplos/](../../exemplos/).
+produção, e depois na manutenção, quando um incidente aparece. Os artefatos que
+ela produz estão em [exemplos/](../../exemplos/).
 
-> No nível 1 o caminho é o mesmo, sem o `/sdd:planejar` e sem a auditoria
-> obrigatória. Ver [níveis de rigor](niveis-de-rigor.md). Para a rotina de
+> No nível 1 o caminho é o mesmo, sem o `/sdd:planejar`, sem a auditoria
+> obrigatória e com a revisão de segurança só quando a feature toca área
+> sensível. Ver [níveis de rigor](niveis-de-rigor.md). Para a rotina de
 > acompanhamento (o que olhar todo dia), ver o
-> [guia de acompanhamento](acompanhamento.md).
+> [guia de acompanhamento](acompanhamento.md). Para o mapa do processo inteiro,
+> ver o [ciclo de vida](ciclo-de-vida.md).
 
 ## 0. Preparar o repositório, uma vez
 
@@ -17,8 +19,11 @@ auditoria. Os artefatos que ela produz estão em
 ```
 
 O agente pergunta o nível padrão e a proteção, cria a estrutura (com backlog e
-sprints), lê o projeto e rascunha a constituição só com o que observou. **A sua
-parte:** revisar a constituição, porque ela vale para todas as features. Depois,
+sprints, e a pasta `sistema/`), lê o projeto e rascunha a constituição só com
+o que observou. **A sua parte:** revisar a constituição, porque ela vale para
+todas as features, e preencher no `.sdd/config.yml` as `areas_sensiveis`
+(aqui, `src/auth/**`) e os comandos de entrega. Para o CI, rode
+`/sdd:pipeline` uma vez. Depois,
 faça commit de tudo (o `.sdd/estado`, pessoal, já fica fora do git).
 
 ## 1. Registrar o pedido no backlog
@@ -51,8 +56,10 @@ fora. Com a sua aprovação, cria `.sdd/sprints/2026-S44.md` e a inicia.
 /sdd:especificar B-001
 ```
 
-O agente lê o item, confirma o nível 2, cria `specs/001-redefinicao-de-senha/`
-(o item vira `[x]` no backlog e a spec registra `Origem: B-001`), pede ao
+O agente lê o item, confirma o nível 2, pergunta a **capacidade** do sistema
+que a feature muda (aqui, `autenticacao`), cria `specs/001-redefinicao-de-senha/`
+(o item vira `[x]` no backlog e a spec registra `Origem: B-001`), lê
+`sistema/autenticacao.md` para saber o que o sistema já faz, pede ao
 `mapeador-de-contexto` o mapa do código de autenticação e escreve a spec,
 marcando o que não sabe:
 
@@ -104,8 +111,12 @@ aprovação", e o `/sdd:planejar` se recusa a continuar até você aprovar de no
 ```
 
 O `arquiteto-de-contratos` decide os componentes, desenha os contratos (entidade,
-interfaces, OpenAPI, DDL), preenche a checagem contra a constituição e propõe um
-ADR: "guardar só o hash SHA-256 do token". Você revisa e roda `/sdd:aprovar`.
+interfaces, OpenAPI, DDL), preenche a checagem contra a constituição, as
+**ameaças** (enumeração de usuários, força bruta no token), o **plano de
+implantação e rollback** (a migration é aditiva, o rollback é desligar a rota) e
+a **observabilidade** (métrica de pedidos de redefinição, alerta de pico), e
+propõe um ADR: "guardar só o hash SHA-256 do token". Você revisa e roda
+`/sdd:aprovar`.
 
 ## 7. Tarefas e aprovação
 
@@ -163,7 +174,30 @@ Em vez de corrigir, registra no backlog:
 
 Cada tarefa vira um commit: `feat(001): T-004 solicitar redefinição sem enumeração`.
 
-## 9. Auditar e decidir
+No fim, o agente roda `sdd-estado sensivel`: a feature tocou `src/auth/`, e a
+revisão de segurança fica obrigatória (no nível 2 ela já seria).
+
+## 9. Revisão de segurança
+
+```
+/sdd:seguranca
+```
+
+O `revisor-de-seguranca`, sem ver a conversa, lê a spec, as ameaças do plano e
+o diff, roda o `comando_seguranca` (SAST, dependências, segredos) e escreve
+`seguranca.md`:
+
+> **S-001 (alta):** o token é comparado com `==`, sujeito a ataque de tempo.
+> Correção: comparação em tempo constante.
+>
+> **S-002 (baixa):** a mensagem de link expirado mostra o horário do servidor.
+
+Você decide com `/sdd:aprovar`: **corrigir** (volta ao green com os achados),
+**aceitar o risco** (de S-002, com a justificativa registrada) ou **aprovar**.
+Aqui: corrigir S-001, aceitar S-002. Corrigido, a revisão roda de novo e você
+aprova. A feature vai para a auditoria.
+
+## 10. Auditar e decidir
 
 ```
 /sdd:auditar main
@@ -180,9 +214,108 @@ plano, tarefas e testes ainda batem com o hash aprovado). Exemplo de achado:
 > retenção de 90 dias.
 
 Você decide com `/sdd:aprovar`: aprovar, aprovar a delta spec (a spec absorve o
-RNF-004 e é reaprovada) ou mandar corrigir.
+RNF-004 e é reaprovada) ou mandar corrigir. Ao aprovar, o utilitário confere
+que spec, plano, testes e revisão de segurança continuam aprovados e
+inalterados, e a feature fica **pronta**.
 
-## 10. Acompanhar e fechar a sprint
+## 11. Consolidar na spec do sistema
+
+Pronta não é em produção, mas o comportamento já está decidido. O
+`/sdd:aprovar` emenda:
+
+```
+/sdd:sistema consolidar
+```
+
+O agente reescreve `sistema/autenticacao.md` para descrever como a autenticação
+funciona **agora**, com cada item ligado à origem:
+
+```markdown
+- QUANDO o usuário pedir a redefinição, O SISTEMA DEVE enviar um link de uso
+  único, válido por 30 minutos. (origem: 001/RF-001, 001/RF-002)
+```
+
+Você confere e confirma; o histórico da feature ganha a linha `consolidacao`. A
+próxima feature que mexer em autenticação parte deste arquivo, não do código.
+
+## 12. Release: do pronto à produção
+
+```
+/sdd:release preparar
+```
+
+O agente lista as features prontas, propõe a versão (`0.1.0`, porque há
+capacidade nova), cria `releases/0.1.0/` e chama o `testador-de-sistema`, que
+roda a regressão, os fluxos ponta a ponta afetados e a medição dos RNFs, e
+preenche `testes.md`. Depois escreve o roteiro de homologação em linguagem de
+quem usa:
+
+```markdown
+| H-001 | 001 | CA-001 | Em "Esqueci a senha", informe um e-mail cadastrado. | Chega um e-mail com o link em até 1 minuto. | pendente |
+```
+
+```
+/sdd:release homologar
+```
+
+Com a versão no ambiente de homologação, a feature passa à fase
+`homologacao`. Bia, a dona do produto, percorre o roteiro, e cada passo vira
+`aprovado` ou `reprovado`.
+
+```
+/sdd:release aceitar
+```
+
+Todos os passos aprovados: o aceite fica registrado em nome dela. Se um passo
+tivesse reprovado, a feature voltaria ao green e a release, à preparação.
+
+```
+/sdd:release implantar
+```
+
+O agente mostra o plano de implantação, o **rollback**, a janela e as notas, e
+pergunta: go ou no-go? Com o go, o pipeline, ao receber a tag `v0.1.0`, roda
+`sdd-release pode-implantar` e implanta. Depois da verificação em produção:
+
+```
+/sdd:release concluir
+```
+
+A feature vai para `producao`, as notas ficam publicadas e a tag é criada.
+
+## 13. Manutenção: um incidente
+
+Duas semanas depois, o suporte avisa que um link de redefinição foi usado duas
+vezes.
+
+```
+/sdd:incidente abrir
+```
+
+O agente registra `incidentes/INC-001.md` com severidade S2, ligado à feature
+001 e à release 0.1.0, e pergunta pela **mitigação**: a redefinição é
+desligada por flag, e o incidente fica `mitigado`.
+
+```
+/sdd:incidente hotfix
+```
+
+Nasce a feature `002-invalidar-link-apos-o-uso`, do tipo hotfix, já na fase
+red: o `escritor-de-testes` escreve o teste que reproduz o problema; você
+aprova; o agente corrige; a **spec retroativa** é escrita e aprovada (sem ela,
+a entrega é recusada); como tocou `src/auth/`, passa pela revisão de segurança;
+é consolidada em `sistema/autenticacao.md`; e sai na release `0.1.1`, com
+homologação expressa, aceite e go.
+
+Em produção, o incidente fica `resolvido`. Você escreve o **post-mortem** com o
+agente (linha do tempo, causa raiz, ações, cada ação com dono e item no
+backlog) e encerra:
+
+```
+/sdd:incidente encerrar INC-001
+```
+
+## 14. Acompanhar e fechar a sprint
 
 Ao longo da sprint:
 

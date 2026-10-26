@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# sdd-verificar: confere o processo SDD do projeto inteiro. Feito para o CI.
+#
+# Uso: sdd-verificar [--estrito] [--silencioso]
+#
+# Falhas (saída 3):
+#   - feature da fase green em diante com lacuna de rastreabilidade (sdd-rastrear);
+#   - feature pronta ou em homologação com spec, testes, plano (nível 2) ou
+#     revisão de segurança (quando obrigatória) sem aprovação, ou alterados
+#     depois da aprovação;
+#   - release em homologação, aceita ou implantação com feature fora da fase
+#     esperada.
+# Avisos (só falham com --estrito):
+#   - feature pronta ou além ainda não consolidada na spec do sistema;
+#   - incidente S1 ou S2 sem estar encerrado;
+#   - hotfix sem spec aprovada.
+# Saída: 0 sem falhas, 3 com falhas, 1 erro de uso.
+set -uo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+
+ESTRITO=0; SILENCIOSO=0
+for a in "$@"; do
+  case "$a" in
+    --estrito) ESTRITO=1 ;;
+    --silencioso) SILENCIOSO=1 ;;
+    -h|--ajuda|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    *) echo "sdd-verificar: opção desconhecida $a" >&2; exit 1 ;;
+  esac
+done
+
+RAIZ="$(sdd_raiz_projeto)"
+[ -d "$RAIZ/.sdd" ] || { echo "sdd-verificar: projeto sem .sdd/." >&2; exit 1; }
+
+falhas=(); avisos=()
+
+for f in $(sdd_features "$RAIZ"); do
+  fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+  [ "$fase" = "cancelada" ] && continue
+  idx="$(sdd_indice_fase "$fase")"
+  if [ "$idx" -ge "$(sdd_indice_fase green)" ] && [ "$fase" != "producao" ]; then
+    saida="$("$AQUI/sdd-rastrear" "$f" 2>&1)" || falhas+=("$f: rastreabilidade com lacunas ($(printf '%s\n' "$saida" | grep -cE '^  [✗!]' || true) item(ns); rode sdd-rastrear $f)")
+  fi
+  case "$fase" in
+    pronta|homologacao)
+      while IFS= read -r p; do
+        [ -n "$p" ] && falhas+=("$f ($fase): $p")
+      done < <(sdd_pendencias_para_pronta "$RAIZ" "$f")
+      ;;
+  esac
+  if sdd_fase_entregue "$fase" && ! "$AQUI/sdd-sistema" consolidada "$f" >/dev/null 2>&1; then
+    avisos+=("$f ($fase): ainda não consolidada na spec do sistema")
+  fi
+  if [ "$(sdd_feature_ler "$RAIZ" "$f" tipo)" = "hotfix" ] && ! sdd_aprovado_ok "$RAIZ" "$f" spec.md; then
+    avisos+=("$f: hotfix sem a spec retroativa aprovada")
+  fi
+done
+
+PASTA_REL="$(sdd_pasta_releases "$RAIZ")"
+if [ -d "$RAIZ/$PASTA_REL" ]; then
+  for d in "$RAIZ/$PASTA_REL"/*/; do
+    [ -f "$d/release.md" ] || continue
+    v="$(basename "$d")"
+    s="$(sdd_kv_ler "$d/estado" fase)"
+    case "$s" in
+      homologacao|aceita|implantacao) esperada=homologacao ;;
+      *) continue ;;
+    esac
+    for f in $(awk '/^## Features/ { d = 1; next } /^## / { d = 0 } d && /^- / { sub(/^- /, ""); sub(/ .*/, ""); print }' "$d/release.md"); do
+      ff="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+      [ "$ff" = "$esperada" ] || falhas+=("release $v ($s): $f está em '$ff', esperado '$esperada'")
+    done
+  done
+fi
+
+PASTA_INC="$(sdd_pasta_incidentes "$RAIZ")"
+if [ -d "$RAIZ/$PASTA_INC" ]; then
+  for a in "$RAIZ/$PASTA_INC"/INC-[0-9][0-9][0-9].md; do
+    [ -f "$a" ] || continue
+    sev="$(sdd_md_campo "$a" Severidade)"; sit="$(sdd_md_campo "$a" Situação)"
+    case "$sev" in S1|S2)
+      [ "$sit" = "encerrado" ] || avisos+=("$(basename "$a" .md) ($sev) está $sit") ;;
+    esac
+  done
+fi
+
+if [ "$SILENCIOSO" -eq 0 ]; then
+  echo "Verificação SDD: $(basename "$RAIZ")"
+  if [ ${#falhas[@]} -eq 0 ]; then echo "  ✓ Nenhuma falha."; else
+    echo "  Falhas (${#falhas[@]}):"; printf '    ✗ %s\n' "${falhas[@]}"; fi
+  if [ ${#avisos[@]} -gt 0 ]; then
+    echo "  Avisos (${#avisos[@]})$( [ "$ESTRITO" -eq 1 ] && echo ', tratados como falha por --estrito'):"
+    printf '    ! %s\n' "${avisos[@]}"
+  fi
+fi
+
+[ ${#falhas[@]} -eq 0 ] || exit 3
+[ "$ESTRITO" -eq 1 ] && [ ${#avisos[@]} -gt 0 ] && exit 3
+exit 0

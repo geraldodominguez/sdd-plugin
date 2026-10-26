@@ -1,38 +1,50 @@
 # Utilitários
 
-Sete scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
-o plugin ativo, eles ficam no PATH. Fora delas, chame pelo caminho completo ou
-ponha `bin/` no seu PATH. Os comandos `/sdd:*` usam esses utilitários por baixo;
-você raramente precisa chamá-los direto, mas eles servem para scripts, CI e
-para conferir algo rápido no terminal.
+Onze scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
+o plugin ativo, eles ficam no PATH. Fora delas (no terminal, no CI), chame pelo
+caminho completo ou ponha `bin/` no PATH. Os comandos `/sdd:*` usam esses
+utilitários por baixo; você raramente precisa chamá-los direto, mas eles servem
+para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 
 | Utilitário | Para quê |
 |---|---|
-| `sdd-iniciar` | prepara o projeto |
-| `sdd-estado` | features, fases, aprovações e histórico |
-| `sdd-backlog` | itens sem spec |
-| `sdd-sprint` | sprints |
-| `sdd-status` | o quadro e o detalhe de uma feature |
-| `sdd-pendencias` | o que espera decisão humana |
-| `sdd-rastrear` | lacunas de rastreabilidade |
+| [`sdd-iniciar`](#sdd-iniciar) | prepara o projeto |
+| [`sdd-estado`](#sdd-estado) | features: criar, fases, aprovações, cancelar, reabrir, histórico |
+| [`sdd-sistema`](#sdd-sistema) | spec viva do sistema, por capacidade |
+| [`sdd-release`](#sdd-release) | releases: preparação, homologação, go/no-go, produção |
+| [`sdd-incidente`](#sdd-incidente) | incidentes, hotfix e post-mortem |
+| [`sdd-backlog`](#sdd-backlog) | itens sem spec |
+| [`sdd-sprint`](#sdd-sprint) | sprints |
+| [`sdd-status`](#sdd-status) | o quadro e o detalhe de uma feature |
+| [`sdd-pendencias`](#sdd-pendencias) | o que espera decisão humana |
+| [`sdd-rastrear`](#sdd-rastrear) | lacunas de rastreabilidade de uma feature |
+| [`sdd-verificar`](#sdd-verificar) | o processo do projeto inteiro, para o CI |
 
 ## Onde o estado mora
 
 | Arquivo | Conteúdo | Escrito por |
 |---|---|---|
-| `.sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual) | `sdd-estado`, `sdd-sprint` |
-| `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `atualizado` da feature | `sdd-estado` |
-| `specs/NNN-slug/historico.md` | eventos da feature: criação, fases, aprovações | `sdd-estado` |
-| `.sdd/historico.md` | eventos do projeto: backlog e sprints | `sdd-backlog`, `sdd-sprint` |
-| `.sdd/backlog.md` | itens `B-NNN` | `sdd-backlog`, ou você, à mão |
-| `.sdd/sprints/<id>.md` | uma sprint | `sdd-sprint`, e você, na revisão |
+| `.sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual); fora do git | `sdd-estado`, `sdd-sprint` |
+| `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `atualizado` | `sdd-estado`, `sdd-release` |
+| `specs/NNN-slug/historico.md` | eventos da feature: criação, fases, aprovações, reaberturas, consolidação | `sdd-estado`, `sdd-sistema`, `sdd-release` |
+| `releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix) | `sdd-release` |
+| `releases/<versão>/historico.md` | testes, aceite, go, verificação, reversão | `sdd-release` |
+| `.sdd/historico.md` | eventos do projeto: backlog, sprints, releases, incidentes, capacidades | todos |
+| `.sdd/backlog.md`, `.sdd/sprints/<id>.md` | itens e sprints | `sdd-backlog`, `sdd-sprint`, e você |
+| `sistema/<capacidade>.md` | comportamento vigente | o agente, com a sua confirmação; `sdd-sistema` registra |
+| `incidentes/INC-NNN.md` | um incidente | `sdd-incidente`, e você |
 
-Os arquivos `estado` e `historico.md` são protegidos pelo hook: o agente não
-consegue editá-los à mão. Linha do histórico:
+Os arquivos `estado` e `historico.md` (de features e de releases) e os do
+`.sdd/` são protegidos pelo hook: o agente não consegue editá-los à mão. Linha
+do histórico:
 
 ```
 - 2026-10-23T18:40:30Z | aprovacao | spec.md | hash=2533c54be22d | por: Geraldo Dominguez
 ```
+
+O autor é o `git config user.name` (ou a variável `SDD_AUTOR`).
+
+---
 
 ## sdd-iniciar
 
@@ -40,38 +52,54 @@ consegue editá-los à mão. Linha do histórico:
 sdd-iniciar [--forcar] [--nivel 1|2] [--protecao desligada|leve|estrita]
 ```
 
-Cria a estrutura no diretório atual (ou em `$CLAUDE_PROJECT_DIR`). Não
-sobrescreve nada sem `--forcar` e atualiza no lugar o bloco do `CLAUDE.md` e do
-`AGENTS.md`.
+Cria `.sdd/` (config, constituição, estado, backlog, sprints, templates),
+`specs/`, `sistema/` e `docs/adr/` no diretório atual (ou em
+`$CLAUDE_PROJECT_DIR`), e injeta o bloco de regras no `CLAUDE.md` e no
+`AGENTS.md`. Não sobrescreve nada sem `--forcar`.
 
 ## sdd-estado
 
 ```
-sdd-estado ver [chave]                      ponteiros e estado da feature ativa
-sdd-estado definir chave=valor [...]        fase, nivel (da feature ativa), feature, sprint
-sdd-estado nova "título" [--nivel N] [--origem B-NNN]
-sdd-estado usar NNN-slug                    troca a feature ativa
-sdd-estado encerrar                         fase=concluida
-sdd-estado aprovar [artefato] [--decisao aprovar|delta|corrigir] [--sem-avancar] [--nota "texto"]
-sdd-estado aprovado <artefato> [NNN-slug]   confere a aprovação
-sdd-estado listar                           todas as features (id, fase, nível, origem, atualização)
+sdd-estado ver [chave]
+sdd-estado definir chave=valor [...]      fase, nivel, seguranca, capacidade, feature, sprint
+sdd-estado nova "título" [--nivel N] [--origem B-NNN|INC-NNN] [--tipo hotfix]
+               [--capacidade nome] [--seguranca obrigatoria|dispensada]
+sdd-estado usar NNN-slug
+sdd-estado aprovar [artefato] [--decisao D] [--sem-avancar] [--nota "texto"]
+sdd-estado aprovado <artefato> [NNN-slug]
+sdd-estado cancelar --motivo "texto"
+sdd-estado reabrir [NNN-slug] --motivo "texto" [--fase especificacao|green] [--origem X]
+sdd-estado sensivel [ref]
+sdd-estado listar
 sdd-estado historico [NNN-slug|--projeto] [--desde AAAA-MM-DD]
-sdd-estado caminho [arquivo]                specs/NNN-slug[/arquivo]
-sdd-estado template nome.md                 caminho do template, local ou do plugin
+sdd-estado caminho [arquivo]
+sdd-estado template nome.md
 ```
 
-Fases: `especificacao clarificacao plano tarefas red green auditoria concluida`.
+**Fases:** `especificacao clarificacao plano tarefas red green seguranca
+auditoria pronta homologacao producao`, e `cancelada`. O `definir fase=` só
+aceita as fases de construção e revisão; `pronta` vem da aprovação,
+`homologacao` e `producao` vêm da release, `cancelada` do `cancelar`.
 
 **Aprovar** registra a aprovação do artefato da fase atual e avança:
 
-| Fase | Artefato | Próxima fase |
-|---|---|---|
-| `especificacao`, `clarificacao` | `spec.md` | `plano` (nível 2) ou `tarefas` (nível 1) |
-| `plano` | `plano.md` (o hash inclui `contratos/`) | `tarefas` |
-| `tarefas` | `tarefas.md` | `red` |
-| `red` | `testes` (arquivos de teste com a marca `sdd:NNN:`) | `green` |
-| `green`, nível 1 | a entrega | `concluida` |
-| `auditoria` | `auditoria.md`, com `--decisao` | `concluida` (aprovar, delta) ou `green` (corrigir) |
+| Fase | Artefato | Decisão | Próxima fase |
+|---|---|---|---|
+| `especificacao`, `clarificacao` | `spec.md` | | `plano` (nível 2) ou `tarefas` (nível 1) |
+| `plano` | `plano.md` (o hash inclui `contratos/`) | | `tarefas` |
+| `tarefas` | `tarefas.md` | | `red` |
+| `red` | `testes` (os blocos marcados `sdd:NNN:`) | | `green` |
+| `green` (nível 1, sem segurança obrigatória) | a entrega | | `pronta` |
+| `seguranca` | `seguranca.md` | `aprovar`, `aceitar-risco`, `corrigir` | `auditoria` (nível 2), `pronta` (nível 1), `green` |
+| `auditoria` | `auditoria.md` | `aprovar`, `delta`, `corrigir` | `pronta` ou `green` |
+
+Com um artefato explícito que não é o da fase (ex.: `aprovar spec.md` no
+green), ou com `--sem-avancar`, só registra a aprovação, sem mudar a fase.
+
+**Para ficar `pronta`**, o utilitário confere: `spec.md` e testes aprovados e
+inalterados; no nível 2, `plano.md` também; com segurança obrigatória,
+`seguranca.md` também. Se algo falhar, a aprovação do artefato atual fica
+registrada, a fase não avança, e a saída lista o que reaprovar.
 
 **Aprovado** responde pelo código de saída:
 
@@ -79,8 +107,91 @@ Fases: `especificacao clarificacao plano tarefas red green auditoria concluida`.
 |---|---|
 | 0 | aprovado e inalterado desde a aprovação |
 | 4 | alterado depois da aprovação |
-| 5 | nunca aprovado |
+| 5 | não aprovado, ou aprovação invalidada por reabertura |
 | 1 | o artefato não existe |
+
+**Hash dos testes por bloco:** um bloco começa na linha com a marca
+`sdd:NNN:` e vai até a marca de outra feature (ou o fim do arquivo). Testes que
+outra feature acrescenta no mesmo arquivo não mudam o hash desta.
+
+**Cancelar** vale para qualquer fase antes da homologação. **Reabrir** vale
+para features `pronta`, `homologacao` ou `cancelada` (nunca `producao`), volta
+para `especificacao` (padrão) ou `green`, e invalida as aprovações dos
+artefatos da fase de reabertura em diante.
+
+**Sensível** lista os arquivos alterados (desde `ref`, mais os não commitados)
+que casam com `areas_sensiveis` e, se houver, marca `seguranca=obrigatoria`.
+Saída 0 quando encontrou, 1 quando não.
+
+**Hotfix** (`--tipo hotfix`, normalmente pelo `sdd-incidente hotfix`): nível 1,
+origem obrigatória num incidente, nasce na fase `red`, sem tarefas; a entrega
+exige a spec (retroativa) aprovada.
+
+## sdd-sistema
+
+```
+sdd-sistema listar
+sdd-sistema nova <capacidade> "título"
+sdd-sistema ver <capacidade>
+sdd-sistema consolidar <NNN-slug> [--sem-mudanca] [--nota "texto"]
+sdd-sistema consolidada <NNN-slug>
+sdd-sistema pendentes
+```
+
+`consolidar` exige a feature pronta (ou além), a capacidade definida e o arquivo
+da capacidade citando a feature (`origem: NNN/...`). Registra no histórico da
+feature, acrescenta a linha no histórico da capacidade e atualiza "Última
+feature". O texto da capacidade é editado antes, pelo agente.
+
+## sdd-release
+
+```
+sdd-release proxima [major|minor|patch]
+sdd-release nova <versão> [--objetivo "texto"] [--hotfix]
+sdd-release incluir <versão> <NNN-slug> [...]
+sdd-release remover <versão> <NNN-slug>
+sdd-release homologar <versão>
+sdd-release aceitar <versão> --por "Nome e papel" [--nota "texto"]
+sdd-release reprovar <versão> <NNN-slug> --motivo "texto"
+sdd-release autorizar <versão> [--nota "texto"]
+sdd-release pode-implantar <versão>
+sdd-release concluir <versão> --verificacao "texto"
+sdd-release reverter <versão> --motivo "texto"
+sdd-release cancelar <versão> --motivo "texto"
+sdd-release ver [versão] | listar | atual
+```
+
+| Comando | De | Para | Exige |
+|---|---|---|---|
+| `nova` | | `preparacao` | versão SemVer nova |
+| `incluir`, `remover` | `preparacao` | | features `pronta` |
+| `homologar` | `preparacao` | `homologacao` | features prontas e com aprovações em dia; `testes.md` completo com `Resultado: aprovado`; roteiro (`| H-NNN |`) em `homologacao.md` |
+| `aceitar` | `homologacao` | `aceita` | nenhum passo `pendente` ou `reprovado`; `--por` |
+| `reprovar` | `homologacao`, `aceita` | `preparacao` | a feature volta ao green |
+| `autorizar` (go) | `aceita` | `implantacao` | `implantacao.md` (com Rollback) e `notas.md` completos |
+| `concluir` | `implantacao` | `producao` | `--verificacao`; as features vão para `producao` |
+| `reverter` | `implantacao`, `producao` | `revertida` | as features voltam a `pronta` |
+| `cancelar` | `preparacao`, `homologacao`, `aceita` | `cancelada` | as features voltam a `pronta` |
+
+`pode-implantar` sai com 0 se a release está em `implantacao` ou `producao`. É
+o passo que o pipeline roda antes de implantar em produção (aceita `v1.2.0` ou
+`1.2.0`).
+
+## sdd-incidente
+
+```
+sdd-incidente abrir "título" --severidade S1|S2|S3|S4 [--feature NNN-slug] [--release X.Y.Z]
+sdd-incidente situacao INC-NNN mitigado|resolvido [--nota "texto"]
+sdd-incidente nota INC-NNN "texto"
+sdd-incidente hotfix INC-NNN "título" [--capacidade nome]
+sdd-incidente encerrar INC-NNN
+sdd-incidente listar [--abertos]
+sdd-incidente ver INC-NNN
+```
+
+Situações: `aberto`, `mitigado`, `resolvido`, `encerrado`. Cada mudança entra
+na linha do tempo do arquivo. `encerrar` exige `resolvido` e o post-mortem sem
+campos `{{...}}` e com ao menos uma ação.
 
 ## sdd-backlog
 
@@ -89,18 +200,12 @@ sdd-backlog listar [--todos]
 sdd-backlog adicionar "título" [--prioridade alta|media|baixa] [--nivel 1|2|?] [--origem "texto"]
 sdd-backlog ver B-NNN
 sdd-backlog prioridade B-NNN alta|media|baixa
-sdd-backlog promover B-NNN NNN-slug      (usado por sdd-estado nova --origem)
+sdd-backlog promover B-NNN NNN-slug
 sdd-backlog descartar B-NNN "motivo"
 sdd-backlog contar
 ```
 
-Formato da linha:
-
-```
-- [ ] B-NNN título (prioridade: alta; nivel: 2; origem: texto; criado: AAAA-MM-DD)
-```
-
-`listar` ordena por prioridade e, dentro dela, pela ordem do arquivo.
+Formato da linha: `- [ ] B-NNN título (prioridade: alta; nivel: 2; origem: texto; criado: AAAA-MM-DD)`.
 
 ## sdd-sprint
 
@@ -110,13 +215,11 @@ sdd-sprint incluir <id> <NNN-slug|B-NNN> [...]
 sdd-sprint remover <id> <item>
 sdd-sprint iniciar <id>
 sdd-sprint encerrar [id]
-sdd-sprint ver [id]
-sdd-sprint listar
-sdd-sprint itens [id]
+sdd-sprint ver [id] | listar | itens [id]
 ```
 
-O id padrão é a semana ISO do início (`2026-S44`), e a duração padrão é de 14
-dias. Um item `B-NNN` promovido é acompanhado pela feature que ele virou.
+O id padrão é a semana ISO do início (`2026-S44`). Conta como entregue a feature
+pronta, em homologação ou em produção.
 
 ## sdd-status
 
@@ -132,8 +235,9 @@ sdd-status --ativa       o detalhe da feature ativa
 sdd-pendencias [--contar]
 ```
 
-Aprovações pendentes ou invalidadas, dúvidas nas specs, delta specs e ADRs
-propostos, backlog a triar (nível `?`) e itens da sprint atual sem spec.
+Incidentes, releases paradas, aprovações pendentes ou invalidadas, revisões de
+segurança devidas, dúvidas, delta specs e ADRs propostos, consolidações
+pendentes, prontas fora de release, backlog a triar e itens da sprint sem spec.
 
 ## sdd-rastrear
 
@@ -149,24 +253,21 @@ sdd-rastrear [NNN-slug] [--silencioso]
 | toda tarefa referencia algo | "T-005 não referencia nenhum requisito ou critério" |
 | as tarefas só citam IDs que existem | "tarefas.md cita RF-009, que não existe na spec" |
 
-Saída: `0` sem lacunas, `3` com lacunas, `1` erro de uso.
+Num hotfix sem `tarefas.md`, só a ligação critério e teste é conferida. Saída:
+`0` sem lacunas, `3` com lacunas, `1` erro de uso.
 
-### Na CI
+## sdd-verificar
 
-No pipeline do **seu projeto**, por exemplo no GitHub Actions:
-
-```yaml
-- name: Rastreabilidade e aprovações SDD
-  run: |
-    git clone --depth 1 https://github.com/geraldodominguez/sdd-plugin /tmp/sdd
-    for f in specs/[0-9][0-9][0-9]-*/; do
-      id="$(basename "$f")"
-      /tmp/sdd/bin/sdd-rastrear "$id" || exit 1
-      if grep -q '^fase=concluida' "$f/estado"; then
-        /tmp/sdd/bin/sdd-estado aprovado spec.md "$id" || exit 1
-      fi
-    done
 ```
+sdd-verificar [--estrito] [--silencioso]
+```
+
+Feito para o CI. Falha (saída 3) com: lacuna de rastreabilidade numa feature da
+fase green em diante; feature pronta ou em homologação com spec, testes, plano
+ou revisão de segurança sem aprovação ou alterados depois dela; release em
+andamento com feature fora da fase esperada. Avisos (falham só com
+`--estrito`): consolidação pendente, incidente S1 ou S2 não encerrado, hotfix
+sem spec aprovada.
 
 ## Formatos
 
@@ -175,5 +276,7 @@ No pipeline do **seu projeto**, por exemplo no GitHub Actions:
 | Linha de tarefa | `- [ ] T-003 [P] descrição (atende: RF-002, CA-003; depende de: T-001)` |
 | Marca de teste | `// sdd:001:CA-003`, no nome ou no comentário logo acima |
 | Item de backlog | `- [ ] B-014 título (prioridade: alta; nivel: 1; origem: texto; criado: AAAA-MM-DD)` |
+| Origem na spec do sistema | `(origem: 004/RF-002)` |
+| Passo de homologação | `\| H-001 \| NNN \| CA-NNN \| como testar \| esperado \| pendente \|` |
 | Evento do histórico | `- AAAA-MM-DDTHH:MM:SSZ \| evento \| detalhe \| por: Nome` |
-| Commit (red, green, auditoria) | `tipo(NNN): T-XXX descrição`, ou `tipo(NNN): descrição` para artefatos |
+| Commit (red, green, segurança, auditoria) | `tipo(NNN): T-XXX descrição`, ou `tipo(NNN): descrição` para artefatos |

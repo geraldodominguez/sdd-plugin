@@ -30,8 +30,24 @@ Na dúvida, o maior. O `/sdd:especificar` faz a classificação e pede a sua con
 | `/sdd:planejar` e contratos | não | não | sim |
 | `/sdd:tarefas` | não | sim, de duas a cinco | sim |
 | Red com `escritor-de-testes` | não | sim | sim |
+| `/sdd:seguranca` | não | se tocar área sensível | sempre |
 | `/sdd:auditar` | não | opcional | sim |
 | Commit com `T-XXX` | não | sim | sim |
+| Consolidar em `sistema/` | não | sim | sim |
+| Entrar numa release (`/sdd:release`) | não, vai no próximo deploy | sim | sim |
+
+O **hotfix** é um caso à parte: nível 1, nasce de um incidente, começa no red
+(teste de regressão) e escreve a spec depois, antes da entrega. Ver
+[/sdd:incidente](../incidente.md).
+
+## Área sensível
+
+`areas_sensiveis`, no `.sdd/config.yml`, lista os globs que tornam a revisão de
+segurança obrigatória (ex.: `src/auth/**`, `src/pagamentos/**`,
+`migrations/**`). No fim do green, o `/sdd:implementar` roda
+`sdd-estado sensivel`: se a feature tocou um desses caminhos, mesmo sendo nível
+1, ela passa por `/sdd:seguranca` antes de ficar pronta. No nível 2 a revisão é
+sempre obrigatória.
 
 ## Exemplos
 
@@ -49,7 +65,7 @@ Na dúvida, o maior. O `/sdd:especificar` faz a classificação e pede a sua con
 
 | Situação | O que fazer |
 |---|---|
-| Era maior do que parecia | `sdd-estado definir nivel=2`, troque a spec pelo template completo (`sdd-estado template spec.md`) e siga com `/sdd:clarificar` e `/sdd:planejar` |
+| Era maior do que parecia | `sdd-estado definir nivel=2` (isso também torna a revisão de segurança obrigatória), troque a spec pelo template completo (`sdd-estado template spec.md`) e siga com `/sdd:clarificar` e `/sdd:planejar` |
 | Era menor do que parecia | `sdd-estado definir nivel=1` e siga para `/sdd:tarefas` |
 
 O nível padrão de novas features fica em `.sdd/config.yml` (`nivel_padrao`). É

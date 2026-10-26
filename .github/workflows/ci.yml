@@ -20,6 +20,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Utilitários e hooks
         run: tests/rodar-testes.sh
+      - name: Simulação do ciclo de vida
+        run: tests/simular-ciclo.sh
 
   prosa:
     name: Prosa sem travessões

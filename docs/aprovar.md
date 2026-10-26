@@ -20,8 +20,13 @@ um comando de fase terminar dizendo "próximo: `/sdd:aprovar`", ou quando o
 | plano | o `plano.md` e os `contratos/` | tarefas |
 | tarefas | o `tarefas.md` | red |
 | red | os testes escritos pelo `escritor-de-testes` | green |
-| green, nível 1 | a entrega, sem auditoria | concluída |
-| auditoria | a decisão: aprovar, aprovar a delta spec ou corrigir | concluída ou green |
+| green, nível 1 sem segurança obrigatória | a entrega | pronta |
+| green, hotfix | a spec retroativa, depois a entrega | pronta |
+| segurança | a decisão: aprovar, aceitar o risco ou corrigir | auditoria (nível 2), pronta (nível 1) ou green |
+| auditoria | a decisão: aprovar, aprovar a delta spec ou corrigir | pronta ou green |
+
+Daqui em diante, os gates são da release (aceite do negócio e go/no-go), no
+[`/sdd:release`](release.md).
 
 ## Pré-requisitos
 
@@ -41,6 +46,14 @@ durante a implementação fica visível.
 
 O histórico e o estado de cada feature só são escritos pelos utilitários: o hook
 de proteção bloqueia a edição manual desses arquivos pelo agente.
+
+## Pronta: tudo conferido de uma vez
+
+Para uma feature ficar **pronta**, o utilitário confere que a spec, os testes, o
+plano (nível 2) e a revisão de segurança (quando obrigatória) estão aprovados
+**e inalterados** desde a aprovação. Se algo mudou, ele recusa e lista o que
+reaprovar. Com a feature pronta, o `/sdd:aprovar` conduz a consolidação na
+[spec do sistema](sistema.md).
 
 ## Perguntas frequentes
 
@@ -65,7 +78,9 @@ aprovou o quê.
 
 ## Onde se encaixa
 
-É o elo entre todas as fases do fluxo principal: aparece depois de
+É o elo entre todas as fases da feature: aparece depois de
 [especificar](especificar.md), [planejar](planejar.md), [tarefas](tarefas.md),
-da fase red do [implementar](implementar.md) e do [auditar](auditar.md). O mapa
+da fase red do [implementar](implementar.md), da [segurança](seguranca.md) e do
+[auditar](auditar.md). Depois da feature pronta, os gates passam ao
+[release](release.md). O mapa
 está na [ajuda](ajuda.md).

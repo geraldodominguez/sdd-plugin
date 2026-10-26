@@ -12,8 +12,11 @@ nivel_padrao: 1
 #              testes na fase red e qualquer edição de código na auditoria
 protecao: leve
 
-# Pasta das especificações, relativa à raiz do projeto.
-pasta_specs: specs
+# Pastas, relativas à raiz do projeto.
+pasta_specs: specs             # uma pasta por feature: o que cada mudança alterou
+pasta_sistema: sistema         # spec viva do sistema, por capacidade: o que ele faz hoje
+pasta_releases: releases       # uma pasta por release
+pasta_incidentes: incidentes   # um arquivo por incidente
 
 # Globs, separados por vírgula, que identificam arquivos de teste.
 # Ajuste para a convenção do seu projeto.
@@ -24,6 +27,17 @@ globs_de_teste: tests/**,test/**,__tests__/**,spec/**,**/*.test.*,**/*.spec.*,**
 # estrita. Vazio mantém os contratos apenas em specs/NNN/contratos/.
 globs_de_contrato:
 
-# Comandos do projeto, usados pelo escritor-de-testes e pelo auditor-de-drift.
-comando_teste:
-comando_lint:
+# Áreas sensíveis: globs (separados por vírgula) de código cuja alteração torna
+# a revisão de segurança obrigatória, mesmo no nível 1. Ex.:
+# src/auth/**,src/pagamentos/**,**/*crypto*,db/migrations/**
+areas_sensiveis:
+
+# Comandos do projeto. Ficam vazios até você preencher; o /sdd:iniciar e o
+# /sdd:pipeline sugerem os valores a partir do código.
+comando_teste:                 # suíte de testes (escritor-de-testes, auditor, pipeline)
+comando_lint:                  # lint e checagem de tipos
+comando_seguranca:             # varreduras: dependências, segredos, análise estática
+comando_teste_sistema:         # ponta a ponta e carga (testador-de-sistema)
+comando_deploy_homologacao:    # implanta no ambiente de homologação
+comando_deploy_producao:       # implanta em produção (só depois do go/no-go)
+comando_verificacao_producao:  # verificação pós-implantação (health check, smoke)

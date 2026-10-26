@@ -36,7 +36,9 @@ início (`2026-S44`):
 | Revisão | o resultado gerado no encerramento e as conclusões |
 
 O andamento é calculado na hora a partir das features: fase de cada uma,
-tarefas concluídas, o que espera aprovação e o que ainda não tem spec.
+tarefas concluídas, o que espera aprovação e o que ainda não tem spec. Conta
+como **entregue** a feature pronta, em homologação ou em produção. Se o time
+quiser que "entregue" signifique "em produção", combine no objetivo da sprint.
 
 ## Perguntas frequentes
 
@@ -44,7 +46,7 @@ tarefas concluídas, o que espera aprovação e o que ainda não tem spec.
 
 Menos do que parece. Uma feature de nível 2 passa por spec, plano, tarefas,
 testes e auditoria, e costuma ocupar boa parte de uma sprint de duas semanas.
-Menos itens concluídos valem mais que muitos itens começados.
+Menos itens entregues valem mais que muitos itens começados.
 
 **Sou só eu no projeto. Sprint faz sentido?**
 

@@ -25,8 +25,11 @@ coluna() {
     especificacao|clarificacao) echo "Especificação" ;;
     plano|tarefas) echo "Planejamento" ;;
     red|green) echo "Implementação" ;;
-    auditoria) echo "Auditoria" ;;
-    concluida) echo "Concluída" ;;
+    seguranca|auditoria) echo "Revisão" ;;
+    pronta) echo "Pronta" ;;
+    homologacao) echo "Homologação" ;;
+    producao) echo "Produção" ;;
+    cancelada) echo "Cancelada" ;;
     *) echo "Sem fase" ;;
   esac
 }
@@ -49,16 +52,23 @@ detalhe() { # detalhe <feature>
   fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"; nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
   echo "Feature $f (nível ${nivel:-?})$( [ "$f" = "$ATIVA" ] && echo ' · ativa')"
   o="$(sdd_feature_ler "$RAIZ" "$f" origem)"; [ -n "$o" ] && echo "  origem: $o"
+  t="$(sdd_feature_ler "$RAIZ" "$f" tipo)"; [ "$t" = "hotfix" ] && echo "  tipo: hotfix (spec retroativa obrigatória)"
+  echo "  revisão de segurança: $(sdd_feature_ler "$RAIZ" "$f" seguranca)"
+  c="$(sdd_feature_ler "$RAIZ" "$f" capacidade)"; echo "  capacidade: ${c:-não definida}"
+  r="$(sdd_feature_ler "$RAIZ" "$f" release)"; [ -n "$r" ] && echo "  release: $r"
+  if sdd_fase_entregue "$fase"; then
+    if "$AQUI/sdd-sistema" consolidada "$f" >/dev/null 2>&1; then echo "  spec do sistema: consolidada"; else echo "  spec do sistema: NÃO consolidada (/sdd:sistema)"; fi
+  fi
   linha=""
   for p in $SDD_FASES; do
     if [ "$p" = "$fase" ]; then linha="$linha [$p]"; else linha="$linha $p"; fi
   done
   echo "  fase:$linha"
   echo "  artefatos:"
-  for a in contexto.md spec.md plano.md tarefas.md auditoria.md delta-spec.md; do
+  for a in contexto.md spec.md plano.md tarefas.md seguranca.md auditoria.md delta-spec.md; do
     [ -f "$dir/$a" ] || { [ "$a" = "delta-spec.md" ] && continue; echo "    · $a"; continue; }
     case "$a" in
-      spec.md|plano.md|tarefas.md|auditoria.md)
+      spec.md|plano.md|tarefas.md|seguranca.md|auditoria.md)
         st="$("$AQUI/sdd-estado" aprovado "$a" "$f" 2>/dev/null)"; st="${st#*: }"
         echo "    ✓ $a ($st)" ;;
       *) echo "    ✓ $a" ;;
@@ -109,12 +119,19 @@ linhas_coluna() { # linhas_coluna <título>
     nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
     extra="$fase"
     prog="$(sdd_tarefas_progresso "$RAIZ" "$f")"; feitas="${prog% *}"; total="${prog#* }"
-    [ "$total" -gt 0 ] && [ "$fase" != "concluida" ] && extra="$extra · $feitas/$total tarefas"
+    em_construcao=1
+    sdd_fase_entregue "$fase" && em_construcao=0
+    [ "$total" -gt 0 ] && [ "$em_construcao" -eq 1 ] && extra="$extra · $feitas/$total tarefas"
     n="$(sdd_duvidas_abertas "$RAIZ" "$f")"
-    [ "${n:-0}" -gt 0 ] && [ "$fase" != "concluida" ] && extra="$extra · $n dúvida(s)"
-    if [ "$fase" != "concluida" ]; then
+    [ "${n:-0}" -gt 0 ] && [ "$em_construcao" -eq 1 ] && extra="$extra · $n dúvida(s)"
+    [ "$(sdd_feature_ler "$RAIZ" "$f" tipo)" = "hotfix" ] && extra="$extra · hotfix"
+    if [ "$em_construcao" -eq 1 ]; then
       aguarda="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
       [ -n "$aguarda" ] && extra="$extra · aguarda aprovação"
+    else
+      rel="$(sdd_feature_ler "$RAIZ" "$f" release)"
+      [ -n "$rel" ] && extra="$extra · release $rel"
+      "$AQUI/sdd-sistema" consolidada "$f" >/dev/null 2>&1 || extra="$extra · não consolidada"
     fi
     marca="  "
     na_sprint "$f" && marca="★ "
@@ -126,13 +143,27 @@ linhas_coluna() { # linhas_coluna <título>
 }
 
 echo "QUADRO   ▶ feature ativa   ★ na sprint atual"
-for col in "Especificação" "Planejamento" "Implementação" "Auditoria"; do
+for col in "Especificação" "Planejamento" "Implementação" "Revisão" "Pronta" "Homologação"; do
   echo "$col"
   linhas_coluna "$col"
 done
-concl="$(for f in $(sdd_features "$RAIZ"); do [ "$(sdd_feature_ler "$RAIZ" "$f" fase)" = "concluida" ] && echo "$f"; done | wc -l | tr -d ' ')"
-echo "Concluída: $concl feature(s)"
+conta_fase() { local f n=0; for f in $(sdd_features "$RAIZ"); do [ "$(sdd_feature_ler "$RAIZ" "$f" fase)" = "$1" ] && n=$((n + 1)); done; echo "$n"; }
+echo "Produção: $(conta_fase producao) feature(s) · Cancelada: $(conta_fase cancelada)"
 echo
+
+rel="$("$AQUI/sdd-release" atual 2>/dev/null || true)"
+if [ -n "$rel" ]; then
+  echo "RELEASE"
+  "$AQUI/sdd-release" ver "$rel" 2>/dev/null | sed 's/^/  /' | head -12
+  echo
+fi
+
+ninc="$("$AQUI/sdd-incidente" listar --abertos 2>/dev/null | grep -c '^INC-' || true)"
+if [ "${ninc:-0}" -gt 0 ]; then
+  echo "INCIDENTES ABERTOS: $ninc"
+  "$AQUI/sdd-incidente" listar --abertos 2>/dev/null | sed 's/^/  /'
+  echo
+fi
 
 nb="$("$AQUI/sdd-backlog" contar 2>/dev/null || echo 0)"
 echo "BACKLOG: $nb item(ns) aberto(s)"

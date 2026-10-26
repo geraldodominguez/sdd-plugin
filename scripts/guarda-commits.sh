@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # guarda-commits.sh: hook PreToolUse para Bash.
 #
-# Nas fases red, green e auditoria de uma feature, exige que `git commit` com
+# Nas fases red, green, seguranca e auditoria de uma feature, exige que `git commit` com
 # mensagem inline cite uma tarefa (T-NNN) ou o número da feature no formato
 # "(NNN)". Exemplo: "feat(004): T-002 valida token expirado".
 #
@@ -33,7 +33,7 @@ PROTECAO="$(sdd_config "$RAIZ" protecao leve)"
 FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
 FASE="$(sdd_estado_ler "$RAIZ" fase)"
 [ -n "$FEATURE" ] || exit 0
-case "$FASE" in red|green|auditoria) ;; *) exit 0 ;; esac
+case "$FASE" in red|green|seguranca|auditoria) ;; *) exit 0 ;; esac
 
 # Sem mensagem inline (-m, -am, --message, -F, --file), o editor abre ou a
 # mensagem vem de --amend/--no-edit: não há o que inspecionar.

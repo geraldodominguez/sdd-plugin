@@ -22,7 +22,7 @@ máquina ou ao assumir o trabalho de outra pessoa. Para ver só "onde estou", o
 
 ## A história em quatro partes
 
-1. **Onde paramos:** fase, nível e se a feature está na sprint.
+1. **Onde paramos:** fase, nível, se é hotfix, se está na sprint e em qual release.
 2. **O que aconteceu:** eventos do histórico, tarefas e commits.
 3. **O que está pela metade:** arquivos não commitados, tarefa em andamento, artefato alterado depois de aprovado.
 4. **Próximo passo:** um comando.

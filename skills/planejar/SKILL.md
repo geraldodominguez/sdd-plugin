@@ -45,6 +45,7 @@ contexto.
    | A checagem da constituição está completa e sem violação injustificada? | devolva ao subagent |
    | Algum RF ficou sem componente? | devolva ao subagent |
    | Há regra de negócio nos contratos? | devolva ao subagent |
+   | As seções de ameaças, implantação e rollback e observabilidade estão preenchidas? | devolva ao subagent |
 
 4. **Gate.** Apresente a abordagem em três a cinco linhas, os contratos
    principais, as dependências novas, os ADRs propostos e os riscos. Próximo:

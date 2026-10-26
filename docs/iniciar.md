@@ -3,7 +3,7 @@
 ## O que faz
 
 Prepara um repositório para o SDD: cria `.sdd/` (configuração, backlog,
-sprints, templates), `specs/` e `docs/adr/`, injeta as regras do método no `CLAUDE.md` e
+sprints, templates), `specs/`, `sistema/` e `docs/adr/`, injeta as regras do método no `CLAUDE.md` e
 no `AGENTS.md` e rascunha a **constituição**. Num projeto existente, ela
 preenche a constituição só com o que observa no código (stack, versões,
 camadas, comandos) e deixa como "a definir" o que não consegue confirmar. Não
@@ -29,6 +29,23 @@ plano precisa respeitar. Revise com calma: ela vale para todas as features.
 Ver [proteção por hooks](referencia/protecao-por-hooks.md) e
 [níveis de rigor](referencia/niveis-de-rigor.md).
 
+## A constituição e o config
+
+| Seção da constituição | Usada por |
+|---|---|
+| Stack, arquitetura, qualidade e testes, convenções | plano, auditoria |
+| Segurança | revisão de segurança |
+| Ambientes e entrega | release, pipeline |
+| Operação e manutenção | plano (observabilidade), incidentes |
+
+| Chave do `.sdd/config.yml` | Para quê |
+|---|---|
+| `areas_sensiveis` | globs que tornam a revisão de segurança obrigatória no nível 1 |
+| `comando_teste`, `comando_lint` | testes e lint (escritor de testes, auditor, pipeline) |
+| `comando_seguranca` | varreduras de dependências, segredos e código |
+| `comando_teste_sistema` | ponta a ponta e carga (testador de sistema) |
+| `comando_deploy_homologacao`, `comando_deploy_producao`, `comando_verificacao_producao` | release e pipeline |
+
 ## Perguntas frequentes
 
 **Ela altera o meu CLAUDE.md?**
@@ -53,6 +70,7 @@ ignorá-la.
 | Caminho | Versionar? | Por quê |
 |---|---|---|
 | `.sdd/config.yml`, `constituicao.md`, `templates/`, `backlog.md`, `sprints/` | sim | são do time |
+| `sistema/`, `releases/`, `incidentes/` | sim | a spec viva, as entregas e os incidentes são do time |
 | `specs/` (inclusive `estado` e `historico.md` de cada feature) | sim | o quadro e as aprovações são do time |
 | `.sdd/estado` | não (já vem no `.sdd/.gitignore`) | é o ponteiro pessoal: a feature ativa e a sprint atual de cada pessoa |
 

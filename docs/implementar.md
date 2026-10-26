@@ -25,10 +25,30 @@ com você).
 | Rodada | O que acontece | Termina com |
 |---|---|---|
 | 1ª `/sdd:implementar` | fase red: o `escritor-de-testes` escreve os testes, que falham | você roda `/sdd:aprovar`, que registra o hash dos testes e leva ao green |
-| 2ª `/sdd:implementar` | fase green: a sessão principal implementa, com os testes congelados | `/sdd:auditar`, ou `/sdd:aprovar` para entregar uma feature de nível 1 |
+| 2ª `/sdd:implementar` | fase green: a sessão principal implementa, com os testes congelados | o próximo passo da tabela abaixo |
 
 Se a sessão for interrompida, rode `/sdd:implementar` de novo: ele continua da
 primeira tarefa aberta.
+
+## Depois da fase green
+
+No fim, o agente roda `sdd-estado sensivel`: se a mudança tocou uma das
+`areas_sensiveis` do `.sdd/config.yml`, a revisão de segurança passa a ser
+obrigatória para esta feature.
+
+| Feature | Próximo |
+|---|---|
+| nível 2 | [`/sdd:seguranca`](seguranca.md), depois [`/sdd:auditar`](auditar.md) |
+| nível 1 com segurança obrigatória | [`/sdd:seguranca`](seguranca.md) |
+| nível 1 sem segurança obrigatória | `/sdd:aprovar` (entrega), ou `/sdd:auditar` antes |
+| hotfix | spec retroativa, `/sdd:aprovar` da spec, depois da entrega |
+
+## Hotfix
+
+Um hotfix (aberto pelo [`/sdd:incidente`](incidente.md)) já nasce na fase red,
+sem tarefas nem spec. O `escritor-de-testes` recebe o incidente e escreve o
+**teste de regressão** que reproduz o problema. Depois da correção, a spec é
+escrita e aprovada: sem ela, a feature não fica pronta.
 
 ## Por que separar quem testa de quem implementa
 
@@ -68,6 +88,7 @@ proíbem, e a auditoria procura testes mexidos depois da fase red. Ver o
 
 ## Onde se encaixa
 
-Quinto passo do fluxo principal, entre [tarefas](tarefas.md) e
-[auditar](auditar.md), com o [aprovar](aprovar.md) entre as fases red e green.
+Etapa de construção, entre [tarefas](tarefas.md) e a revisão
+([segurança](seguranca.md) e [auditar](auditar.md)), com o
+[aprovar](aprovar.md) entre as fases red e green.
 O mapa está na [ajuda](ajuda.md).

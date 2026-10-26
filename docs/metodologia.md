@@ -23,7 +23,8 @@ carregam no início.
 | `DECOMPOSICAO-DE-TAREFAS.md` | o tamanho certo, a ordem e o formato da linha |
 | `NIVEIS-DE-RIGOR.md` | como classificar uma mudança e o que cada nível exige |
 | `QUALIDADE-DA-SPEC.md` | o checklist antes de entregar uma spec |
-| `templates/` | constituição, spec, contexto, plano, tarefas, ADR, auditoria, delta spec |
+| `CICLO-DE-VIDA.md` | as transições da feature, da release e do incidente, e quem decide cada uma |
+| `templates/` | constituição, specs (completa, leve e hotfix), contexto, plano, tarefas, segurança, ADR, auditoria, delta spec, capacidade, backlog, sprint, incidente, release (`release/`) e pipeline (`pipeline/`) |
 
 Os templates são copiados para `.sdd/templates/` pelo `/sdd:iniciar`, para
 cada projeto poder adaptar os seus.

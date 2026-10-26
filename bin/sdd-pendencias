@@ -9,7 +9,11 @@
 #   3. ADRs em situação "proposta";
 #   4. delta specs em situação "proposta";
 #   5. itens de backlog a triar (sem nível estimado);
-#   6. itens da sprint atual que ainda não têm spec.
+#   6. itens da sprint atual que ainda não têm spec;
+#   7. features que precisam da revisão de segurança;
+#   8. features prontas (ou além) não consolidadas na spec do sistema;
+#   9. releases esperando aceite, go/no-go ou conclusão, e features prontas fora de release;
+#  10. incidentes abertos e hotfixes sem spec aprovada.
 #
 # Com --contar, imprime só o total. Código de saída sempre 0.
 set -uo pipefail
@@ -27,10 +31,24 @@ fi
 PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 
 aprov=(); duv=(); adrs=(); deltas=(); triar=(); semspec=()
+seg=(); consolidar=(); releases=(); prontas=(); incidentes=()
 
 for f in $(sdd_features "$RAIZ"); do
   fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
-  [ "$fase" = "concluida" ] && continue
+  [ "$fase" = "cancelada" ] && continue
+  if sdd_fase_entregue "$fase"; then
+    "$AQUI/sdd-sistema" consolidada "$f" >/dev/null 2>&1 || consolidar+=("$f ($fase) ainda não foi consolidada na spec do sistema")
+    if [ "$fase" = "pronta" ] && [ -z "$(sdd_feature_ler "$RAIZ" "$f" release)" ]; then
+      prontas+=("$f está pronta e fora de qualquer release")
+    fi
+    continue
+  fi
+  if [ "$fase" = "green" ] && [ "$(sdd_feature_ler "$RAIZ" "$f" seguranca)" = "obrigatoria" ]; then
+    p="$(sdd_tarefas_progresso "$RAIZ" "$f")"
+    if [ "${p% *}" -gt 0 ] && [ "${p% *}" = "${p#* }" ]; then
+      seg+=("$f terminou a implementação e precisa da revisão de segurança")
+    fi
+  fi
   art="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
   if [ -n "$art" ]; then
     if [ -n "$(sdd_ultima_aprovacao "$RAIZ" "$f" "$art")" ]; then
@@ -61,6 +79,32 @@ if [ -f "$RAIZ/.sdd/backlog.md" ]; then
   done < <(grep -E '^- \[ \] B-[0-9]{3} .*nivel: \?' "$RAIZ/.sdd/backlog.md" || true)
 fi
 
+PASTA_REL="$(sdd_pasta_releases "$RAIZ")"
+if [ -d "$RAIZ/$PASTA_REL" ]; then
+  for d in "$RAIZ/$PASTA_REL"/*/; do
+    [ -f "$d/estado" ] || continue
+    v="$(basename "$d")"
+    case "$(sdd_kv_ler "$d/estado" fase)" in
+      homologacao) releases+=("release $v em homologação, esperando o aceite do negócio") ;;
+      aceita) releases+=("release $v aceita, esperando o go/no-go da implantação") ;;
+      implantacao) releases+=("release $v autorizada, esperando a implantação e a verificação") ;;
+    esac
+  done
+fi
+
+PASTA_INC="$(sdd_pasta_incidentes "$RAIZ")"
+if [ -d "$RAIZ/$PASTA_INC" ]; then
+  for a in "$RAIZ/$PASTA_INC"/INC-[0-9][0-9][0-9].md; do
+    [ -f "$a" ] || continue
+    sit="$(sdd_md_campo "$a" Situação)"
+    case "$sit" in
+      encerrado) ;;
+      resolvido) incidentes+=("$(basename "$a" .md) resolvido, falta o post-mortem") ;;
+      *) incidentes+=("$(basename "$a" .md) ($(sdd_md_campo "$a" Severidade)) está $sit") ;;
+    esac
+  done
+fi
+
 sprint="$(sdd_kv_ler "$RAIZ/.sdd/estado" sprint)"
 if [ -n "$sprint" ] && [ -f "$RAIZ/.sdd/sprints/$sprint.md" ]; then
   while IFS= read -r item; do
@@ -70,7 +114,8 @@ if [ -n "$sprint" ] && [ -f "$RAIZ/.sdd/sprints/$sprint.md" ]; then
   done < <("$AQUI/sdd-sprint" itens "$sprint" 2>/dev/null || true)
 fi
 
-total=$(( ${#aprov[@]} + ${#duv[@]} + ${#adrs[@]} + ${#deltas[@]} + ${#triar[@]} + ${#semspec[@]} ))
+total=$(( ${#aprov[@]} + ${#duv[@]} + ${#adrs[@]} + ${#deltas[@]} + ${#triar[@]} + ${#semspec[@]} \
+  + ${#seg[@]} + ${#consolidar[@]} + ${#releases[@]} + ${#prontas[@]} + ${#incidentes[@]} ))
 
 if [ "${1:-}" = "--contar" ]; then
   echo "$total"
@@ -92,10 +137,15 @@ secao() { # secao <título> <comando> <itens...>
 
 echo "Esperando você: $total item(ns)"
 echo
+[ ${#incidentes[@]} -gt 0 ] && secao "Incidentes" "/sdd:incidente" "${incidentes[@]}"
 [ ${#aprov[@]} -gt 0 ] && secao "Aprovações" "/sdd:aprovar" "${aprov[@]}"
+[ ${#seg[@]} -gt 0 ] && secao "Revisão de segurança" "/sdd:seguranca" "${seg[@]}"
+[ ${#releases[@]} -gt 0 ] && secao "Releases" "/sdd:release" "${releases[@]}"
 [ ${#duv[@]} -gt 0 ] && secao "Dúvidas na spec" "/sdd:clarificar" "${duv[@]}"
 [ ${#deltas[@]} -gt 0 ] && secao "Delta specs propostas" "/sdd:aprovar" "${deltas[@]}"
 [ ${#adrs[@]} -gt 0 ] && secao "ADRs propostos" "revisar e mudar a situação para aceita" "${adrs[@]}"
 [ ${#triar[@]} -gt 0 ] && secao "Backlog a triar (sem nível)" "/sdd:backlog priorizar" "${triar[@]}"
 [ ${#semspec[@]} -gt 0 ] && secao "Sprint sem spec" "/sdd:especificar B-NNN" "${semspec[@]}"
+[ ${#consolidar[@]} -gt 0 ] && secao "Spec do sistema" "/sdd:sistema consolidar" "${consolidar[@]}"
+[ ${#prontas[@]} -gt 0 ] && secao "Prontas para release" "/sdd:release preparar" "${prontas[@]}"
 exit 0

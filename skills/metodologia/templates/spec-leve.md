@@ -6,6 +6,7 @@
 | Situação | rascunho |
 | Criada em | {{DATA}} |
 | Origem | {{ORIGEM}} |
+| Capacidade | {{CAPACIDADE}} |
 
 > Spec curta para correção de bug ou feature pequena. Se, ao escrever, você
 > perceber que a mudança mexe em domínio, schema ou contrato público, suba

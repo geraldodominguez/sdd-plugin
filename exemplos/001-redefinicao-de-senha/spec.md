@@ -7,6 +7,7 @@
 | Criada em | 2026-10-20 |
 | Contexto | [contexto.md](./contexto.md) |
 | Origem | B-001 |
+| Capacidade | autenticacao |
 
 ## 1. Contexto e objetivo
 

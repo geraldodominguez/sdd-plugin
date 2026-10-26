@@ -28,17 +28,20 @@ descobrir na auditoria que faltou spec não é.
 | Plano e contratos | não | não | sim |
 | Tarefas | não | sim, curtas | sim |
 | Red com `escritor-de-testes` | não | sim | sim |
+| Revisão de segurança | não | só em área sensível | sempre |
 | Auditoria com `auditor-de-drift` | não | opcional | sim |
-| Gates | nenhum | spec e final | todas as fases |
+| Consolidação na spec do sistema | não | sim | sim |
+| Release (homologação e produção) | entra junto com outra mudança | sim | sim |
 | Commit com `T-XXX` | não | sim | sim |
 
 ## Fluxo de cada nível
 
 | Nível | Fluxo |
 |---|---|
-| 0 | implementa e faz commit; não abre feature nem mexe em `.sdd/estado` |
-| 1 | `/sdd:especificar`, `/sdd:clarificar` se houver marcadores, `/sdd:tarefas`, `/sdd:implementar`, `/sdd:auditar` opcional |
-| 2 | `/sdd:especificar`, `/sdd:clarificar`, `/sdd:planejar`, `/sdd:tarefas`, `/sdd:implementar`, `/sdd:auditar` |
+| 0 | implementa e faz commit; não abre feature; vai para produção na próxima release |
+| 1 | especificar, (clarificar), aprovar, tarefas, aprovar, implementar (red), aprovar, implementar (green), (seguranca), aprovar, sistema, release |
+| 2 | especificar, clarificar, aprovar, planejar, aprovar, tarefas, aprovar, implementar (red), aprovar, implementar (green), seguranca, aprovar, auditar, aprovar, sistema, release |
+| hotfix | incidente, hotfix (começa no red), aprovar, implementar (green), spec retroativa, aprovar, (seguranca), aprovar, release de hotfix |
 
 ## Mudando de nível no meio do caminho
 

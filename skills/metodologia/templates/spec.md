@@ -7,6 +7,7 @@
 | Criada em | {{DATA}} |
 | Contexto | [contexto.md](./contexto.md) (projetos existentes) |
 | Origem | {{ORIGEM}} |
+| Capacidade | {{CAPACIDADE}} |
 
 > **Esta spec descreve O QUÊ e POR QUÊ, nunca o COMO.**
 > Tecnologia, arquitetura e estrutura de código ficam no `plano.md`.
@@ -73,7 +74,16 @@ ele valida.
 
 - [PRECISA ESCLARECER: {{pergunta}}]
 
-## 10. Histórico de clarificação
+## 10. Impacto na spec do sistema
+
+> Quais comportamentos vigentes (em `sistema/<capacidade>.md`) esta feature
+> acrescenta, muda ou remove. É o que será consolidado quando ela ficar pronta.
+
+- **Acrescenta:** {{...}}
+- **Muda:** {{...}}
+- **Remove:** {{nada}}
+
+## 11. Histórico de clarificação
 
 | Data | Pergunta | Resposta | Seção alterada |
 |---|---|---|---|

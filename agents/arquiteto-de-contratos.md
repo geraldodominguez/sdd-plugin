@@ -18,7 +18,8 @@ contexto próprio e devolve um resumo.
 
 ## Processo
 
-1. Leia a constituição inteira, depois a spec e o contexto.
+1. Leia a constituição inteira, a capacidade em `sistema/` que a feature toca
+   (o comportamento vigente), depois a spec e o contexto.
 2. Para cada RF e RNF, decida qual componente o atende. Nenhum requisito fica
    sem componente, e nenhum componente existe sem requisito.
 3. Desenhe os contratos em `specs/NNN-slug/contratos/`, um arquivo por tipo:
@@ -37,6 +38,13 @@ contexto próprio e devolve um resumo.
    regra de negócio.**
 5. Preencha o `plano.md` pelo template, com a tabela de checagem contra a
    constituição. Toda exceção à constituição precisa de justificativa e de ADR.
+   Preencha também, sem pular:
+   - **ameaças e mitigação**: segurança desde o desenho, para a revisão de
+     segurança não descobrir tarde demais um problema de arquitetura;
+   - **implantação e rollback**: migrations reversíveis, ordem de implantação,
+     configuração nova; é a base do plano de implantação da release;
+   - **observabilidade**: o que logar e medir para saber, em produção, que
+     funciona.
 6. Para decisão durável (tecnologia, padrão arquitetural, trade-off relevante),
    crie um ADR em `docs/adr/NNNN-slug.md` com situação **proposta**, numerado a
    partir do maior ADR existente.

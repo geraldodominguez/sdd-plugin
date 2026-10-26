@@ -1,0 +1,5 @@
+interface:
+  display_name: "Incidente"
+  short_description: "Incidente, hotfix e post-mortem"
+policy:
+  allow_implicit_invocation: false

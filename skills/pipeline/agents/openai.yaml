@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pipeline"
+  short_description: "CI/CD que confere o processo"
+policy:
+  allow_implicit_invocation: false

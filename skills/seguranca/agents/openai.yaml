@@ -1,0 +1,5 @@
+interface:
+  display_name: "Segurança"
+  short_description: "Revisão de segurança independente"
+policy:
+  allow_implicit_invocation: false

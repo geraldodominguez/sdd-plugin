@@ -14,6 +14,11 @@ Você digita `/sdd:auditar`; o agente não a usa por conta própria. Use quando 
 fase green terminar. É obrigatória no nível 2 e opcional no nível 1. Informe a
 base da comparação se não for `main`: `/sdd:auditar develop`.
 
+## Pré-requisitos
+
+A fase green concluída e, se a revisão de segurança é obrigatória (sempre no
+nível 2), a [`/sdd:seguranca`](seguranca.md) aprovada.
+
 ## Drift e delta spec
 
 **Drift** é o código divergir da spec. O auditor procura quatro formas dele:
@@ -33,8 +38,8 @@ A sua decisão é registrada com `/sdd:aprovar`:
 
 | Decisão | O que acontece |
 |---|---|
-| Aprovar | a feature é concluída |
-| Aprovar a delta spec | a spec absorve a mudança de `delta-spec.md`, é reaprovada, e a feature é concluída |
+| Aprovar | a feature fica pronta e é consolidada na spec do sistema |
+| Aprovar a delta spec | a spec absorve a mudança de `delta-spec.md`, é reaprovada, e a feature fica pronta |
 | Corrigir o código | a feature volta ao green, só para os desvios apontados, e é auditada de novo |
 
 ## Perguntas frequentes
@@ -57,6 +62,7 @@ uma ordem. A sessão principal não deve "corrigir" o relatório.
 
 ## Onde se encaixa
 
-Último passo do fluxo principal, depois do [implementar](implementar.md). A
+Último passo da revisão da feature, depois da [segurança](seguranca.md) (ou do
+[implementar](implementar.md), no nível 1). A
 decisão passa pelo [aprovar](aprovar.md): uma delta spec aprovada atualiza a
 spec; uma correção leva de volta à fase green. O mapa está na [ajuda](ajuda.md).

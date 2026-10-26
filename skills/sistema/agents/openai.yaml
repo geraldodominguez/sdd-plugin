@@ -1,0 +1,5 @@
+interface:
+  display_name: "Spec do sistema"
+  short_description: "O que o sistema faz hoje, por capacidade"
+policy:
+  allow_implicit_invocation: false

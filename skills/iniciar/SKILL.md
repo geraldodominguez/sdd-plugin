@@ -32,14 +32,17 @@ Argumentos: `$ARGUMENTS`
      *.csproj, go.mod, Dockerfile, docker-compose, CI), a estrutura de pastas,
      a configuração de lint e de testes e um ou dois módulos representativos.
      Preencha **só o que observou**: stack e versões, camadas, convenções,
-     comandos. O que não conseguir confirmar fica `{{a definir}}`. Não invente
+     comandos, ambientes e como se implanta hoje (CI, Dockerfile, scripts de
+     deploy). O que não conseguir confirmar fica `{{a definir}}`. Não invente
      regra. Regra que o projeto já descumpre hoje vai para "Exceções aprovadas".
    - **Projeto novo:** mantenha os campos `{{...}}` e liste ao usuário as cinco
      decisões mais importantes (stack, arquitetura, política de testes,
-     segurança, convenções).
+     segurança, ambientes e entrega).
 
-5. **Ajuste `.sdd/config.yml`.** Preencha `comando_teste` e `comando_lint` se
-   os descobriu, e adapte `globs_de_teste` à convenção real do projeto.
+5. **Ajuste `.sdd/config.yml`.** Proponha `areas_sensiveis` (pastas de
+   autenticação, pagamentos, dados pessoais, migrations) e confirme. Preencha
+   `comando_teste`, `comando_lint` e, se der para descobrir, `comando_seguranca`
+   e os de implantação, e adapte `globs_de_teste` à convenção real do projeto.
 
 6. **Gate.** Mostre o que foi criado, o rascunho da constituição e o que ficou
    em aberto. Peça ao usuário que revise e aprove a constituição: ela vale para
@@ -51,6 +54,7 @@ Argumentos: `$ARGUMENTS`
    |---|---|
    | uma mudança para fazer agora | `/sdd:especificar <mudança>` |
    | uma lista de coisas para fazer | `/sdd:backlog adicionar` para cada uma, depois `/sdd:sprint planejar` |
+   | um sistema que já está em produção | `/sdd:sistema mapear` na área que mais muda, e `/sdd:pipeline` |
 
 ## Não faça
 
