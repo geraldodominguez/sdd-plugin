@@ -13,6 +13,14 @@ _Evite_: documentação (sugere algo secundário, escrito depois)
 As regras inegociáveis de um projeto (stack, arquitetura, testes, segurança, convenções), em `.sdd/constituicao.md`. Todo **plano** é checado contra ela.
 _Evite_: guia de estilo, padrões
 
+**Layout**:
+Os lugares fixos de cada artefato de processo: `specs/NNN-slug/`, `docs/adr/NNNN-slug.md`, `.sdd/`, `sistema/`, `releases/`, `incidentes/`, `docs/arquitetura/` e `docs/legado/`. Um contrato: o hook bloqueia criar artefato fora dele.
+_Evite_: estrutura de pastas (sugere algo que cada um decide)
+
+**Adoção**:
+Trazer para o **layout** os artefatos que outro processo ou outro agente deixou fora do lugar, com um mapa aprovado pelo usuário (`/sdd:iniciar --adotar`, `sdd-adotar`). Move sem reescrever nem apagar.
+_Evite_: migração (sugere converter o conteúdo)
+
 **Feature**:
 Uma unidade de mudança, com pasta própria `specs/NNN-slug/` e um **nível de rigor**.
 _Evite_: história, épico, ticket

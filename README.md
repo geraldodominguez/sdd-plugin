@@ -23,7 +23,7 @@ E mantém você no controle: cada aprovação fica registrada com o hash do que 
 aprovado, um quadro mostra a situação de todas as features e releases, e uma
 caixa de entrada lista o que espera a sua decisão.
 
-É pequeno de propósito: vinte skills, seis subagents, dois hooks e onze
+É pequeno de propósito: vinte skills, seis subagents, dois hooks e doze
 utilitários em bash. Tudo em markdown legível. Adapte à vontade.
 
 > **Primeira vez?** Leia o [guia do desenvolvedor](docs/referencia/guia-do-desenvolvedor.md)
@@ -67,7 +67,8 @@ Uma vez por repositório. Ele:
 
 - cria `.sdd/` (configuração, backlog, sprints, templates), `specs/`, `sistema/` e `docs/adr/`;
 - lê o seu código e rascunha a **constituição**, as regras que valem para todas as features (arquitetura, testes, segurança, ambientes, operação);
-- injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md`.
+- injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md`;
+- num projeto que não nasceu com o plugin, lê as specs, planos, tarefas e ADRs que outros processos e agentes deixaram (em `docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`, `.specify/`...) e, com a sua aprovação do mapa, os traz para o padrão. Ver [projetos existentes](docs/referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
 
 Depois, revise a constituição e preencha no `.sdd/config.yml` o que o plugin não
 adivinha: `areas_sensiveis` (caminhos que exigem revisão de segurança) e os
@@ -83,6 +84,7 @@ comandos de teste, varredura de segurança e deploy. Para o CI, rode
 | features prontas para ir a produção | `/sdd:release preparar` |
 | algo quebrado em produção | `/sdd:incidente abrir` |
 | um sistema que já existe e quer documentar uma parte | `/sdd:sistema mapear` |
+| specs e tarefas espalhadas por outros agentes | `/sdd:iniciar --adotar` |
 
 Perdeu o fio? `/sdd:status` mostra o quadro, `/sdd:pendencias` mostra o que
 espera você, e `/sdd:ajuda` diz qual comando serve para a sua situação.
@@ -376,8 +378,8 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Hooks e utilitários
 
-- **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`.
-- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear` e `sdd-verificar`, as transições de fase e onde o estado e o histórico moram.
+- **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`, e os artefatos novos fora do lugar do padrão.
+- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar` e `sdd-adotar`, as transições de fase e onde o estado e o histórico moram.
 
 ### Guias
 
@@ -401,10 +403,15 @@ specs/NNN-slug/          uma feature: spec, plano, contratos, tarefas, seguranç
 sistema/<capacidade>.md  o que o sistema faz hoje (spec viva)
 releases/<versão>/       uma release: testes, homologação, implantação, notas, estado, histórico
 incidentes/INC-NNN.md    um incidente, com linha do tempo e post-mortem
-docs/adr/                decisões de arquitetura
+docs/adr/NNNN-slug.md    decisões de arquitetura
+docs/arquitetura/        documentos e diagramas de arquitetura, como referência
+docs/legado/             o que veio de outro processo e não entra no fluxo
 ```
 
-Tudo é markdown ou texto, versionado no git, legível sem o plugin.
+Tudo é markdown ou texto, versionado no git, legível sem o plugin. Esse layout
+é um contrato: o hook bloqueia criar um artefato fora dele, para que cada
+agente não invente a própria estrutura, e o `/sdd:iniciar --adotar` traz de
+volta o que escapou.
 
 ## Licença
 

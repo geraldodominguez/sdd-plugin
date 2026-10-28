@@ -81,6 +81,7 @@ Uma vez por repositório, normalmente feito pelo tech lead:
 | lê o código e rascunha a **constituição** só com o que observou | revisa e completa as regras: stack, arquitetura, testes, segurança, ambientes, operação |
 | propõe as **áreas sensíveis** e os comandos (teste, lint, segurança, deploy) | confirma ou corrige no `.sdd/config.yml` |
 | injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md` | nada |
+| acha specs, planos, tarefas e ADRs de outros processos, lê tudo e propõe um mapa para o padrão | **aprova o mapa**: nada se move sem isso |
 
 Depois, ainda uma vez:
 

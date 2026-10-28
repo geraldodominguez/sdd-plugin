@@ -44,31 +44,8 @@ fi
 
 PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 
-# Transliteração explícita: não depende de locale nem de iconv.
-slug() {
-  printf '%s' "$1" \
-    | sed -e 's/á/a/g; s/à/a/g; s/â/a/g; s/ã/a/g; s/ä/a/g' \
-          -e 's/Á/a/g; s/À/a/g; s/Â/a/g; s/Ã/a/g; s/Ä/a/g' \
-          -e 's/é/e/g; s/è/e/g; s/ê/e/g; s/ë/e/g; s/É/e/g; s/È/e/g; s/Ê/e/g' \
-          -e 's/í/i/g; s/ì/i/g; s/î/i/g; s/ï/i/g; s/Í/i/g; s/Î/i/g' \
-          -e 's/ó/o/g; s/ò/o/g; s/ô/o/g; s/õ/o/g; s/ö/o/g; s/Ó/o/g; s/Ô/o/g; s/Õ/o/g' \
-          -e 's/ú/u/g; s/ù/u/g; s/û/u/g; s/ü/u/g; s/Ú/u/g; s/Ü/u/g' \
-          -e 's/ç/c/g; s/Ç/c/g; s/ñ/n/g; s/Ñ/n/g' \
-    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
-    | LC_ALL=C sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' \
-    | cut -c1-50 \
-    | sed -E 's/-+$//'
-}
-
-proximo_numero() {
-  local maior=0 id n
-  for id in $(sdd_features "$RAIZ"); do
-    n="$(printf '%s' "$id" | cut -c1-3)"
-    n=$((10#$n))
-    [ "$n" -gt "$maior" ] && maior="$n"
-  done
-  printf '%03d' $((maior + 1))
-}
+slug() { sdd_slug "$1"; }
+proximo_numero() { sdd_proximo_numero_feature "$RAIZ"; }
 
 feature_ativa() {
   local f

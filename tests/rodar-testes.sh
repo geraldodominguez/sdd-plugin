@@ -29,7 +29,11 @@ bash_json() { # bash_json <cwd> <comando>
   local cmd="${2//\"/\\\"}"
   printf '{"session_id":"t","cwd":"%s","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" "$cmd"
 }
+write_json() { # write_json <cwd> <arquivo>
+  printf '{"session_id":"t","cwd":"%s","hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"%s","content":"x"}}' "$1" "$2"
+}
 guard_edit()   { edit_json "$1" "$2" | "$PLUGIN/scripts/guarda-edicoes.sh"; }
+guard_write()  { write_json "$1" "$2" | "$PLUGIN/scripts/guarda-edicoes.sh"; }
 guard_commit() { bash_json "$1" "$2" | "$PLUGIN/scripts/guarda-commits.sh"; }
 
 sdd_kv_ler_t() { grep -E "^$2=" "$1" | tail -1 | cut -d= -f2-; }
@@ -504,6 +508,113 @@ echo "$out" | grep -q "$F5 (pronta) ainda não foi consolidada" && ok "pendênci
 echo "$out" | grep -q "$F5 está pronta e fora de qualquer release" && ok "pendências apontam prontas fora de release" || fail "prontas fora de release" "$out"
 out="$(cd "$Q4" && sdd-status)"
 echo "$out" | grep -q 'Produção: 1 feature' && ok "quadro conta produção" || fail "quadro produção" "$out"
+
+echo "layout: classificador"
+tipo_de() { (. "$PLUGIN/lib/sdd-comum.sh"; sdd_fora_do_layout "$TMP/nenhum" "$1" || echo nada); }
+for par in "docs/specs/login.md:spec" "PRD.md:spec" "TODO.md:tarefas" "tasks.md:tarefas" \
+           "docs/decisions/usar-pg.md:adr" "docs/adr/usar-pg.md:adr" ".kiro/specs/x/design.md:plano" \
+           "ROADMAP.md:backlog" "CONVENTIONS.md:constituicao" "docs/architecture.md:arquitetura" \
+           "README.md:nada" "src/a.spec.ts:nada" "docs/guia.md:nada" "docs/adr/0001-usar-pg.md:nada" \
+           "docs/legado/x/spec.md:nada" "node_modules/x/TODO.md:nada" "docs/adr/0001-Usar_PG.md:adr"; do
+  c="${par%%:*}"; e="${par#*:}"; o="$(tipo_de "$c")"
+  [ "$o" = "$e" ] && ok "classifica $c como $e" || fail "classifica $c" "esperado $e, obtido $o"
+done
+
+echo "layout: adoção de projeto que não nasceu com o plugin"
+L="$TMP/legado"
+mkdir -p "$L/docs/specs/login" "$L/docs/decisions" "$L/.kiro/specs/pagamento" "$L/src"
+printf '# Login\nrequisitos do login\n' > "$L/docs/specs/login/requirements.md"
+printf -- '- [ ] fazer login\n' > "$L/docs/specs/login/tasks.md"
+printf '# Usar Postgres\n' > "$L/docs/decisions/usar-postgres.md"
+printf '# design\n' > "$L/.kiro/specs/pagamento/design.md"
+printf '# req\n' > "$L/.kiro/specs/pagamento/requirements.md"
+printf -- '- [ ] exportar csv\n' > "$L/TODO.md"
+printf 'Veja docs/specs/login/requirements.md\n' > "$L/README.md"
+printf 'x\n' > "$L/src/app.ts"
+(cd "$L" && git init -q && git config user.name Teste && git config user.email t@t && git add -A && git commit -qm inicio)
+[ "$(cd "$L" && sdd-adotar contar)" = "6" ] && ok "inventário encontra os 6 artefatos antes do .sdd/" || fail "inventário antes do .sdd" "$(cd "$L" && sdd-adotar inventario)"
+out="$(cd "$L" && sdd-adotar inventario)"
+echo "$out" | grep -q 'não foi preparado pelo SDD' && ok "inventário avisa que o projeto não nasceu com o plugin" || fail "aviso de projeto alheio"
+printf 'TODO.md -> legado:TODO.md\n' > "$TMP/mapa-cedo.txt"
+(cd "$L" && assert_exit 1 "aplicar exige .sdd/" sdd-adotar aplicar "$TMP/mapa-cedo.txt")
+(cd "$L" && sdd-iniciar >/dev/null)
+M="$TMP/mapa.txt"
+printf 'docs/specs/login/nao-existe.md -> feature:login/spec.md\nTODO.md -> legado:TODO.md\n' > "$M"
+(cd "$L" && assert_exit 1 "mapa com origem inexistente é recusado" sdd-adotar aplicar "$M")
+[ -f "$L/TODO.md" ] && ok "mapa recusado não move nada" || fail "mapa recusado moveu arquivo"
+printf 'TODO.md -> src/TODO.md\n' > "$M"
+(cd "$L" && assert_exit 1 "destino fora do padrão é recusado" sdd-adotar aplicar "$M")
+printf 'TODO.md -> feature:x/qualquer.md\n' > "$M"
+(cd "$L" && assert_exit 1 "arquivo de feature inválido é recusado" sdd-adotar aplicar "$M")
+printf 'TODO.md -> specs/050-inventada/spec.md\n' > "$M"
+(cd "$L" && assert_exit 1 "feature nova só pelo atalho feature:" sdd-adotar aplicar "$M")
+printf 'TODO.md -> legado:a.md\nREADME.md -> legado:a.md\n' > "$M"
+(cd "$L" && assert_exit 1 "destino repetido é recusado" sdd-adotar aplicar "$M")
+cat > "$M" <<'MAPA'
+# login, em andamento
+docs/specs/login/requirements.md -> feature:Login com e-mail/spec.md
+docs/specs/login/tasks.md -> feature:login-com-e-mail/tarefas.md
+# pagamento, do kiro
+.kiro/specs/pagamento/requirements.md -> feature:pagamento/spec.md
+.kiro/specs/pagamento/design.md -> feature:pagamento/plano.md
+docs/decisions/usar-postgres.md -> adr:Usar Postgres
+TODO.md -> legado:TODO.md
+MAPA
+out="$(cd "$L" && sdd-adotar aplicar "$M" --simular)"
+echo "$out" | grep -q 'specs/001-login-com-e-mail/tarefas.md' && echo "$out" | grep -q 'specs/002-pagamento/plano.md' \
+  && ok "simulação numera as features e junta pelo slug" || fail "simulação numera" "$out"
+echo "$out" | grep -q 'docs/adr/0001-usar-postgres.md' && ok "simulação numera o ADR" || fail "simulação ADR" "$out"
+[ -f "$L/TODO.md" ] && [ ! -d "$L/specs/001-login-com-e-mail" ] && ok "simulação não move nada" || fail "simulação moveu"
+out="$(cd "$L" && sdd-adotar aplicar "$M")"; code=$?
+[ "$code" -eq 0 ] && ok "aplica o mapa aprovado" || fail "aplica" "$out"
+[ -f "$L/specs/001-login-com-e-mail/spec.md" ] && grep -q 'requisitos do login' "$L/specs/001-login-com-e-mail/spec.md" \
+  && ok "a spec chega com o conteúdo original" || fail "spec movida"
+[ "$(sdd_feature_ler_t "$L" 001-login-com-e-mail fase)" = "especificacao" ] && ok "feature adotada nasce na especificacao" || fail "fase da adotada"
+grep -q '| criada | .*adotada' "$L/specs/001-login-com-e-mail/historico.md" && grep -q '| adocao | docs/specs/login/tasks.md -> tarefas.md' "$L/specs/001-login-com-e-mail/historico.md" \
+  && ok "histórico da feature registra a adoção" || fail "histórico da adotada"
+grep -q '| adocao | TODO.md -> docs/legado/TODO.md' "$L/.sdd/historico.md" && ok "histórico do projeto registra cada movimento" || fail "histórico do projeto"
+grep -q '`.kiro/specs/pagamento/design.md` | `specs/002-pagamento/plano.md`' "$L/.sdd/adocao.md" && ok "relatório em .sdd/adocao.md" || fail "relatório"
+(cd "$L" && git status --short | grep -q '^R  TODO.md -> docs/legado/TODO.md') && ok "usa git mv (o histórico do arquivo segue)" || fail "git mv" "$(cd "$L" && git status --short)"
+[ ! -d "$L/.kiro" ] && [ ! -d "$L/docs/specs" ] && [ ! -d "$L/docs/decisions" ] && ok "remove as pastas que ficaram vazias" || fail "pastas vazias"
+echo "$out" | grep -q 'README.md cita docs/specs/login/requirements.md' && ok "aponta links para o caminho antigo" || fail "links antigos" "$out"
+[ "$(cd "$L" && sdd-adotar contar)" = "0" ] && ok "depois da adoção, nada fora do padrão" || fail "contar depois" "$(cd "$L" && sdd-adotar inventario)"
+out="$(cd "$L" && sdd-status)"
+echo "$out" | grep -q '001-login-com-e-mail' && ok "o quadro mostra as features adotadas" || fail "quadro com adotadas"
+printf 'README.md -> legado:README.md\n' > "$M"; printf 'x' > "$L/docs/legado/README.md"
+(cd "$L" && assert_exit 1 "não sobrescreve destino existente" sdd-adotar aplicar "$M")
+
+echo "layout: hook"
+assert_exit 2 "bloqueia criar spec em docs/specs/" guard_write "$L" "$L/docs/specs/nova.md"
+assert_exit 2 "bloqueia criar TODO.md na raiz" guard_write "$L" "$L/TODO.md"
+assert_exit 2 "bloqueia criar pasta tasks/" guard_write "$L" "$L/tasks/fazer.md"
+assert_exit 2 "bloqueia ADR sem numeração" guard_write "$L" "$L/docs/adr/usar-redis.md"
+assert_exit 0 "permite ADR numerado" guard_write "$L" "$L/docs/adr/0002-usar-redis.md"
+assert_exit 2 "bloqueia pasta de feature criada à mão" guard_write "$L" "$L/specs/009-feita-a-mao/spec.md"
+out="$(guard_write "$L" "$L/specs/009-feita-a-mao/spec.md" 2>&1)"
+echo "$out" | grep -q 'sdd-estado nova' && ok "a mensagem ensina a criar a feature" || fail "mensagem da feature à mão" "$out"
+assert_exit 0 "permite arquivo novo numa feature que existe" guard_write "$L" "$L/specs/001-login-com-e-mail/contexto.md"
+assert_exit 0 "permite código novo" guard_write "$L" "$L/src/novo.ts"
+assert_exit 0 "permite documento comum" guard_write "$L" "$L/docs/guia.md"
+printf 'x\n' > "$L/PLAN.md"
+assert_exit 0 "editar arquivo antigo fora do padrão continua livre" guard_edit "$L" "$L/PLAN.md"
+assert_exit 0 "reescrever arquivo que já existe continua livre" guard_write "$L" "$L/PLAN.md"
+assert_exit 2 "registro de adoção só pelo utilitário" guard_edit "$L" "$L/.sdd/adocao.md"
+subst 's#^excecoes_de_layout:.*#excecoes_de_layout: docs/manual/**#' "$L/.sdd/config.yml"
+assert_exit 0 "excecoes_de_layout libera o caminho" guard_write "$L" "$L/docs/manual/tasks.md"
+subst 's/^protecao: .*/protecao: desligada/' "$L/.sdd/config.yml"
+assert_exit 0 "proteção desligada não bloqueia o layout" guard_write "$L" "$L/docs/specs/nova.md"
+subst 's/^protecao: .*/protecao: leve/' "$L/.sdd/config.yml"
+
+echo "layout: verificar e pendências"
+out="$(cd "$L" && sdd-verificar 2>&1)"; code=$?
+[ "$code" -eq 0 ] && echo "$out" | grep -q '1 artefato(s) de processo fora do lugar do padrão' && ok "verificar: artefato fora do padrão é aviso" || fail "verificar aviso layout" "$out"
+(cd "$L" && assert_exit 3 "verificar --estrito falha com artefato fora do padrão" sdd-verificar --estrito)
+out="$(cd "$L" && sdd-pendencias)"
+echo "$out" | grep -q 'Fora do padrão (1) · /sdd:iniciar --adotar' && echo "$out" | grep -q 'PLAN.md (plano)' && ok "pendências listam o que está fora do padrão" || fail "pendências layout" "$out"
+printf 'PLAN.md -> legado:PLAN.md\n' > "$M"
+(cd "$L" && sdd-adotar aplicar "$M" >/dev/null)
+out="$(cd "$L" && sdd-verificar 2>&1)"
+echo "$out" | grep -q 'fora do lugar do padrão' && fail "aviso some depois da adoção" "$out" || ok "aviso some depois da adoção"
 
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"

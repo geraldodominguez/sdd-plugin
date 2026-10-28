@@ -9,12 +9,32 @@ preenche a constituição só com o que observa no código (stack, versões,
 camadas, comandos) e deixa como "a definir" o que não consegue confirmar. Não
 inventa regra.
 
+Num projeto que não nasceu com o plugin, ela também faz a **adoção**: lê os
+artefatos que outros processos e agentes deixaram (specs, planos, tarefas,
+ADRs, backlog, em qualquer pasta) e propõe um mapa que os leva para o lugar do
+padrão. Ela não move nada sem a sua aprovação do mapa.
+
 ## Quando usar
 
 Você digita `/sdd:iniciar`; o agente não a usa por conta própria. Use uma vez
 por repositório, antes de qualquer outro comando. Pode rodar de novo para
 atualizar o bloco de regras depois de atualizar o plugin: ela não duplica nem
-apaga o que você escreveu no `CLAUDE.md`.
+apaga o que você escreveu no `CLAUDE.md`. Com o projeto já preparado, use
+`/sdd:iniciar --adotar` quando o `/sdd:pendencias` mostrar artefatos "Fora do
+padrão".
+
+## A adoção
+
+| Etapa | O que acontece |
+|---|---|
+| Inventário | `sdd-adotar inventario` acha os artefatos fora do lugar, pelo nome e pela pasta |
+| Leitura | o agente lê cada um por inteiro e olha o código para saber o que já foi implementado |
+| Mapa | cada arquivo recebe um destino: feature nova, ADR, `docs/arquitetura/` ou `docs/legado/` |
+| **Gate** | você aprova o mapa; sem aprovação, nada se move |
+| Aplicação | `sdd-adotar aplicar` move com `git mv`, numera e registra em `.sdd/adocao.md` |
+| Arrumação | backlog, constituição, links e exceções |
+
+O detalhe está em [projetos existentes](referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
 
 ## A constituição
 
@@ -53,6 +73,19 @@ Ver [proteção por hooks](referencia/protecao-por-hooks.md) e
 Só acrescenta, ou atualiza no lugar, o bloco entre `<!-- sdd:inicio -->` e
 `<!-- sdd:fim -->`. O resto do arquivo fica como está.
 
+**Ela vai mexer nas minhas specs antigas?**
+
+Só move, e só com o mapa que você aprovou. O conteúdo chega como estava, o
+`git mv` preserva o histórico de cada arquivo e nada é apagado: o que não entra
+no fluxo vai para `docs/legado/`. As features adotadas nascem na fase
+`especificacao`, sem aprovação nenhuma, porque ninguém aprovou aquelas specs
+dentro do SDD.
+
+**Um documento meu tem nome de artefato, mas não é do SDD.**
+
+Ele fica onde está. Ponha o glob em `excecoes_de_layout` no `.sdd/config.yml`,
+e nem o hook nem o inventário voltam a apontá-lo.
+
 **O meu projeto já descumpre regras que eu quero na constituição. E agora?**
 
 Coloque a regra e registre a situação atual em "Exceções aprovadas", com o plano
@@ -63,7 +96,8 @@ ignorá-la.
 
 - A constituição cita versões e comandos que existem de verdade no projeto.
 - Nada nela soa como boa prática genérica ("código limpo", "boas práticas").
-- `/sdd:status` mostra o quadro (vazio), sem dizer que o projeto não usa SDD.
+- `/sdd:status` mostra o quadro (vazio, ou com as features adotadas), sem dizer que o projeto não usa SDD.
+- `sdd-adotar contar` dá 0.
 
 ## O que versionar
 
@@ -72,6 +106,7 @@ ignorá-la.
 | `.sdd/config.yml`, `constituicao.md`, `templates/`, `backlog.md`, `sprints/` | sim | são do time |
 | `sistema/`, `releases/`, `incidentes/` | sim | a spec viva, as entregas e os incidentes são do time |
 | `specs/` (inclusive `estado` e `historico.md` de cada feature) | sim | o quadro e as aprovações são do time |
+| `.sdd/adocao.md`, `docs/legado/`, `docs/arquitetura/` | sim | de onde veio cada artefato adotado, e o que veio de outro processo |
 | `.sdd/estado` | não (já vem no `.sdd/.gitignore`) | é o ponteiro pessoal: a feature ativa e a sprint atual de cada pessoa |
 
 ## Onde se encaixa

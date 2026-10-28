@@ -30,7 +30,7 @@ Intercepta `Edit`, `Write`, `MultiEdit` e `NotebookEdit`.
 
 **Nunca editáveis à mão**, em qualquer fase (proteção leve ou estrita): o
 `estado` e o `historico.md` de cada feature e de cada release, e o
-`.sdd/estado` e o `.sdd/historico.md`. Eles são escritos só pelos utilitários. É isso que impede
+`.sdd/estado`, o `.sdd/historico.md` e o `.sdd/adocao.md`. Eles são escritos só pelos utilitários. É isso que impede
 o agente de forjar uma aprovação ou de pular uma fase editando um arquivo.
 
 **Sempre editáveis**, em qualquer modo e fase: o resto de `.sdd/`, `specs/`,
@@ -45,6 +45,36 @@ o agente de forjar uma aprovação ou de pular uma fase editando um arquivo.
 | `green` | **testes bloqueados** | **testes e `globs_de_contrato` bloqueados** |
 | `seguranca`, `auditoria` | **testes bloqueados** | **só artefatos** |
 | `pronta`, `homologacao`, `producao`, `cancelada` | livre | livre |
+
+### Arquivos novos só no lugar do padrão
+
+Sem um lugar fixo, cada agente inventa o seu: um cria `docs/specs/`, outro
+`tasks/`, outro um `PLAN.md` na raiz, e a verdade se espalha. Por isso, em
+qualquer fase (proteção leve ou estrita), **criar** com o `Write` um arquivo
+que é artefato de processo fora do lugar do padrão é bloqueado, com a
+mensagem dizendo onde ele mora:
+
+| Tentativa | Resultado |
+|---|---|
+| `docs/specs/login.md`, `tasks/fazer.md`, `TODO.md`, `PLAN.md` | bloqueada: feature nova só pelo `/sdd:especificar` |
+| `specs/009-feita-a-mao/spec.md`, numa pasta sem `estado` | bloqueada: a pasta não foi criada pelo `sdd-estado nova` |
+| `docs/adr/usar-redis.md` | bloqueada: ADR é `docs/adr/NNNN-slug.md` |
+| `docs/adr/0002-usar-redis.md`, `specs/001-login/contexto.md` | permitida |
+| `docs/guia.md`, `src/qualquer.ts` | permitida: não é artefato de processo |
+
+Um arquivo é artefato de processo pelo nome ou pela pasta (spec, PRD,
+requisitos, plano, design, tarefas, TODO, ADR, decisões, backlog, roadmap,
+sprint, arquitetura, convenções), em markdown ou diagrama. Editar ou reescrever
+um arquivo que **já existe** continua livre: os artefatos antigos são trazidos
+ao padrão pelo `/sdd:iniciar --adotar`, não pelo hook. Um documento que tem nome
+de artefato, mas não é do SDD (um manual com `tasks.md`, por exemplo), entra
+nos `excecoes_de_layout` do config:
+
+```yaml
+excecoes_de_layout: docs/manual/**,site/content/**
+```
+
+Os lugares do padrão estão no [sdd-adotar](utilitarios.md#sdd-adotar).
 
 ### O que conta como teste
 
@@ -91,6 +121,7 @@ Os hooks são trilhos contra deslizes, não um sandbox:
 | Brecha | O que cobre |
 |---|---|
 | Edição pelo shell (`echo > tests/x.test.ts`) | as instruções das skills e dos subagents, e a auditoria, que procura testes mexidos depois da red |
+| Artefato criado fora do padrão pelo shell (`mkdir docs/specs`) | o `sdd-verificar` na CI, que avisa, e o `/sdd:pendencias`, que lista em "Fora do padrão" |
 | O agente trocando a fase ou aprovando pelo shell (`sdd-estado definir`, `sdd-estado aprovar`, `sdd-release aceitar`) | as instruções (só o `/sdd:aprovar`, digitado por você, aprova), o autor registrado em cada aprovação e a auditoria, que confere as aprovações |
 | Subagent com ferramenta de escrita | as instruções dele e, na proteção estrita, o hook da fase |
 

@@ -28,6 +28,7 @@ mostrar "ESPERANDO VOCÊ".
 | ADR proposto | `docs/adr/*.md` com situação "proposta" | revisar e mudar para "aceita" |
 | Backlog a triar | item sem nível estimado | `/sdd:backlog priorizar` |
 | Sprint sem spec | item da sprint atual que ainda é `B-NNN` | `/sdd:especificar B-NNN` |
+| Fora do padrão | spec, plano, tarefas, ADR ou backlog fora do lugar do padrão (ver `sdd-adotar inventario`) | `/sdd:iniciar --adotar` |
 
 A ordem sugerida começa por incidentes e releases paradas (produção e entrega),
 passa por artefatos alterados depois de aprovados (um sinal de drift em

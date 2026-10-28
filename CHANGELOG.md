@@ -4,6 +4,23 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
+## Não lançado
+
+### Novidades
+
+- Layout como contrato: cada artefato de processo (spec, plano, tarefas, ADR, backlog, sprint, arquitetura, regras) tem um único lugar, e o hook `guarda-edicoes` bloqueia criar um fora dele, nas proteções leve e estrita. Uma pasta de feature sem `estado` (criada à mão) também conta como fora do padrão. Ver [ADR 0014](.agents/adr/0014-layout-como-contrato-e-adocao.md).
+- Adoção de projetos que não nasceram com o plugin: o `/sdd:iniciar` detecta artefatos de outros processos e agentes, lê tudo, propõe um mapa e, com a aprovação do usuário, os traz para o padrão. `/sdd:iniciar --adotar` repete a adoção num projeto já preparado.
+- Utilitário `sdd-adotar` (`inventario`, `contar`, `aplicar` com `--simular`): numera features e ADRs, usa `git mv`, cria o estado das features adotadas na fase `especificacao`, registra em `.sdd/adocao.md` e aponta os links para os caminhos antigos.
+- Novos lugares do padrão: `docs/arquitetura/` (referência) e `docs/legado/` (o que veio de outro processo e não entra no fluxo).
+- Chave nova `excecoes_de_layout` no `.sdd/config.yml`, para documentos com nome de artefato que não são do SDD.
+- `sdd-verificar` avisa sobre artefatos fora do padrão, e `sdd-pendencias` os lista na seção "Fora do padrão".
+- Regra 10 no bloco do `CLAUDE.md` e do `AGENTS.md`: artefatos só nos lugares do padrão.
+
+### Mudanças
+
+- O `.sdd/adocao.md` entra na lista de arquivos que só os utilitários escrevem.
+- `sdd_slug`, `sdd_proximo_numero_feature` e `sdd_proximo_numero_adr` passam para a `lib/sdd-comum.sh`.
+
 ## 0.1.0
 
 Primeira versão pública. Cobre o ciclo de vida inteiro: análise,

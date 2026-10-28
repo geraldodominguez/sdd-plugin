@@ -24,6 +24,13 @@ repositório. Ele cria a estrutura, rascunha a **constituição** a partir do
 código e injeta as regras no `CLAUDE.md` e no `AGENTS.md`. Logo depois, vale
 rodar **`/sdd:pipeline`** para o CI conferir o processo.
 
+Projeto que não nasceu com o plugin, ou com specs, planos, tarefas e ADRs
+espalhados por outros agentes (`docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`,
+`.specify/`)? O mesmo **`/sdd:iniciar`** detecta, lê tudo e, com a sua
+aprovação, traz para o padrão. Com o projeto já preparado, rode
+**`/sdd:iniciar --adotar`** sempre que o `/sdd:pendencias` mostrar artefatos
+"Fora do padrão".
+
 ## Fluxo da feature: do pedido à feature pronta
 
 1. **`/sdd:especificar <mudança>`** (ou `/sdd:especificar B-NNN`) classifica o

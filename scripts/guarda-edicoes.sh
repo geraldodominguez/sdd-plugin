@@ -19,8 +19,12 @@
 #   Sem feature ativa, ou com ela pronta, em homologação, em produção ou
 #   cancelada, nada é bloqueado pela fase.
 #   Em qualquer fase (proteção leve ou estrita), históricos e arquivos de estado
-#   (de features, releases e do projeto) não podem ser editados à mão: só os
-#   utilitários os escrevem.
+#   (de features, releases e do projeto) e o registro de adoção não podem ser
+#   editados à mão: só os utilitários os escrevem.
+#   Em qualquer fase (proteção leve ou estrita), um arquivo novo que é artefato
+#   de processo (spec, plano, tarefas, ADR, backlog, sprint, arquitetura, regras)
+#   só nasce no lugar do padrão. Arquivos que já existem não são afetados: quem
+#   os traz ao padrão é o sdd-adotar.
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
@@ -58,15 +62,37 @@ PASTA_INCIDENTES="$(sdd_pasta_incidentes "$RAIZ")"
 # Histórico e estado são escritos só pelos utilitários. Editar à mão permitiria
 # forjar uma aprovação ou pular uma fase, em qualquer fase.
 case "$REL" in
-  "$PASTA_SPECS"/*/historico.md|"$PASTA_SPECS"/*/estado|"$PASTA_RELEASES"/*/historico.md|"$PASTA_RELEASES"/*/estado|.sdd/historico.md|.sdd/estado)
+  "$PASTA_SPECS"/*/historico.md|"$PASTA_SPECS"/*/estado|"$PASTA_RELEASES"/*/historico.md|"$PASTA_RELEASES"/*/estado|.sdd/historico.md|.sdd/estado|.sdd/adocao.md)
     {
       echo "SDD (proteção $PROTECAO) bloqueou a edição de '$REL'."
-      echo "Histórico e estado são gravados só pelos utilitários (sdd-estado, sdd-backlog, sdd-sprint, sdd-release). Aprovações passam pelo /sdd:aprovar e pelo /sdd:release, que são do usuário."
+      echo "Histórico, estado e registro de adoção são gravados só pelos utilitários (sdd-estado, sdd-backlog, sdd-sprint, sdd-release, sdd-adotar). Aprovações passam pelo /sdd:aprovar e pelo /sdd:release, que são do usuário."
       echo "Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir."
     } >&2
     exit 2
     ;;
 esac
+
+# Layout: cada agente inventaria a própria estrutura de pastas e nomes se
+# pudesse. Um arquivo novo que é artefato de processo só nasce no lugar do
+# padrão. Editar um arquivo que já existe continua livre (é o caso dos
+# artefatos antigos, que o sdd-adotar traz ao padrão).
+FERRAMENTA="$(sdd_json_campo "$ENTRADA" tool_name)"
+if [ "$FERRAMENTA" = "Write" ] && [ ! -e "$RAIZ/$REL" ]; then
+  if TIPO="$(sdd_fora_do_layout "$RAIZ" "$REL")"; then
+    {
+      echo "SDD (proteção $PROTECAO) bloqueou a criação de '$REL': é um artefato de processo ($TIPO) fora do lugar do padrão."
+      case "$REL" in
+        "$PASTA_SPECS"/[0-9][0-9][0-9]-*/*)
+          echo "A pasta da feature não tem o arquivo 'estado': ela não foi criada pelo sdd-estado nova. Features nascem só pelo /sdd:especificar (ou sdd-estado nova), que numera a pasta e registra o estado." ;;
+        *)
+          echo "Lugar do padrão para $TIPO: $(sdd_destino_do_tipo "$TIPO" "$RAIZ")." ;;
+      esac
+      echo "Não invente pastas nem nomes. Se este arquivo não é um artefato do SDD, o usuário pode listá-lo em excecoes_de_layout no .sdd/config.yml."
+      echo "Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir."
+    } >&2
+    exit 2
+  fi
+fi
 
 FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
 FASE="$(sdd_estado_ler "$RAIZ" fase)"

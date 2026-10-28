@@ -314,4 +314,12 @@ valendo: eles separam **momentos de decisão**, não pessoas.
 | Quem aprovou o quê, e quando? | `specs/NNN/historico.md`, `releases/X/historico.md` |
 | O que deu errado em produção? | `incidentes/INC-NNN.md` |
 | O que vem depois? | `.sdd/backlog.md` |
+| De onde veio este artefato antigo? | `.sdd/adocao.md` e `docs/legado/` |
 | Como está tudo agora? | `/sdd:status` |
+
+Cada artefato de processo tem um único lugar, e o layout é contrato: o hook
+bloqueia criar um fora dele, o `sdd-verificar` avisa na CI e o
+`/sdd:pendencias` lista o que escapou. Um projeto que chega com artefatos de
+outro processo passa pela **adoção** no `/sdd:iniciar`, antes da Etapa 1: o
+agente lê tudo, você aprova o mapa, e o `sdd-adotar` move. Ver
+[projetos existentes](projetos-existentes.md#projeto-com-artefatos-de-outro-processo).

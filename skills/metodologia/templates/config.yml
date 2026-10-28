@@ -32,6 +32,13 @@ globs_de_contrato:
 # src/auth/**,src/pagamentos/**,**/*crypto*,db/migrations/**
 areas_sensiveis:
 
+# Exceções de layout: globs (separados por vírgula) de arquivos que parecem
+# artefato de processo (spec, plano, tarefas, ADR, backlog, arquitetura) pelo
+# nome ou pela pasta, mas não são do SDD e devem ficar onde estão. Sem isso, o
+# hook bloqueia criar arquivos assim e o sdd-verificar os aponta. Ex.:
+# docs/manual/**,site/content/**
+excecoes_de_layout:
+
 # Comandos do projeto. Ficam vazios até você preencher; o /sdd:iniciar e o
 # /sdd:pipeline sugerem os valores a partir do código.
 comando_teste:                 # suíte de testes (escritor-de-testes, auditor, pipeline)

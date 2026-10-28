@@ -22,7 +22,13 @@ próximo passo fora do comum.
 | `sistema/<capacidade>.md` | A spec viva: o que o sistema faz **hoje**, por capacidade. Leia antes de mudar uma área. |
 | `releases/<versão>/` | `release.md`, `testes.md`, `homologacao.md`, `implantacao.md`, `notas.md`, `historico.md`. |
 | `incidentes/INC-NNN.md` | Um incidente, da abertura ao post-mortem. |
-| `docs/adr/` | Decisões arquiteturais duráveis. |
+| `docs/adr/NNNN-slug.md` | Decisões arquiteturais duráveis, numeradas com 4 dígitos. |
+| `docs/arquitetura/` | Documentos e diagramas de arquitetura, como referência. |
+| `docs/legado/` | O que veio de outro processo e não entra no fluxo. Não é fonte de verdade. |
+
+Esses são os únicos lugares de artefatos de processo. Não crie pastas ou nomes
+próprios (`docs/specs/`, `tasks/`, `TODO.md`, `PLAN.md`): o hook bloqueia, e o
+que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 
 ## Utilitários no PATH
 
@@ -30,6 +36,7 @@ próximo passo fora do comum.
 - `sdd-sistema listar | nova | ver | consolidar | consolidada | pendentes`
 - `sdd-release proxima | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
+- `sdd-adotar inventario | contar | aplicar` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
 - `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
 
 ## Fases da feature

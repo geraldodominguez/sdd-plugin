@@ -1,6 +1,6 @@
 # Utilitários
 
-Onze scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
+Doze scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
 o plugin ativo, eles ficam no PATH. Fora delas (no terminal, no CI), chame pelo
 caminho completo ou ponha `bin/` no PATH. Os comandos `/sdd:*` usam esses
 utilitários por baixo; você raramente precisa chamá-los direto, mas eles servem
@@ -19,6 +19,7 @@ para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 | [`sdd-pendencias`](#sdd-pendencias) | o que espera decisão humana |
 | [`sdd-rastrear`](#sdd-rastrear) | lacunas de rastreabilidade de uma feature |
 | [`sdd-verificar`](#sdd-verificar) | o processo do projeto inteiro, para o CI |
+| [`sdd-adotar`](#sdd-adotar) | artefatos de outros processos: inventário e mudança para o padrão |
 
 ## Onde o estado mora
 
@@ -33,9 +34,10 @@ para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 | `.sdd/backlog.md`, `.sdd/sprints/<id>.md` | itens e sprints | `sdd-backlog`, `sdd-sprint`, e você |
 | `sistema/<capacidade>.md` | comportamento vigente | o agente, com a sua confirmação; `sdd-sistema` registra |
 | `incidentes/INC-NNN.md` | um incidente | `sdd-incidente`, e você |
+| `.sdd/adocao.md` | de onde veio cada artefato adotado | `sdd-adotar` |
 
 Os arquivos `estado` e `historico.md` (de features e de releases) e os do
-`.sdd/` são protegidos pelo hook: o agente não consegue editá-los à mão. Linha
+`.sdd/` (inclusive o `adocao.md`) são protegidos pelo hook: o agente não consegue editá-los à mão. Linha
 do histórico:
 
 ```
@@ -266,8 +268,61 @@ Feito para o CI. Falha (saída 3) com: lacuna de rastreabilidade numa feature da
 fase green em diante; feature pronta ou em homologação com spec, testes, plano
 ou revisão de segurança sem aprovação ou alterados depois dela; release em
 andamento com feature fora da fase esperada. Avisos (falham só com
-`--estrito`): consolidação pendente, incidente S1 ou S2 não encerrado, hotfix
-sem spec aprovada.
+`--estrito`): artefato de processo fora do lugar do padrão, consolidação
+pendente, incidente S1 ou S2 não encerrado, hotfix sem spec aprovada.
+
+## sdd-adotar
+
+```
+sdd-adotar inventario [--tsv]
+sdd-adotar contar
+sdd-adotar aplicar <mapa> [--simular]
+```
+
+Traz para o padrão os artefatos de processo que outro processo ou outro agente
+deixou fora do lugar. O `/sdd:iniciar` o usa por baixo; ver
+[projetos existentes](projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
+
+**Inventário.** Lista os arquivos que parecem spec, plano, tarefas, ADR,
+backlog, sprint, arquitetura ou regras do projeto (pelo nome e pela pasta) e
+que não estão no lugar do padrão, agrupados por tipo. Funciona antes do
+`/sdd:iniciar`: é ele que detecta um projeto que não nasceu com o plugin. O
+`contar` imprime só o total (0: o projeto está no padrão). Ignora
+dependências e saídas de build, e o que casar com `excecoes_de_layout`.
+
+| Lugar do padrão | O que mora lá |
+|---|---|
+| `specs/NNN-slug/` (com `estado`) | feature: `spec.md`, `plano.md`, `tarefas.md`, `contexto.md`, `contratos/`, e os demais artefatos da feature |
+| `docs/adr/NNNN-slug.md` | ADR, numerado com 4 dígitos |
+| `.sdd/` | constituição, backlog, sprints, templates |
+| `sistema/`, `releases/`, `incidentes/` | spec viva, entregas, incidentes |
+| `docs/arquitetura/` | documentos e diagramas de arquitetura (C4, por exemplo), como referência |
+| `docs/legado/` | o que veio de outro processo e não entra no fluxo: preservado, nunca apagado |
+
+Uma pasta com nome de feature, mas sem o arquivo `estado`, conta como fora do
+padrão: foi criada à mão, e não pelo `sdd-estado nova`.
+
+**Aplicar.** Lê um mapa com uma linha por arquivo, `origem -> destino`
+(linhas vazias e as que começam com `#` são ignoradas). O destino é um caminho
+do padrão ou um atalho que o utilitário numera:
+
+| Destino | Vira |
+|---|---|
+| `feature:<slug>/<arquivo>` | `specs/NNN-slug/<arquivo>`; o mesmo slug, a mesma feature. `<arquivo>`: `spec.md`, `plano.md`, `tarefas.md`, `contexto.md` ou `contratos/<nome>` |
+| `adr:<slug>` | `docs/adr/NNNN-slug.md` |
+| `legado:<caminho>` | `docs/legado/<caminho>` |
+| `arquitetura:<caminho>` | `docs/arquitetura/<caminho>` |
+| outro caminho | só se for do padrão (ex.: um arquivo novo numa feature que já existe) |
+
+O mapa inteiro é conferido antes de mover qualquer arquivo: origem
+inexistente ou repetida, destino existente, repetido ou fora do padrão, e
+feature nova sem o atalho recusam tudo (saída 1). Com `--simular`, mostra os
+destinos resolvidos e para. Na aplicação, usa `git mv` para arquivos
+versionados (o histórico do arquivo segue), cria o `estado` e o
+`historico.md` de cada feature nova na fase `especificacao` (sem nenhuma
+aprovação), registra cada movimento no histórico do projeto e da feature e em
+`.sdd/adocao.md`, remove só as pastas que ficaram vazias e lista os arquivos
+que ainda citam os caminhos antigos. Nunca sobrescreve nem apaga.
 
 ## Formatos
 
@@ -279,4 +334,5 @@ sem spec aprovada.
 | Origem na spec do sistema | `(origem: 004/RF-002)` |
 | Passo de homologação | `\| H-001 \| NNN \| CA-NNN \| como testar \| esperado \| pendente \|` |
 | Evento do histórico | `- AAAA-MM-DDTHH:MM:SSZ \| evento \| detalhe \| por: Nome` |
+| Linha do mapa de adoção | `origem -> destino`, com destino `feature:<slug>/<arquivo>`, `adr:<slug>`, `legado:<caminho>`, `arquitetura:<caminho>` ou um caminho do padrão |
 | Commit (red, green, segurança, auditoria) | `tipo(NNN): T-XXX descrição`, ou `tipo(NNN): descrição` para artefatos |

@@ -11,6 +11,7 @@
 #   - release em homologação, aceita ou implantação com feature fora da fase
 #     esperada.
 # Avisos (só falham com --estrito):
+#   - artefatos de processo fora do lugar do padrão (sdd-adotar inventario);
 #   - feature pronta ou além ainda não consolidada na spec do sistema;
 #   - incidente S1 ou S2 sem estar encerrado;
 #   - hotfix sem spec aprovada.
@@ -84,6 +85,11 @@ if [ -d "$RAIZ/$PASTA_INC" ]; then
       [ "$sit" = "encerrado" ] || avisos+=("$(basename "$a" .md) ($sev) está $sit") ;;
     esac
   done
+fi
+
+fora="$(sdd_artefatos_fora_do_layout "$RAIZ" | grep -c . || true)"
+if [ "${fora:-0}" -gt 0 ]; then
+  avisos+=("$fora artefato(s) de processo fora do lugar do padrão (sdd-adotar inventario; /sdd:iniciar --adotar)")
 fi
 
 if [ "$SILENCIOSO" -eq 0 ]; then

@@ -638,3 +638,183 @@ sdd_template() {
 
 # sdd_semver_valida <versão>
 sdd_semver_valida() { printf '%s' "$1" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; }
+
+# ---------------------------------------------------------------------------
+# Nomes e numeração
+# ---------------------------------------------------------------------------
+
+# sdd_slug <texto>: minúsculas, sem acento, palavras unidas por "-", até 50
+# caracteres. Transliteração explícita: não depende de locale nem de iconv.
+sdd_slug() {
+  printf '%s' "$1" \
+    | sed -e 's/á/a/g; s/à/a/g; s/â/a/g; s/ã/a/g; s/ä/a/g' \
+          -e 's/Á/a/g; s/À/a/g; s/Â/a/g; s/Ã/a/g; s/Ä/a/g' \
+          -e 's/é/e/g; s/è/e/g; s/ê/e/g; s/ë/e/g; s/É/e/g; s/È/e/g; s/Ê/e/g' \
+          -e 's/í/i/g; s/ì/i/g; s/î/i/g; s/ï/i/g; s/Í/i/g; s/Î/i/g' \
+          -e 's/ó/o/g; s/ò/o/g; s/ô/o/g; s/õ/o/g; s/ö/o/g; s/Ó/o/g; s/Ô/o/g; s/Õ/o/g' \
+          -e 's/ú/u/g; s/ù/u/g; s/û/u/g; s/ü/u/g; s/Ú/u/g; s/Ü/u/g' \
+          -e 's/ç/c/g; s/Ç/c/g; s/ñ/n/g; s/Ñ/n/g' \
+    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
+    | LC_ALL=C sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' \
+    | cut -c1-50 \
+    | sed -E 's/-+$//'
+}
+
+# sdd_proximo_numero_feature <raiz>: próximo NNN livre em specs/.
+sdd_proximo_numero_feature() {
+  local maior=0 id n
+  for id in $(sdd_features "$1"); do
+    n="$(printf '%s' "$id" | cut -c1-3)"
+    n=$((10#$n))
+    [ "$n" -gt "$maior" ] && maior="$n"
+  done
+  printf '%03d\n' $((maior + 1))
+}
+
+# sdd_proximo_numero_adr <raiz>: próximo NNNN livre em docs/adr/.
+sdd_proximo_numero_adr() {
+  local maior=0 a n
+  for a in "$1"/docs/adr/[0-9][0-9][0-9][0-9]-*.md; do
+    [ -f "$a" ] || continue
+    n="$(basename "$a" | cut -c1-4)"
+    n=$((10#$n))
+    [ "$n" -gt "$maior" ] && maior="$n"
+  done
+  printf '%04d\n' $((maior + 1))
+}
+
+# ---------------------------------------------------------------------------
+# Layout: onde cada artefato mora
+#
+# O layout é o da tabela do README ("Onde fica cada coisa"), com as pastas
+# configuráveis do .sdd/config.yml. Um artefato de processo (spec, plano,
+# tarefas, ADR, backlog, sprint, arquitetura, regras do projeto) fora dele é
+# o rastro de outro processo ou de um agente que inventou a própria estrutura.
+# As mesmas funções servem ao hook (arquivo novo), ao sdd-adotar (inventário e
+# destino) e ao sdd-verificar (aviso no CI), para que os três concordem.
+# ---------------------------------------------------------------------------
+
+# Pastas que nunca são examinadas: dependências, saídas de build, ferramentas.
+sdd_caminho_ignorado() {
+  case "/$1" in
+    */node_modules/*|*/vendor/*|*/.git/*|*/dist/*|*/build/*|*/target/*|*/.venv/*|*/venv/*|*/.next/*|*/coverage/*|*/.claude/*|*/.github/*|*/.gitlab/*|*/.idea/*|*/.vscode/*) return 0 ;;
+  esac
+  return 1
+}
+
+# sdd_tipo_de_artefato <caminho relativo>: imprime o tipo do artefato de
+# processo (spec, plano, tarefas, adr, backlog, sprint, arquitetura,
+# constituicao) ou nada, se o arquivo não parece um. Só olha o nome e as
+# pastas: é barato o bastante para rodar num hook.
+sdd_tipo_de_artefato() {
+  local rel base nome dirs ext
+  rel="$(printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+  sdd_caminho_ignorado "$rel" && return 1
+  base="${rel##*/}"
+  case "$base" in
+    *.md|*.mdx|*.markdown) ext=md ;;
+    *.dsl|*.puml|*.plantuml) ext=diagrama ;;
+    *) return 1 ;;
+  esac
+  nome="${base%.*}"
+  case "$rel" in */*) dirs="/${rel%/*}/" ;; *) dirs="/" ;; esac
+
+  case "$nome" in
+    readme|changelog|license|licenca|contributing|contribuindo|code_of_conduct|claude|agents|gemini|copilot-instructions|index) return 1 ;;
+  esac
+
+  case "$nome:$dirs" in
+    adr:*|adr-*:*|adr_*:*|*:*/adr/*|*:*/adrs/*|*:*/decisions/*|*:*/decisoes/*)
+      echo adr; return 0 ;;
+  esac
+  if [ "$ext" = diagrama ]; then echo arquitetura; return 0; fi
+  case "$nome:$dirs" in
+    architecture*:*|arquitetura*:*|c4*:*|*-c4:*|*:*/architecture/*|*:*/arquitetura/*|*:*/c4/*)
+      echo arquitetura; return 0 ;;
+  esac
+  case "$nome" in
+    constitution*|constituicao*|conventions*|convencoes*|guidelines*|diretrizes*|principles*|principios*|standards*|padroes*)
+      echo constituicao; return 0 ;;
+    backlog*|roadmap*|ideias*|ideas*|wishlist*)
+      echo backlog; return 0 ;;
+    sprint*|iteration*|iteracao*)
+      echo sprint; return 0 ;;
+    tasks|tasks[-_.]*|task[-_]*|tarefas*|todo|todo[-_.]*|to-do*|checklist*)
+      echo tarefas; return 0 ;;
+    plan|plan[-_.]*|*[-_]plan|plano|plano[-_.]*|implementation*|implementacao*)
+      echo plano; return 0 ;;
+    spec|spec[-_.]*|*[-_.]spec|specification*|especificacao*|requirements*|requisitos*|prd|prd[-_.]*|*[-_]prd)
+      echo spec; return 0 ;;
+  esac
+  case "$nome:$dirs" in
+    design:*/specs/*|design:*/spec/*|design:*/.kiro/*|design:*/.specify/*|design:*/openspec/*|design:*/features/*)
+      echo plano; return 0 ;;
+  esac
+  case "$dirs" in
+    */tasks/*|*/tarefas/*|*/todo/*|*/.taskmaster/*) echo tarefas; return 0 ;;
+    */plans/*|*/planos/*) echo plano; return 0 ;;
+    */backlog/*) echo backlog; return 0 ;;
+    */sprints/*) echo sprint; return 0 ;;
+    */specs/*|*/spec/*|*/specifications/*|*/features/*|*/requirements/*|*/requisitos/*|*/prd/*|*/prds/*|*/.specify/*|*/.kiro/*|*/openspec/*)
+      echo spec; return 0 ;;
+  esac
+  return 1
+}
+
+# sdd_no_layout <raiz> <caminho relativo>: 0 se o arquivo está num lugar do
+# padrão (ou casa com excecoes_de_layout do config).
+sdd_no_layout() {
+  local raiz="$1" rel="$2" specs sistema releases incidentes excecoes resto pasta
+  specs="$(sdd_pasta_specs "$raiz")"
+  sistema="$(sdd_pasta_sistema "$raiz")"
+  releases="$(sdd_pasta_releases "$raiz")"
+  incidentes="$(sdd_pasta_incidentes "$raiz")"
+  case "$rel" in
+    .sdd/*|"$sistema"/*|"$releases"/*|"$incidentes"/*|docs/legado/*|docs/arquitetura/*) return 0 ;;
+    docs/adr/*)
+      printf '%s' "${rel#docs/adr/}" | grep -qE '^[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*\.md$' && return 0 ;;
+    "$specs"/*/*)
+      resto="${rel#"$specs"/}"
+      pasta="${resto%%/*}"
+      # Pasta com nome de feature, mas sem estado, foi criada à mão: não conta.
+      printf '%s' "$pasta" | grep -qE '^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' \
+        && [ -f "$raiz/$specs/$pasta/estado" ] && return 0 ;;
+  esac
+  excecoes="$(sdd_config "$raiz" excecoes_de_layout "")"
+  [ -n "$excecoes" ] && sdd_casa_glob "$rel" "$excecoes" && return 0
+  return 1
+}
+
+# sdd_fora_do_layout <raiz> <caminho relativo>: imprime o tipo e devolve 0 se
+# o arquivo é um artefato de processo fora do lugar do padrão.
+sdd_fora_do_layout() {
+  local tipo
+  tipo="$(sdd_tipo_de_artefato "$2")" || return 1
+  sdd_no_layout "$1" "$2" && return 1
+  printf '%s\n' "$tipo"
+}
+
+# sdd_artefatos_fora_do_layout <raiz>: "tipo<TAB>caminho", um por linha, em ordem.
+sdd_artefatos_fora_do_layout() {
+  local raiz="$1" f tipo
+  # Filtra pela extensão antes: só os candidatos passam pelo classificador.
+  sdd_listar_arquivos "$raiz" | grep -iE '\.(md|mdx|markdown|dsl|puml|plantuml)$' | sort | while IFS= read -r f; do
+    [ -n "$f" ] && [ -f "$raiz/$f" ] || continue
+    tipo="$(sdd_fora_do_layout "$raiz" "$f")" || continue
+    printf '%s\t%s\n' "$tipo" "$f"
+  done
+  return 0
+}
+
+# Onde cada tipo de artefato mora no padrão (texto curto, para mensagens).
+sdd_destino_do_tipo() {
+  case "$1" in
+    spec|plano|tarefas) echo "$(sdd_pasta_specs "${2:-.}")/NNN-slug/ (crie a feature com sdd-estado nova; nunca crie a pasta à mão)" ;;
+    adr) echo "docs/adr/NNNN-slug.md (numeração sequencial de 4 dígitos, a partir do template de ADR)" ;;
+    backlog) echo ".sdd/backlog.md (sdd-backlog adicionar)" ;;
+    sprint) echo ".sdd/sprints/ (sdd-sprint)" ;;
+    arquitetura) echo "docs/arquitetura/" ;;
+    constituicao) echo ".sdd/constituicao.md (regras do projeto inteiro)" ;;
+    *) echo "o lugar do padrão (ver /sdd:ajuda)" ;;
+  esac
+}
