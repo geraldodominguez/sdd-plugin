@@ -1,9 +1,9 @@
 ---
 name: iniciar
-description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog) e, com a sua aprovação, os traz para o padrão. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
+description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
 argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write
+allowed-tools: Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write
 ---
 
 # /sdd:iniciar
@@ -65,7 +65,7 @@ Argumentos: `$ARGUMENTS`
 
    | O usuário tem | Próximo |
    |---|---|
-   | features adotadas na fase especificacao | `/sdd:clarificar` em cada uma, depois `/sdd:aprovar` |
+   | features adotadas em transição | `/sdd:aprovar` em cada uma (aprova a transição e leva à fase de destino), depois o comando dessa fase |
    | uma mudança para fazer agora | `/sdd:especificar <mudança>` |
    | uma lista de coisas para fazer | `/sdd:backlog adicionar` para cada uma, depois `/sdd:sprint planejar` |
    | um sistema que já está em produção | `/sdd:sistema mapear` na área que mais muda, e `/sdd:pipeline` |
@@ -114,20 +114,87 @@ com um mapa aprovado pelo usuário.
 
 4. **Gate da adoção.** Mostre ao usuário, agrupado por destino: cada origem, o
    destino resolvido pela simulação e o motivo em uma linha; as features novas
-   (nascem na fase `especificacao`, sem aprovação); o que fica onde está e as
-   exceções propostas; e as suas dúvidas de classificação, com uma
-   recomendação. Pergunte se pode aplicar. Sem aprovação explícita, pare aqui.
-   Se ninguém está acompanhando a sessão, não aplique: deixe o mapa e a
-   simulação prontos e encerre dizendo isso.
+   (nascem em transição); o que fica onde está e as exceções propostas; e as
+   suas dúvidas de classificação, com uma recomendação. Pergunte se pode
+   aplicar. Sem aprovação explícita, pare aqui. Se ninguém está acompanhando a
+   sessão, não aplique: deixe o mapa e a simulação prontos e encerre dizendo
+   isso.
 
-5. **Aplique.** Rode `sdd-adotar aplicar .sdd/adocao-mapa.txt`. Depois:
+5. **Aplique.** Antes, rode `git ls-files` nas origens que vão para features:
+   o "como era" de cada arquivo fica no git. Arquivo fora do git perde o
+   original na conversão, então copie-o antes para `docs/legado/<caminho original>`.
+   Rode `sdd-adotar aplicar .sdd/adocao-mapa.txt`. Ele renomeia cada arquivo
+   para o padrão (com `git mv`), cria as features na situação de
+   **transição** (`adocao=transicao`) e, em cada uma, o `transicao.md` a partir
+   do modelo, com o "como era" dos arquivos já preenchido. Sugira um commit
+   agora ("adoção: arquivos no padrão"), para que a conversão fique num commit
+   separado e o diff mostre exatamente o que mudou. Depois:
    - itens em aberto de backlog, roadmap e TODO: `sdd-backlog adicionar "título" --origem "adoção: <arquivo>"`, um por item, sem os já feitos;
    - regras de outro processo: incorpore à constituição (passo 4 do processo) o que for regra do projeto e ainda valer;
    - links: atualize os arquivos que o `aplicar` listou como citando o caminho antigo;
    - exceções aprovadas: preencha `excecoes_de_layout` no `.sdd/config.yml`;
    - apague o mapa (`rm .sdd/adocao-mapa.txt`): o registro fica em `.sdd/adocao.md` e no histórico.
 
-6. **Confira.** `sdd-adotar contar` deve dar 0. Mostre `sdd-pendencias`.
+6. **Converta cada feature para o padrão** (passo seguinte), uma de cada vez.
+
+7. **Confira.** `sdd-adotar contar` deve dar 0. Mostre `sdd-pendencias`: cada
+   feature adotada aparece esperando a aprovação da transição.
+
+## Conversão de uma feature adotada
+
+Os arquivos já estão com o nome do padrão (`spec.md`, `plano.md`,
+`tarefas.md`), mas com o conteúdo do outro processo. Converta cada um para o
+modelo do SDD e registre no `transicao.md` como era e como ficou, para o
+usuário aprovar a transição e o plugin continuar de onde o outro processo
+parou.
+
+1. **Descubra onde a feature parou.** Para cada tarefa do original, procure no
+   código a evidência de que foi feita (`Grep` pelos nomes, caminho:linha). A
+   caixa marcada no original não basta: sem evidência, a tarefa conta como
+   aberta. Escolha a **fase de destino**:
+
+   | A feature tem | Destino |
+   |---|---|
+   | só uma ideia, ou requisitos com dúvidas que mudam o escopo | `especificacao` |
+   | spec clara, nível 2, sem plano técnico | `plano` |
+   | spec clara (e plano, no nível 2), sem tarefas | `tarefas` |
+   | spec, tarefas (e plano, no nível 2), algumas feitas ou nenhuma | `red` |
+
+   No nível 2, o plano convertido precisa cumprir o modelo (contratos,
+   ameaças, implantação). Se o original não tem isso, o destino é `plano`.
+
+2. **Converta, na ordem do destino**, usando os modelos (`sdd-estado template
+   <nome>` dá o caminho):
+   - **`spec.md`**: reescreva no modelo da spec (leve no nível 1, completa no
+     nível 2). Cada requisito do original vira um `RF`/`RNF` em EARS, e cada
+     condição verificável vira um `CA` em Dado, Quando, Então. O que for
+     ambíguo vira `[PRECISA ESCLARECER]` (aí o destino é `especificacao`).
+     Não invente requisito que o original não tem.
+   - **`plano.md`**: reescreva no modelo do plano, mantendo as decisões do
+     original e ligando cada uma a um requisito.
+   - **`tarefas.md`**: reescreva no modelo das tarefas. Cada tarefa do
+     original vira uma linha `T-NNN` com `atende:` e `depende de:`. As feitas
+     fora do plugin (com evidência) ficam **`- [O] T-NNN`**; as abertas, ou
+     sem evidência, ficam **`- [ ] T-NNN`**, e é por elas que o plugin
+     continua. Nunca marque `[x]`: essa marca é do trabalho feito no plugin.
+     Tarefa do original que não cabe em nenhum requisito vai para "O que
+     ficou de fora" e, se ainda valer, para o backlog.
+   - **testes existentes**: procure os testes que já cobrem os CAs das
+     tarefas `[O]` e liste-os em "Testes que já existiam". Não os edite agora:
+     a marca é acrescentada na fase red.
+
+3. **Preencha o `transicao.md`**, sem deixar nenhum `{{...}}`: a fase de
+   destino e o porquê, a situação encontrada (com caminho:linha), e as tabelas
+   de **como era** e **como vai ficar** dos requisitos e das tarefas, linha a
+   linha, com o texto original ao lado do ID novo. Rode `sdd-rastrear` na
+   feature e corrija as tarefas sem referência ou com ID inexistente.
+
+4. **Gate da transição.** Mostre ao usuário, para cada feature: a fase de
+   destino com a evidência, o "como era" e o "como vai ficar" lado a lado,
+   quantas tarefas ficam `[O]` e quantas `[ ]`, e o que ficou de fora. Ele
+   aprova com `/sdd:aprovar` (feature ativa: `sdd-estado usar NNN-slug`), que
+   registra a transição e os artefatos convertidos, com hash, e leva a feature
+   à fase de destino. Você não aprova nada.
 
 ## Não faça
 
@@ -137,9 +204,12 @@ com um mapa aprovado pelo usuário.
   atualiza o bloco entre `<!-- sdd:inicio -->` e `<!-- sdd:fim -->`.
 - Na adoção, não mova nem apague arquivos por conta própria (`mv`, `git mv`,
   `rm`, Write em outro lugar): só o `sdd-adotar aplicar`, com o mapa aprovado.
-- Não reescreva o conteúdo dos arquivos adotados. Eles chegam como estavam; a
-  revisão vem no fluxo normal (`/sdd:clarificar`, `/sdd:aprovar`).
-- Não registre aprovação de nenhuma feature adotada.
+- Na conversão, não invente requisito, critério ou tarefa que o original não
+  tem, e não apague nada do original sem dizer para onde foi ("O que ficou de
+  fora").
+- Não marque `[O]` sem evidência no código, nem `[x]` em tarefa de fora.
+- Não aprove a transição nem mude a fase da feature adotada: só o usuário,
+  pelo `/sdd:aprovar`.
 
 ## Pronto quando
 
@@ -147,4 +217,5 @@ com um mapa aprovado pelo usuário.
 - A constituição tem só fatos observados ou campos marcados como a definir.
 - `comando_teste` está preenchido ou o usuário sabe que precisa preencher.
 - `sdd-adotar contar` dá 0, ou o usuário decidiu deixar a adoção para depois.
+- Cada feature adotada tem o `transicao.md` sem lacunas, à espera do `/sdd:aprovar`.
 - O usuário revisou a constituição.

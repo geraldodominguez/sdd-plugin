@@ -26,7 +26,7 @@ para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 | Arquivo | Conteúdo | Escrito por |
 |---|---|---|
 | `.sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual); fora do git | `sdd-estado`, `sdd-sprint` |
-| `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `atualizado` | `sdd-estado`, `sdd-release` |
+| `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `adocao` (só nas adotadas: `transicao` ou `regularizada`), `atualizado` | `sdd-estado`, `sdd-release`, `sdd-adotar` |
 | `specs/NNN-slug/historico.md` | eventos da feature: criação, fases, aprovações, reaberturas, consolidação | `sdd-estado`, `sdd-sistema`, `sdd-release` |
 | `releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix) | `sdd-release` |
 | `releases/<versão>/historico.md` | testes, aceite, go, verificação, reversão | `sdd-release` |
@@ -97,6 +97,22 @@ aceita as fases de construção e revisão; `pronta` vem da aprovação,
 
 Com um artefato explícito que não é o da fase (ex.: `aprovar spec.md` no
 green), ou com `--sem-avancar`, só registra a aprovação, sem mudar a fase.
+
+**Transição** (feature adotada, `adocao=transicao`): antes de tudo, o
+`aprovar` sem artefato aprova a transição. Ele lê a "Fase de destino" do
+`transicao.md` e confere que nada ali ficou por preencher (`{{...}}`):
+
+| Destino | Aprovados junto, com `decisao: transicao` |
+|---|---|
+| `especificacao` | só o `transicao.md` |
+| `plano` (só nível 2) | `spec.md` |
+| `tarefas` | `spec.md`, e `plano.md` no nível 2 |
+| `red` | `spec.md`, `tarefas.md` (com pelo menos uma linha de tarefa), e `plano.md` no nível 2 |
+
+Os artefatos precisam existir sem campos do modelo, e a spec sem dúvidas em
+aberto (exceto no destino `especificacao`). Aprovada, a feature fica
+`adocao=regularizada` e vai para a fase de destino. Enquanto está em
+transição, aprovar outro artefato e `definir fase=` são recusados.
 
 **Para ficar `pronta`**, o utilitário confere: `spec.md` e testes aprovados e
 inalterados; no nível 2, `plano.md` também; com segurança obrigatória,
@@ -318,17 +334,23 @@ O mapa inteiro é conferido antes de mover qualquer arquivo: origem
 inexistente ou repetida, destino existente, repetido ou fora do padrão, e
 feature nova sem o atalho recusam tudo (saída 1). Com `--simular`, mostra os
 destinos resolvidos e para. Na aplicação, usa `git mv` para arquivos
-versionados (o histórico do arquivo segue), cria o `estado` e o
-`historico.md` de cada feature nova na fase `especificacao` (sem nenhuma
-aprovação), registra cada movimento no histórico do projeto e da feature e em
-`.sdd/adocao.md`, remove só as pastas que ficaram vazias e lista os arquivos
-que ainda citam os caminhos antigos. Nunca sobrescreve nem apaga.
+versionados (o histórico do arquivo segue), registra cada movimento (com o
+hash do original) no histórico do projeto e da feature e em `.sdd/adocao.md`,
+remove só as pastas que ficaram vazias e lista os arquivos que ainda citam os
+caminhos antigos. Nunca sobrescreve nem apaga.
+
+Cada feature nova nasce na **situação de transição**: `adocao=transicao`, fase
+`especificacao`, nenhuma aprovação, e um `transicao.md` feito do modelo, com o
+"como era" de cada arquivo (caminho original e hash) já preenchido. O agente
+converte os arquivos para o padrão e preenche o "como vai ficar"; o usuário
+aprova a transição (ver [sdd-estado](#sdd-estado)), e a feature segue da fase de
+destino. Tarefas feitas fora do plugin ficam `[O]`; as abertas, `[ ]`.
 
 ## Formatos
 
 | O quê | Formato |
 |---|---|
-| Linha de tarefa | `- [ ] T-003 [P] descrição (atende: RF-002, CA-003; depende de: T-001)` |
+| Linha de tarefa | `- [ ] T-003 [P] descrição (atende: RF-002, CA-003; depende de: T-001)`; `[ ]` aberta, `[x]` feita no plugin, `[O]` feita fora do plugin (adoção) |
 | Marca de teste | `// sdd:001:CA-003`, no nome ou no comentário logo acima |
 | Item de backlog | `- [ ] B-014 título (prioridade: alta; nivel: 1; origem: texto; criado: AAAA-MM-DD)` |
 | Origem na spec do sistema | `(origem: 004/RF-002)` |

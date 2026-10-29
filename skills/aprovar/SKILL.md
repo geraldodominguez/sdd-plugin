@@ -25,8 +25,14 @@ do `/sdd:release`.
 
 2. **Descubra o que está em jogo:**
 
+   Feature com `adocao=transicao` (veio de outro processo) aprova primeiro a
+   **transição**, em qualquer fase: o `transicao.md`, e com ele a spec, o
+   plano e as tarefas convertidos que a fase de destino pressupõe. Ela vai
+   para a fase de destino escrita no `transicao.md`.
+
    | Fase | O que se aprova | Para onde vai |
    |---|---|---|
+   | qualquer, em transição | `transicao.md` (e `spec.md`, `plano.md`, `tarefas.md`, conforme o destino) | a fase de destino: `especificacao`, `plano`, `tarefas` ou `red` |
    | `especificacao`, `clarificacao` | `spec.md` | `plano` (nível 2) ou `tarefas` (nível 1) |
    | `plano` | `plano.md` e `contratos/` | `tarefas` |
    | `tarefas` | `tarefas.md` | `red` |
@@ -38,6 +44,10 @@ do `/sdd:release`.
    | `auditoria` | a decisão sobre `auditoria.md` | `pronta` ou `green` (corrigir) |
 
 3. **Apresente um resumo para a decisão**, curto e honesto:
+   - **transição:** o "como era" e o "como vai ficar" do `transicao.md` lado a
+     lado (arquivos, requisitos, tarefas), quantas tarefas ficam `[O]` (feitas
+     fora do plugin, sem gate) e quantas `[ ]` (o plugin continua daqui), o
+     que ficou de fora e a fase de destino com a evidência;
    - **spec:** objetivo, quantidade de RFs e CAs, fora do escopo, capacidade, e
      alerta se houver `[PRECISA ESCLARECER]` em aberto;
    - **plano:** abordagem, contratos, dependências novas, ADRs, ameaças e plano de implantação;

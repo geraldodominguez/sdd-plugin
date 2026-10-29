@@ -50,6 +50,14 @@ sem tarefas nem spec. O `escritor-de-testes` recebe o incidente e escreve o
 **teste de regressão** que reproduz o problema. Depois da correção, a spec é
 escrita e aprovada: sem ela, a feature não fica pronta.
 
+## Feature adotada
+
+Numa feature que veio de outro processo, as tarefas `[O]` foram feitas fora do
+plugin. Elas não se implementam de novo, mas os critérios delas ganham testes
+na fase red (os que já existiam recebem a marca), e esses testes devem passar
+de início. Se um falhar, você decide se a tarefa volta a `[ ]`, para o plugin
+refazer. Na fase green, só as tarefas `[ ]` são implementadas.
+
 ## Por que separar quem testa de quem implementa
 
 Quando o mesmo agente escreve teste e código, o teste tende a confirmar a

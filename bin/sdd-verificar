@@ -12,6 +12,7 @@
 #     esperada.
 # Avisos (só falham com --estrito):
 #   - artefatos de processo fora do lugar do padrão (sdd-adotar inventario);
+#   - feature adotada ainda em transição (sem a transição aprovada);
 #   - feature pronta ou além ainda não consolidada na spec do sistema;
 #   - incidente S1 ou S2 sem estar encerrado;
 #   - hotfix sem spec aprovada.
@@ -53,6 +54,9 @@ for f in $(sdd_features "$RAIZ"); do
   esac
   if sdd_fase_entregue "$fase" && ! "$AQUI/sdd-sistema" consolidada "$f" >/dev/null 2>&1; then
     avisos+=("$f ($fase): ainda não consolidada na spec do sistema")
+  fi
+  if [ "$(sdd_feature_ler "$RAIZ" "$f" adocao)" = "transicao" ]; then
+    avisos+=("$f: adotada de outro processo, ainda em transição (aprove o transicao.md)")
   fi
   if [ "$(sdd_feature_ler "$RAIZ" "$f" tipo)" = "hotfix" ] && ! sdd_aprovado_ok "$RAIZ" "$f" spec.md; then
     avisos+=("$f: hotfix sem a spec retroativa aprovada")

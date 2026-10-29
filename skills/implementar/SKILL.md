@@ -25,6 +25,13 @@ Rode `sdd-estado ver` e decida por onde começar:
 | fase `red`, testes marcados existem e não estão aprovados | os testes já foram escritos: mostre-os e diga para rodar `/sdd:aprovar` |
 | fase `green` | vá direto para a fase green, continuando da primeira tarefa aberta |
 | fase `tarefas` | comece pela fase red |
+| `adocao=transicao` | a feature veio de outro processo e a transição não foi aprovada: diga para rodar `/sdd:aprovar` e pare |
+
+**Tarefas `[O]`** foram feitas fora do plugin, antes da adoção, sem gate. Elas
+não se implementam de novo. Na fase red, os critérios delas também ganham
+testes (os que já existiam recebem a marca, como lista o `transicao.md`), e
+esses testes devem **passar** de início: é assim que o trabalho de fora é
+verificado. Na fase green, implemente só as tarefas `[ ]`.
 
 Leia `comando_teste` e `protecao` no `.sdd/config.yml`. Sem `comando_teste`, descubra o comando de testes do projeto
 e confirme com o usuário.
@@ -40,6 +47,9 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
    - o número da feature (NNN), para as marcas `sdd:NNN:CA-XXX`;
    - o `comando_teste` e os `globs_de_teste`;
    - as tarefas no escopo;
+   - **numa feature adotada** (`transicao.md` existe): as tarefas `[O]` e a
+     tabela "Testes que já existiam" do `transicao.md`, com a instrução de
+     marcar os testes listados e de escrever os que faltam para os CAs delas;
    - **num hotfix** (feature com `tipo=hotfix`, sem tarefas nem spec ainda): o
      caminho de `incidentes/INC-NNN.md` (a origem) e a instrução de escrever o
      teste de regressão que reproduz o incidente, com a marca `sdd:NNN:CA-001`.
@@ -49,7 +59,11 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
 3. Ao receber o resumo, confirme que:
    - todo CA do escopo tem teste com marca (o `sdd-rastrear` ajuda);
    - os testes **falham pelo motivo certo**: comportamento ausente, não erro de
-     sintaxe nem configuração quebrada.
+     sintaxe nem configuração quebrada;
+   - numa feature adotada, os testes dos CAs atendidos só por tarefas `[O]`
+     **passam**. Se um deles falhar, o trabalho feito fora do plugin não cumpre
+     a spec: mostre ao usuário e pergunte se a tarefa volta a `[ ]` (o plugin
+     refaz) ou se a spec está errada (corrija a spec antes de aprovar os testes).
 4. **Gate.** Mostre os testes criados (nome e CA) e a execução falhando, e
    **pare**. Diga ao usuário para rodar `/sdd:aprovar`, que registra o hash dos
    testes (qualquer mudança neles depois disso fica visível para o auditor), e
@@ -64,7 +78,8 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
    2. implemente **só** o necessário para esses testes passarem, respeitando a
       constituição, o plano e os contratos;
    3. rode os testes e itere até ficarem verdes, sem quebrar os anteriores;
-   4. marque `[x]` em `tarefas.md`;
+   4. marque `[x]` em `tarefas.md`. Uma tarefa `[O]` só vira `[x]` se o plugin
+      a refez (porque o teste dela falhou e o usuário decidiu refazer);
    5. faça o commit, se o usuário pediu.
 3. **Se um teste parecer errado** (contradiz a spec, depende de detalhe interno,
    é impossível de satisfazer): **pare.** Explique o problema e as opções:
@@ -96,7 +111,7 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
 
 ## Pronto quando
 
-- Toda tarefa do escopo está `[x]` e a suíte está verde.
+- Toda tarefa do escopo está `[x]` (ou `[O]`, com os testes dela verdes) e a suíte está verde.
 - O `sdd-rastrear` não aponta lacunas.
 - Nenhum teste foi alterado na fase green.
 - A obrigatoriedade da revisão de segurança foi conferida com `sdd-estado sensivel`.

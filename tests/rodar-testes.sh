@@ -616,6 +616,58 @@ printf 'PLAN.md -> legado:PLAN.md\n' > "$M"
 out="$(cd "$L" && sdd-verificar 2>&1)"
 echo "$out" | grep -q 'fora do lugar do padrão' && fail "aviso some depois da adoção" "$out" || ok "aviso some depois da adoção"
 
+echo "adoção: transição e tarefas [O]"
+A=001-login-com-e-mail
+TR="$L/specs/$A/transicao.md"
+[ "$(sdd_feature_ler_t "$L" $A adocao)" = "transicao" ] && ok "feature adotada nasce em transição" || fail "adocao=transicao"
+grep -q "^# Transição $A" "$TR" && ok "transicao.md vem do modelo" || fail "transicao.md do modelo"
+grep -qE '^\| `docs/specs/login/tasks.md` \| [0-9a-f]{12} \| `tarefas.md` \|$' "$TR" && ok "o como era traz o caminho original e o hash" || fail "como era" "$(grep '^| `' "$TR")"
+grep -qE '\| adocao \| docs/specs/login/tasks.md -> tarefas.md \| hash=[0-9a-f]{12}' "$L/specs/$A/historico.md" && ok "histórico guarda o hash do original" || fail "hash no histórico"
+out="$(cd "$L" && sdd-pendencias)"
+echo "$out" | grep -q "$A veio de outro processo" && ok "pendências cobram a transição" || fail "pendência da transição" "$out"
+out="$(cd "$L" && sdd-status)"
+echo "$out" | grep -q "$A .*em transição" && ok "o quadro mostra a transição" || fail "quadro transição" "$out"
+(cd "$L" && sdd-estado usar $A >/dev/null)
+(cd "$L" && assert_exit 1 "transicao.md com lacunas não se aprova" sdd-estado aprovar)
+(cd "$L" && assert_exit 1 "outro artefato não se aprova antes da transição" sdd-estado aprovar spec.md)
+(cd "$L" && assert_exit 1 "a fase não muda à mão durante a transição" sdd-estado definir fase=red)
+# A conversão: o agente reescreve no padrão e preenche o como vai ficar.
+printf '# Spec %s\n- **RF-001**: O SISTEMA DEVE autenticar por e-mail.\n- **RF-002**: O SISTEMA DEVE redefinir a senha.\n- **CA-001** (valida RF-001)\n- **CA-002** (valida RF-002)\n' "$A" > "$L/specs/$A/spec.md"
+printf -- '- [O] T-001 login por e-mail (atende: RF-001, CA-001; depende de: nada)\n- [ ] T-002 redefinir a senha (atende: RF-002, CA-002; depende de: T-001)\n' > "$L/specs/$A/tarefas.md"
+awk '{ s = s $0 "\n" } END { while (match(s, /\{\{[^}]*\}\}/)) s = substr(s, 1, RSTART - 1) "x" substr(s, RSTART + RLENGTH); printf "%s", s }' "$TR" > "$TR.tmp" && mv "$TR.tmp" "$TR"
+subst 's/^| Fase de destino | .* |$/| Fase de destino | plano |/' "$TR"
+(cd "$L" && assert_exit 1 "destino plano no nível 1 é recusado" sdd-estado aprovar)
+subst 's/^| Fase de destino | .* |$/| Fase de destino | codar |/' "$TR"
+(cd "$L" && assert_exit 1 "destino inválido é recusado" sdd-estado aprovar)
+subst 's/^| Fase de destino | .* |$/| Fase de destino | red |/' "$TR"
+mv "$L/specs/$A/tarefas.md" "$TMP/tarefas.bak"
+(cd "$L" && assert_exit 1 "destino red sem tarefas.md é recusado" sdd-estado aprovar)
+mv "$TMP/tarefas.bak" "$L/specs/$A/tarefas.md"
+out="$(cd "$L" && sdd-estado aprovar 2>&1)"; code=$?
+[ "$code" -eq 0 ] && echo "$out" | grep -q 'segue no SDD a partir da fase red' && ok "aprovar a transição leva à fase de destino" || fail "aprova transição" "$out"
+echo "$out" | grep -q 'Tarefas feitas fora do plugin (\[O\]): 1' && ok "a aprovação conta as tarefas [O]" || fail "conta [O]" "$out"
+[ "$(sdd_feature_ler_t "$L" $A fase)" = "red" ] && [ "$(sdd_feature_ler_t "$L" $A adocao)" = "regularizada" ] && ok "feature regularizada, na fase red" || fail "regularizada red"
+for art in spec.md tarefas.md transicao.md; do
+  grep -qE "\| aprovacao \| $art \| hash=[0-9a-f]{12} \| decisao: transicao" "$L/specs/$A/historico.md" && ok "transição registra $art com hash" || fail "registro $art"
+done
+(cd "$L" && assert_exit 0 "spec convertida conta como aprovada" sdd-estado aprovado spec.md)
+(cd "$L" && assert_exit 0 "tarefas convertidas contam como aprovadas" sdd-estado aprovado tarefas.md)
+out="$(cd "$L" && sdd-status --ativa)"
+echo "$out" | grep -q 'tarefas: 1/2 concluídas (1 feitas fora do plugin, marcadas \[O\])' && ok "o detalhe separa as tarefas [O]" || fail "detalhe [O]" "$out"
+echo "$out" | grep -q 'próxima: T-002' && ok "o plugin continua pela primeira tarefa aberta" || fail "próxima tarefa" "$out"
+echo "$out" | grep -q 'adoção: regularizada' && ok "o detalhe mostra a adoção" || fail "detalhe adoção" "$out"
+mkdir -p "$L/tests"
+printf '// sdd:001:CA-001\nit("entra com e-mail", () => {})\n// sdd:001:CA-002\nit("redefine a senha", () => {})\n' > "$L/tests/login.test.ts"
+(cd "$L" && assert_exit 0 "rastrear lê as tarefas [O]" sdd-rastrear --silencioso)
+(cd "$L" && sdd-estado aprovar >/dev/null)
+[ "$(sdd_feature_ler_t "$L" $A fase)" = "green" ] && ok "testes aprovados: green" || fail "green da adotada"
+subst 's/^- \[ \] T-002/- [x] T-002/' "$L/specs/$A/tarefas.md"
+(cd "$L" && assert_exit 0 "entrega com [O] e [x]" sdd-estado aprovar)
+[ "$(sdd_feature_ler_t "$L" $A fase)" = "pronta" ] && ok "a feature adotada chega a pronta" || fail "adotada pronta"
+grep -q '^- \[O\] T-001' "$L/specs/$A/tarefas.md" && ok "a marca [O] fica como registro" || fail "marca [O] mantida"
+out="$(cd "$L" && sdd-verificar 2>&1)"
+echo "$out" | grep -q '002-pagamento: adotada de outro processo, ainda em transição' && ok "verificar avisa transição pendente" || fail "aviso transição" "$out"
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"

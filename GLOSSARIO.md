@@ -18,8 +18,16 @@ Os lugares fixos de cada artefato de processo: `specs/NNN-slug/`, `docs/adr/NNNN
 _Evite_: estrutura de pastas (sugere algo que cada um decide)
 
 **Adoção**:
-Trazer para o **layout** os artefatos que outro processo ou outro agente deixou fora do lugar, com um mapa aprovado pelo usuário (`/sdd:iniciar --adotar`, `sdd-adotar`). Move sem reescrever nem apagar.
-_Evite_: migração (sugere converter o conteúdo)
+Trazer para o **layout** os artefatos que outro processo ou outro agente deixou fora do lugar, com um mapa aprovado pelo usuário (`/sdd:iniciar --adotar`, `sdd-adotar`): renomeia para o padrão, nunca apaga, e põe cada feature em andamento numa **transição**.
+_Evite_: importação
+
+**Transição**:
+A situação de uma feature adotada (`adocao=transicao`) até o usuário aprovar o `transicao.md`, que mostra como ela era no outro processo e como fica no SDD. A aprovação registra os artefatos convertidos e leva a feature à **fase de destino**, para continuar de onde parou.
+_Evite_: migração
+
+**Tarefa `[O]`**:
+Tarefa feita fora do plugin, antes da adoção, sem gate. Não se refaz; os testes dos critérios dela vêm na fase red e devem passar de início.
+_Evite_: tarefa concluída (essa é a `[x]`, feita no plugin)
 
 **Feature**:
 Uma unidade de mudança, com pasta própria `specs/NNN-slug/` e um **nível de rigor**.

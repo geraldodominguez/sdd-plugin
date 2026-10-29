@@ -25,10 +25,15 @@
 #
 # O aplicar confere o mapa inteiro antes de mover qualquer coisa. Nunca
 # sobrescreve nem apaga: recusa destino existente, usa git mv quando o arquivo
-# está no git, cria o estado e o histórico das features novas (na fase
-# especificacao, à espera da aprovação humana), registra cada movimento no
-# histórico do projeto e em .sdd/adocao.md, remove só as pastas que ficaram
-# vazias e lista os arquivos que ainda citam os caminhos antigos.
+# está no git, cria o estado e o histórico das features novas, registra cada
+# movimento no histórico do projeto e em .sdd/adocao.md, remove só as pastas
+# que ficaram vazias e lista os arquivos que ainda citam os caminhos antigos.
+#
+# Toda feature nova nasce na situação de transição (adocao=transicao, fase
+# especificacao) com um transicao.md feito do modelo, já com o "como era" dos
+# arquivos (caminho original e hash). O agente converte os arquivos para o
+# padrão e preenche o "como vai ficar"; o usuário aprova a transição com
+# /sdd:aprovar, e a feature segue da fase de destino.
 # Saída: 0 ok, 1 erro de uso ou mapa inválido (nada é movido).
 set -uo pipefail
 
@@ -236,7 +241,7 @@ aplicar() {
     done
     if [ -n "$features_novas" ]; then
       echo
-      echo "Features novas (nascem na fase especificacao, à espera da sua aprovação):"
+      echo "Features novas (nascem em transição, à espera da conversão e da sua aprovação):"
       printf '%s\n' "$features_novas" | sed "s#^#  + $PASTA_SPECS/#"
     fi
     return 0
@@ -256,8 +261,9 @@ aplicar() {
       sdd_feature_gravar "$RAIZ" "$f" seguranca "$seguranca"
       sdd_feature_gravar "$RAIZ" "$f" capacidade ""
       sdd_feature_gravar "$RAIZ" "$f" release ""
+      sdd_feature_gravar "$RAIZ" "$f" adocao transicao
       sdd_feature_gravar "$RAIZ" "$f" atualizado "$(sdd_agora)"
-      sdd_registrar "$RAIZ" "$f" criada "nível $nivel, normal, adotada de outro processo"
+      sdd_registrar "$RAIZ" "$f" criada "nível $nivel, normal, adotada de outro processo (em transição)"
     done <<< "$features_novas"
   fi
 
@@ -272,9 +278,10 @@ aplicar() {
     } > "$relatorio"
   fi
 
-  local movidos=0 o d pai feat
+  local movidos=0 o d pai feat hashes=()
   for i in "${!origens[@]}"; do
     o="${origens[$i]}"; d="${destinos[$i]}"
+    hashes[i]="$(sdd_hash_stdin < "$RAIZ/$o")"
     mkdir -p "$RAIZ/$(dirname "$d")"
     if no_git "$o"; then
       git -C "$RAIZ" mv -- "$o" "$d" || { echo "sdd-adotar: falha ao mover '$o'. Os anteriores já foram movidos (ver .sdd/adocao.md)." >&2; exit 1; }
@@ -287,7 +294,7 @@ aplicar() {
     case "$d" in
       "$PASTA_SPECS"/*/*)
         feat="${d#"$PASTA_SPECS"/}"; feat="${feat%%/*}"
-        sdd_registrar "$RAIZ" "$feat" adocao "$o -> ${d#"$PASTA_SPECS/$feat"/}"
+        sdd_registrar "$RAIZ" "$feat" adocao "$o -> ${d#"$PASTA_SPECS/$feat"/} | hash=${hashes[$i]}"
         ;;
     esac
     # Remove só as pastas que ficaram vazias, subindo até a raiz.
@@ -297,10 +304,37 @@ aplicar() {
     done
   done
 
+  # O "como era" de cada feature em transição: uma linha por arquivo movido.
+  local alvo linhas
+  for feat in $(printf '%s\n' "${destinos[@]}" | sed -n "s#^$PASTA_SPECS/\\([^/]*\\)/.*#\\1#p" | sort -u); do
+    [ "$(sdd_feature_ler "$RAIZ" "$feat" adocao)" = "transicao" ] || continue
+    linhas="$RAIZ/.sdd/.transicao.$$"
+    : > "$linhas"
+    for i in "${!origens[@]}"; do
+      case "${destinos[$i]}" in
+        "$PASTA_SPECS/$feat"/*) printf '| `%s` | %s | `%s` |\n' "${origens[$i]}" "${hashes[$i]}" "${destinos[$i]#"$PASTA_SPECS/$feat"/}" >> "$linhas" ;;
+      esac
+    done
+    alvo="$RAIZ/$PASTA_SPECS/$feat/transicao.md"
+    if [ ! -f "$alvo" ]; then
+      sed -e "s/{{FEATURE}}/$feat/g" -e "s/{{DATA}}/$hoje/g" "$(sdd_template "$RAIZ" transicao.md)" \
+        | awk -v lf="$linhas" '$0 == "{{ARQUIVOS}}" { while ((getline l < lf) > 0) print l; next } { print }' > "$alvo"
+    else
+      # Feature já em transição que recebeu mais arquivos: acrescenta à tabela.
+      awk -v lf="$linhas" '
+        /^\| Arquivo original \|/ { tab = 1 }
+        tab && !/^\|/ { while ((getline l < lf) > 0) print l; tab = 0 }
+        { print }
+        END { if (tab) while ((getline l < lf) > 0) print l }
+      ' "$alvo" > "$alvo.tmp.$$" && mv "$alvo.tmp.$$" "$alvo"
+    fi
+    rm -f "$linhas"
+  done
+
   echo "Adotados: $movidos arquivo(s). Registro em .sdd/adocao.md."
   if [ -n "$features_novas" ]; then
     echo
-    echo "Features criadas na fase especificacao (revise e aprove cada spec com /sdd:aprovar):"
+    echo "Features em transição (converta os arquivos para o padrão, preencha o transicao.md e aprove a transição com /sdd:aprovar):"
     printf '%s\n' "$features_novas" | sed "s#^#  + $PASTA_SPECS/#"
   fi
 

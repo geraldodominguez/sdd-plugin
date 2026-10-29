@@ -22,6 +22,12 @@ para e pede `/sdd:aprovar`.
 O `[P]` marca tarefas que podem rodar em paralelo. O `sdd-rastrear` e o
 `sdd-status` leem exatamente este formato, por isso ele é fixo.
 
+| Caixa | Significado |
+|---|---|
+| `[ ]` | aberta |
+| `[x]` | feita no plugin, com os testes verdes |
+| `[O]` | feita fora do plugin, antes da adoção, sem gate (só a adoção escreve esta marca) |
+
 ## Perguntas frequentes
 
 **O sdd-rastrear aponta que os critérios não têm teste. Está errado?**

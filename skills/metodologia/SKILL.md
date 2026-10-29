@@ -97,7 +97,14 @@ constituição, **ameaças e mitigações**, **implantação e rollback**,
 congelados durante a implementação.
 
 **Tarefas:** pequenas, rastreáveis ([DECOMPOSICAO-DE-TAREFAS.md](DECOMPOSICAO-DE-TAREFAS.md)):
-`- [ ] T-NNN [P] descrição (atende: RF-NNN, CA-NNN; depende de: T-NNN)`
+`- [ ] T-NNN [P] descrição (atende: RF-NNN, CA-NNN; depende de: T-NNN)`.
+`[x]` é feita no plugin; `[O]` é feita fora do plugin, antes da adoção, sem
+gate: não se refaz, mas os testes dos critérios dela vêm na fase red e devem
+passar de início.
+
+**Feature adotada:** veio de outro processo e nasce em transição
+(`adocao=transicao`), com um `transicao.md` que mostra como ela era e como
+fica. Nada avança antes de o usuário aprovar a transição (`/sdd:aprovar`).
 
 **Testes:** todo CA tem teste com a marca `sdd:<NNN>:<CA-ID>`. O hash dos testes
 cobre só os blocos marcados com o número da feature.

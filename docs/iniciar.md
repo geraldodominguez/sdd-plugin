@@ -31,8 +31,10 @@ padrão".
 | Leitura | o agente lê cada um por inteiro e olha o código para saber o que já foi implementado |
 | Mapa | cada arquivo recebe um destino: feature nova, ADR, `docs/arquitetura/` ou `docs/legado/` |
 | **Gate** | você aprova o mapa; sem aprovação, nada se move |
-| Aplicação | `sdd-adotar aplicar` move com `git mv`, numera e registra em `.sdd/adocao.md` |
+| Aplicação | `sdd-adotar aplicar` renomeia para o padrão com `git mv`, numera, registra em `.sdd/adocao.md` e põe cada feature em **transição** |
 | Arrumação | backlog, constituição, links e exceções |
+| Conversão | o agente reescreve spec, plano e tarefas no modelo, marca `[O]` as tarefas feitas fora do plugin e `[ ]` as abertas, e preenche no `transicao.md` como era e como vai ficar |
+| **Gate da transição** | você aprova cada feature com `/sdd:aprovar`, e ela continua de onde parou |
 
 O detalhe está em [projetos existentes](referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
 
@@ -75,11 +77,20 @@ Só acrescenta, ou atualiza no lugar, o bloco entre `<!-- sdd:inicio -->` e
 
 **Ela vai mexer nas minhas specs antigas?**
 
-Só move, e só com o mapa que você aprovou. O conteúdo chega como estava, o
-`git mv` preserva o histórico de cada arquivo e nada é apagado: o que não entra
-no fluxo vai para `docs/legado/`. As features adotadas nascem na fase
-`especificacao`, sem aprovação nenhuma, porque ninguém aprovou aquelas specs
-dentro do SDD.
+Renomeia para o padrão, só com o mapa que você aprovou, e depois converte o
+conteúdo para os modelos do SDD. O `git mv` preserva o histórico de cada
+arquivo, o hash do original fica no `transicao.md` e nada é apagado: o que não
+entra no fluxo vai para `docs/legado/`.
+
+**A feature continua de onde parou?**
+
+Sim, depois que você aprova a transição. Ela nasce em transição, sem nenhuma
+aprovação, porque ninguém aprovou aquele trabalho dentro do SDD. O
+`transicao.md` mostra como era e como ficou, e diz em que fase ela continua
+(por exemplo, `red`, com 6 tarefas `[O]` feitas fora do plugin e 4 `[ ]`
+abertas). Ao aprovar, a spec, o plano e as tarefas convertidos ficam aprovados,
+e o plugin segue pelas tarefas abertas. Os testes das tarefas `[O]` vêm na
+fase red e devem passar de início.
 
 **Um documento meu tem nome de artefato, mas não é do SDD.**
 

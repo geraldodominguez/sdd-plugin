@@ -74,7 +74,7 @@ else
       anotar "✗ $t não referencia nenhum requisito ou critério."
       lacunas=$((lacunas + 1))
     fi
-  done < <(grep -E '^[[:space:]]*- \[[ xX]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$TAREFAS" || true)
+  done < <(grep -E "$SDD_RE_TAREFA" "$TAREFAS" || true)
 fi
 
 # CA → teste (marca NNN:CA-XXX em arquivos de teste).

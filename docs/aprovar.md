@@ -16,6 +16,7 @@ um comando de fase terminar dizendo "próximo: `/sdd:aprovar`", ou quando o
 
 | Fase | O que você aprova | Para onde a feature vai |
 |---|---|---|
+| qualquer, com a feature em transição (adotada de outro processo) | o `transicao.md`: como era e como vai ficar, e com ele a spec, o plano e as tarefas convertidos | a fase de destino do `transicao.md`: especificação, plano, tarefas ou red |
 | especificação ou clarificação | a `spec.md` | plano (nível 2) ou tarefas (nível 1) |
 | plano | o `plano.md` e os `contratos/` | tarefas |
 | tarefas | o `tarefas.md` | red |

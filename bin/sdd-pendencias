@@ -51,7 +51,9 @@ for f in $(sdd_features "$RAIZ"); do
     fi
   fi
   art="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
-  if [ -n "$art" ]; then
+  if [ "$art" = "transicao.md" ]; then
+    aprov+=("$f veio de outro processo: converta para o padrão e aprove a transição (transicao.md)")
+  elif [ -n "$art" ]; then
     if [ -n "$(sdd_ultima_aprovacao "$RAIZ" "$f" "$art")" ]; then
       aprov+=("$f: $art foi alterado depois de aprovado (fase $fase)")
     else

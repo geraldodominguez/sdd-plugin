@@ -39,5 +39,7 @@ menos uma tarefa. O `sdd-rastrear` verifica as duas direções.
 - [ ] T-003 [P] valida expiração do token (atende: RF-002, CA-003, CA-004; depende de: T-001)
 ```
 
-O `sdd-rastrear` e o `sdd-status` leem exatamente este formato: `- [ ]` ou
-`- [x]`, seguido de `T-NNN`.
+O `sdd-rastrear` e o `sdd-status` leem exatamente este formato: `- [ ]`
+(aberta), `- [x]` (feita no plugin) ou `- [O]` (feita fora do plugin, antes da
+adoção, sem gate), seguido de `T-NNN`. Só a adoção escreve `[O]`; o plugin
+nunca marca uma tarefa assim.

@@ -88,8 +88,9 @@ sdd_config() {
 # Chaves que pertencem à feature, não aos ponteiros.
 #   fase, nivel, origem (B-NNN ou INC-NNN), tipo (normal ou hotfix),
 #   seguranca (obrigatoria ou dispensada), capacidade (da spec do sistema),
-#   release (versão em que entrou), atualizado
-SDD_CHAVES_DA_FEATURE="fase nivel origem tipo seguranca capacidade release atualizado"
+#   release (versão em que entrou), adocao (transicao ou regularizada, só nas
+#   features adotadas de outro processo), atualizado
+SDD_CHAVES_DA_FEATURE="fase nivel origem tipo seguranca capacidade release adocao atualizado"
 
 sdd_e_chave_da_feature() {
   local c="$1" x
@@ -552,14 +553,28 @@ sdd_semana_iso() {
 # Progresso de uma feature
 # ---------------------------------------------------------------------------
 
+# Linha de tarefa: "- [ ] T-NNN" aberta, "- [x] T-NNN" feita no plugin e
+# "- [O] T-NNN" feita fora do plugin, antes da adoção, sem gate.
+# shellcheck disable=SC2034  # usado por quem carrega este arquivo
+SDD_RE_TAREFA='^[[:space:]]*- \[[ xXoO]\][[:space:]]*\*{0,2}T-[0-9]{3}'
+
 # sdd_tarefas_progresso <raiz> <feature>: "feitas total" (0 0 sem tarefas.md).
+# As feitas incluem as [O]; sdd_tarefas_fora conta só essas.
 sdd_tarefas_progresso() {
   local arq feitas abertas
   arq="$1/$(sdd_pasta_specs "$1")/$2/tarefas.md"
   if [ ! -f "$arq" ]; then echo "0 0"; return; fi
-  feitas="$(grep -cE '^[[:space:]]*- \[[xX]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true)"
+  feitas="$(grep -cE '^[[:space:]]*- \[[xXoO]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true)"
   abertas="$(grep -cE '^[[:space:]]*- \[ \][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true)"
   echo "$feitas $((feitas + abertas))"
+}
+
+# sdd_tarefas_fora <raiz> <feature>: quantas tarefas [O], feitas fora do plugin.
+sdd_tarefas_fora() {
+  local arq
+  arq="$1/$(sdd_pasta_specs "$1")/$2/tarefas.md"
+  [ -f "$arq" ] || { echo 0; return; }
+  grep -cE '^[[:space:]]*- \[[oO]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true
 }
 
 # sdd_duvidas_abertas <raiz> <feature>: marcadores PRECISA ESCLARECER reais na spec.
@@ -574,6 +589,11 @@ sdd_duvidas_abertas() {
 sdd_aguarda_aprovacao() {
   local raiz="$1" f="$2" fase art atual aprovado
   fase="$(sdd_feature_ler "$raiz" "$f" fase)"
+  # Feature adotada de outro processo: antes de tudo, a transição.
+  if [ "$(sdd_feature_ler "$raiz" "$f" adocao)" = "transicao" ]; then
+    printf 'transicao.md\n'
+    return 0
+  fi
   art="$(sdd_artefato_da_fase "$fase")"
   # Hotfix: a spec é retroativa e precisa ser aprovada antes da entrega.
   if [ "$(sdd_feature_ler "$raiz" "$f" tipo)" = "hotfix" ] && [ "$fase" = "green" ]; then
@@ -763,12 +783,24 @@ sdd_tipo_de_artefato() {
 
 # sdd_no_layout <raiz> <caminho relativo>: 0 se o arquivo está num lugar do
 # padrão (ou casa com excecoes_de_layout do config).
+# As pastas e as exceções são lidas do config uma vez por raiz: o inventário
+# chama esta função para cada arquivo do projeto.
+SDD__LAYOUT_RAIZ=""
+sdd__carregar_layout() {
+  [ "$SDD__LAYOUT_RAIZ" = "$1" ] && return 0
+  SDD__LAYOUT_SPECS="$(sdd_pasta_specs "$1")"
+  SDD__LAYOUT_SISTEMA="$(sdd_pasta_sistema "$1")"
+  SDD__LAYOUT_RELEASES="$(sdd_pasta_releases "$1")"
+  SDD__LAYOUT_INCIDENTES="$(sdd_pasta_incidentes "$1")"
+  SDD__LAYOUT_EXCECOES="$(sdd_config "$1" excecoes_de_layout "")"
+  SDD__LAYOUT_RAIZ="$1"
+}
+
 sdd_no_layout() {
   local raiz="$1" rel="$2" specs sistema releases incidentes excecoes resto pasta
-  specs="$(sdd_pasta_specs "$raiz")"
-  sistema="$(sdd_pasta_sistema "$raiz")"
-  releases="$(sdd_pasta_releases "$raiz")"
-  incidentes="$(sdd_pasta_incidentes "$raiz")"
+  sdd__carregar_layout "$raiz"
+  specs="$SDD__LAYOUT_SPECS"; sistema="$SDD__LAYOUT_SISTEMA"
+  releases="$SDD__LAYOUT_RELEASES"; incidentes="$SDD__LAYOUT_INCIDENTES"
   case "$rel" in
     .sdd/*|"$sistema"/*|"$releases"/*|"$incidentes"/*|docs/legado/*|docs/arquitetura/*) return 0 ;;
     docs/adr/*)
@@ -780,7 +812,7 @@ sdd_no_layout() {
       printf '%s' "$pasta" | grep -qE '^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' \
         && [ -f "$raiz/$specs/$pasta/estado" ] && return 0 ;;
   esac
-  excecoes="$(sdd_config "$raiz" excecoes_de_layout "")"
+  excecoes="$SDD__LAYOUT_EXCECOES"
   [ -n "$excecoes" ] && sdd_casa_glob "$rel" "$excecoes" && return 0
   return 1
 }
@@ -797,9 +829,11 @@ sdd_fora_do_layout() {
 # sdd_artefatos_fora_do_layout <raiz>: "tipo<TAB>caminho", um por linha, em ordem.
 sdd_artefatos_fora_do_layout() {
   local raiz="$1" f tipo
+  sdd__carregar_layout "$raiz"
   # Filtra pela extensão antes: só os candidatos passam pelo classificador.
   sdd_listar_arquivos "$raiz" | grep -iE '\.(md|mdx|markdown|dsl|puml|plantuml)$' | sort | while IFS= read -r f; do
     [ -n "$f" ] && [ -f "$raiz/$f" ] || continue
+    case "$f" in .sdd/*) continue ;; esac
     tipo="$(sdd_fora_do_layout "$raiz" "$f")" || continue
     printf '%s\t%s\n' "$tipo" "$f"
   done

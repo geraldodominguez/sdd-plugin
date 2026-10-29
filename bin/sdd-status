@@ -46,13 +46,17 @@ na_sprint() { # na_sprint <feature>
 }
 
 detalhe() { # detalhe <feature>
-  local f="$1" dir fase nivel prog feitas total linha p a
+  local f="$1" dir fase nivel prog feitas total linha p a fora
   dir="$RAIZ/$PASTA_SPECS/$f"
   [ -d "$dir" ] || { echo "sdd-status: a feature $f não existe." >&2; exit 1; }
   fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"; nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
   echo "Feature $f (nível ${nivel:-?})$( [ "$f" = "$ATIVA" ] && echo ' · ativa')"
   o="$(sdd_feature_ler "$RAIZ" "$f" origem)"; [ -n "$o" ] && echo "  origem: $o"
   t="$(sdd_feature_ler "$RAIZ" "$f" tipo)"; [ "$t" = "hotfix" ] && echo "  tipo: hotfix (spec retroativa obrigatória)"
+  case "$(sdd_feature_ler "$RAIZ" "$f" adocao)" in
+    transicao) echo "  adoção: EM TRANSIÇÃO (veio de outro processo; converta e aprove o transicao.md)" ;;
+    regularizada) echo "  adoção: regularizada (veio de outro processo; ver transicao.md)" ;;
+  esac
   echo "  revisão de segurança: $(sdd_feature_ler "$RAIZ" "$f" seguranca)"
   c="$(sdd_feature_ler "$RAIZ" "$f" capacidade)"; echo "  capacidade: ${c:-não definida}"
   r="$(sdd_feature_ler "$RAIZ" "$f" release)"; [ -n "$r" ] && echo "  release: $r"
@@ -65,8 +69,8 @@ detalhe() { # detalhe <feature>
   done
   echo "  fase:$linha"
   echo "  artefatos:"
-  for a in contexto.md spec.md plano.md tarefas.md seguranca.md auditoria.md delta-spec.md; do
-    [ -f "$dir/$a" ] || { [ "$a" = "delta-spec.md" ] && continue; echo "    · $a"; continue; }
+  for a in transicao.md contexto.md spec.md plano.md tarefas.md seguranca.md auditoria.md delta-spec.md; do
+    [ -f "$dir/$a" ] || { case "$a" in delta-spec.md|transicao.md) continue ;; esac; echo "    · $a"; continue; }
     case "$a" in
       spec.md|plano.md|tarefas.md|seguranca.md|auditoria.md)
         st="$("$AQUI/sdd-estado" aprovado "$a" "$f" 2>/dev/null)"; st="${st#*: }"
@@ -77,7 +81,12 @@ detalhe() { # detalhe <feature>
   [ -d "$dir/contratos" ] && echo "    ✓ contratos/ ($(find "$dir/contratos" -type f | wc -l | tr -d ' ') arquivos)"
   prog="$(sdd_tarefas_progresso "$RAIZ" "$f")"; feitas="${prog% *}"; total="${prog#* }"
   if [ "$total" -gt 0 ]; then
-    echo "  tarefas: $feitas/$total concluídas"
+    fora="$(sdd_tarefas_fora "$RAIZ" "$f")"
+    if [ "${fora:-0}" -gt 0 ]; then
+      echo "  tarefas: $feitas/$total concluídas ($fora feitas fora do plugin, marcadas [O])"
+    else
+      echo "  tarefas: $feitas/$total concluídas"
+    fi
     proxima="$(grep -E '^[[:space:]]*- \[ \][[:space:]]*\*{0,2}T-[0-9]{3}' "$dir/tarefas.md" | head -1 | sed -E 's/^[[:space:]]*- \[ \][[:space:]]*//')"
     [ -n "$proxima" ] && echo "  próxima: $proxima"
   fi
@@ -112,7 +121,7 @@ else
 fi
 
 linhas_coluna() { # linhas_coluna <título>
-  local alvo="$1" f fase nivel extra prog feitas total n aguarda marca achou=0
+  local alvo="$1" f fase nivel extra prog feitas total n aguarda marca fora achou=0
   for f in $(sdd_features "$RAIZ"); do
     fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
     [ "$(coluna "$fase")" = "$alvo" ] || continue
@@ -122,9 +131,12 @@ linhas_coluna() { # linhas_coluna <título>
     em_construcao=1
     sdd_fase_entregue "$fase" && em_construcao=0
     [ "$total" -gt 0 ] && [ "$em_construcao" -eq 1 ] && extra="$extra · $feitas/$total tarefas"
+    fora="$(sdd_tarefas_fora "$RAIZ" "$f")"
+    [ "${fora:-0}" -gt 0 ] && [ "$em_construcao" -eq 1 ] && extra="$extra ($fora fora do plugin)"
     n="$(sdd_duvidas_abertas "$RAIZ" "$f")"
     [ "${n:-0}" -gt 0 ] && [ "$em_construcao" -eq 1 ] && extra="$extra · $n dúvida(s)"
     [ "$(sdd_feature_ler "$RAIZ" "$f" tipo)" = "hotfix" ] && extra="$extra · hotfix"
+    [ "$(sdd_feature_ler "$RAIZ" "$f" adocao)" = "transicao" ] && extra="$extra · em transição"
     if [ "$em_construcao" -eq 1 ]; then
       aguarda="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
       [ -n "$aguarda" ] && extra="$extra · aguarda aprovação"

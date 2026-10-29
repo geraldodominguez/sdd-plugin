@@ -153,6 +153,29 @@ grep -q 'Entregue: 1 de 1 itens' .sdd/sprints/S1.md && echo "   ✓ sprint S1: 1
 echo
 sdd-status | sed 's/^/   /'
 
+etapa "10. Adoção: trabalho que outro agente começou fora do plugin (/sdd:iniciar --adotar)"
+mkdir -p docs/specs/exportar
+printf '# Exportar pedidos\nO usuário exporta os pedidos em CSV e em PDF.\n' > docs/specs/exportar/requirements.md
+printf -- '- [x] exportar CSV\n- [ ] exportar PDF\n' > docs/specs/exportar/tasks.md
+git add -A && git commit -qm "docs: specs de outro agente"
+espera "artefatos fora do padrão" "$(sdd-adotar contar)" 2
+printf 'docs/specs/exportar/requirements.md -> feature:exportar-pedidos/spec.md\ndocs/specs/exportar/tasks.md -> feature:exportar-pedidos/tarefas.md\n' > .sdd/adocao-mapa.txt
+sdd-adotar aplicar .sdd/adocao-mapa.txt >/dev/null && rm .sdd/adocao-mapa.txt
+X=""; for d in specs/*-exportar-pedidos; do X="${d#specs/}"; done; NX="${X%%-*}"
+espera "situação da $X" "$(grep -E '^adocao=' "specs/$X/estado" | cut -d= -f2)" transicao
+printf '# Spec\n- **RF-001**: O SISTEMA DEVE exportar os pedidos em CSV.\n- **RF-002**: O SISTEMA DEVE exportar os pedidos em PDF.\n- **CA-001** (valida RF-001)\n- **CA-002** (valida RF-002)\n' > "specs/$X/spec.md"
+printf -- '- [O] T-001 exportar CSV (atende: RF-001, CA-001; depende de: nada)\n- [ ] T-002 exportar PDF (atende: RF-002, CA-002; depende de: nada)\n' > "specs/$X/tarefas.md"
+awk '{ s = s $0 "\n" } END { while (match(s, /\{\{[^}]*\}\}/)) s = substr(s, 1, RSTART - 1) "ok" substr(s, RSTART + RLENGTH); printf "%s", s }' "specs/$X/transicao.md" > t.tmp && mv t.tmp "specs/$X/transicao.md"
+subst 's/^| Fase de destino | .* |$/| Fase de destino | red |/' "specs/$X/transicao.md"
+sdd-estado usar "$X" >/dev/null && sdd-estado aprovar >/dev/null
+espera "transição aprovada, segue de" "$(fase "$X")" red
+printf "// sdd:%s:CA-001\nit('CSV')\n// sdd:%s:CA-002\nit('PDF')\n" "$NX" "$NX" > tests/exportar.test.js
+sdd-estado aprovar >/dev/null
+subst 's/^- \[ \] T-002/- [x] T-002/' "specs/$X/tarefas.md"
+sdd-estado aprovar >/dev/null
+espera "feature adotada" "$(fase "$X")" pronta
+echo "   T-001 ficou [O] (feita fora do plugin); T-002 foi feita no plugin [x]"
+
 echo
 if [ "$FALHOU" -eq 0 ]; then echo "Simulação concluída: todas as etapas chegaram ao estado esperado."; else echo "Simulação com falhas."; fi
 if [ "$MANTER" -eq 1 ]; then echo "Projeto simulado em: $P"; else rm -rf "${P:?}"; fi

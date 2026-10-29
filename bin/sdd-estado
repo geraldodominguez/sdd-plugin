@@ -10,7 +10,9 @@
 #                                              cria specs/NNN-slug/ e ativa a feature
 #   sdd-estado usar <NNN-slug>                 ativa uma feature existente
 #   sdd-estado aprovar [artefato] [--decisao D] [--sem-avancar] [--nota "texto"]
-#                                              registra a aprovação humana e avança a fase
+#                                              registra a aprovação humana e avança a fase;
+#                                              numa feature adotada em transição, aprova a
+#                                              transição (transicao.md) e leva à fase de destino
 #   sdd-estado aprovado <artefato> [NNN-slug]  confere se o artefato está aprovado e inalterado
 #   sdd-estado cancelar --motivo "texto"       cancela a feature ativa
 #   sdd-estado reabrir [NNN-slug] --motivo "texto" [--fase especificacao|green] [--origem X]
@@ -60,6 +62,54 @@ existe_feature() {
 }
 
 carimbar() { sdd_feature_gravar "$RAIZ" "$1" atualizado "$(sdd_agora)"; }
+
+# aprovar_transicao <feature> [nota]: a feature veio de outro processo
+# (adocao=transicao). O usuário aprova de uma vez a conversão descrita no
+# transicao.md: os artefatos que a fase de destino pressupõe recebem a
+# aprovação, com o hash de cada um, e a feature segue dali. As tarefas [O]
+# (feitas fora do plugin) ficam como estão; os testes delas vêm na fase red.
+aprovar_transicao() {
+  local f="$1" nota="${2:-}" dir arq destino nivel lista a h n fora
+  dir="$RAIZ/$PASTA_SPECS/$f"; arq="$dir/transicao.md"
+  falha() { echo "sdd-estado aprovar: transição de $f: $1" >&2; exit 1; }
+  [ -f "$arq" ] || falha "falta o transicao.md (o sdd-adotar o cria a partir do modelo)."
+  sdd_md_sem_lacunas "$arq" || falha "o transicao.md ainda tem campos {{...}} por preencher."
+  destino="$(sdd_md_campo "$arq" 'Fase de destino')"
+  nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
+  case "$destino" in
+    especificacao) lista="" ;;
+    plano)
+      [ "$nivel" = "2" ] || falha "a fase plano só existe no nível 2; no nível 1, o destino é tarefas ou red."
+      lista="spec.md" ;;
+    tarefas) lista="spec.md"; [ "$nivel" = "2" ] && lista="spec.md plano.md" ;;
+    red) lista="spec.md tarefas.md"; [ "$nivel" = "2" ] && lista="spec.md plano.md tarefas.md" ;;
+    *) falha "'Fase de destino' inválida: '$destino' (especificacao, plano, tarefas ou red)." ;;
+  esac
+  for a in $lista; do
+    [ -f "$dir/$a" ] || falha "o destino $destino pressupõe $a convertido para o padrão, e ele não existe."
+    sdd_md_sem_lacunas "$dir/$a" || falha "$a ainda tem campos {{...}} do modelo."
+  done
+  if [ -n "$lista" ]; then
+    n="$(sdd_duvidas_abertas "$RAIZ" "$f")"
+    [ "${n:-0}" -eq 0 ] || falha "a spec tem $n dúvida(s) em aberto. Esclareça antes, ou use o destino especificacao."
+  fi
+  if [ "$destino" = "red" ]; then
+    n="$(sdd_tarefas_progresso "$RAIZ" "$f")"
+    [ "${n#* }" -gt 0 ] || falha "o tarefas.md não tem nenhuma linha de tarefa no formato do SDD (- [ ] T-NNN ou - [O] T-NNN)."
+  fi
+  for a in $lista transicao.md; do
+    h="$(sdd_hash_artefato "$RAIZ" "$f" "$a")"
+    sdd_registrar "$RAIZ" "$f" aprovacao "$a | hash=$h | decisao: transicao${nota:+ | nota: $nota}"
+  done
+  sdd_feature_gravar "$RAIZ" "$f" adocao regularizada
+  carimbar "$f"
+  mudar_fase "$f" "$destino" "transição aprovada"
+  fora="$(sdd_tarefas_fora "$RAIZ" "$f")"
+  echo "Transição aprovada: $f segue no SDD a partir da fase $destino."
+  [ -n "$lista" ] && echo "Aprovados com a transição: $lista."
+  [ "${fora:-0}" -gt 0 ] && echo "Tarefas feitas fora do plugin ([O]): $fora. Os testes delas vêm na fase red e devem passar de início."
+  return 0
+}
 
 mudar_fase() { # mudar_fase <feature> <nova> [nota]
   local f="$1" nova="$2" nota="${3:-}" antiga
@@ -117,6 +167,10 @@ case "$cmd" in
           fi
           f="$(feature_ativa)"
           atual="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+          if [ "$(sdd_feature_ler "$RAIZ" "$f" adocao)" = "transicao" ]; then
+            echo "sdd-estado: a feature $f está em transição (adotada de outro processo). A fase muda pela aprovação da transição (/sdd:aprovar)." >&2
+            exit 1
+          fi
           if sdd_fase_protegida "$atual"; then
             echo "sdd-estado: a feature $f está em '$atual'. Para voltar a trabalhar nela, use 'sdd-estado reabrir --motivo \"...\"'." >&2
             exit 1
@@ -305,6 +359,13 @@ case "$cmd" in
     if sdd_fase_protegida "$fase"; then
       echo "sdd-estado aprovar: a feature $f está em '$fase'. Daqui em diante, o caminho é a release (/sdd:release)." >&2
       exit 1
+    fi
+
+    if [ "$(sdd_feature_ler "$RAIZ" "$f" adocao)" = "transicao" ]; then
+      case "$art" in
+        ""|transicao.md) aprovar_transicao "$f" "$nota"; exit 0 ;;
+        *) echo "sdd-estado aprovar: a feature $f veio de outro processo e está em transição. Aprove a transição primeiro (sdd-estado aprovar, sem artefato): ela registra os artefatos convertidos." >&2; exit 1 ;;
+      esac
     fi
 
     # Entrega direta (fase green, sem artefato informado).

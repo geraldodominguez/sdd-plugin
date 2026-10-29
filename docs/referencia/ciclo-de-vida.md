@@ -321,5 +321,8 @@ Cada artefato de processo tem um único lugar, e o layout é contrato: o hook
 bloqueia criar um fora dele, o `sdd-verificar` avisa na CI e o
 `/sdd:pendencias` lista o que escapou. Um projeto que chega com artefatos de
 outro processo passa pela **adoção** no `/sdd:iniciar`, antes da Etapa 1: o
-agente lê tudo, você aprova o mapa, e o `sdd-adotar` move. Ver
+agente lê tudo, você aprova o mapa, o `sdd-adotar` renomeia para o padrão, e
+cada feature em andamento fica em **transição** até você aprovar o
+`transicao.md`. Ela então entra no ciclo na fase em que parou (especificação,
+plano, tarefas ou red), com as tarefas feitas fora do plugin marcadas `[O]`. Ver
 [projetos existentes](projetos-existentes.md#projeto-com-artefatos-de-outro-processo).

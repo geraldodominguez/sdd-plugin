@@ -68,7 +68,7 @@ Uma vez por repositório. Ele:
 - cria `.sdd/` (configuração, backlog, sprints, templates), `specs/`, `sistema/` e `docs/adr/`;
 - lê o seu código e rascunha a **constituição**, as regras que valem para todas as features (arquitetura, testes, segurança, ambientes, operação);
 - injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md`;
-- num projeto que não nasceu com o plugin, lê as specs, planos, tarefas e ADRs que outros processos e agentes deixaram (em `docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`, `.specify/`...) e, com a sua aprovação do mapa, os traz para o padrão. Ver [projetos existentes](docs/referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
+- num projeto que não nasceu com o plugin, lê as specs, planos, tarefas e ADRs que outros processos e agentes deixaram (em `docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`, `.specify/`...) e, com a sua aprovação do mapa, os renomeia e converte para o padrão. Cada feature em andamento entra numa **transição** que mostra como era e como fica, com as tarefas feitas fora do plugin marcadas `[O]`; aprovada a transição, o plugin continua de onde o outro processo parou. Ver [projetos existentes](docs/referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
 
 Depois, revise a constituição e preencha no `.sdd/config.yml` o que o plugin não
 adivinha: `areas_sensiveis` (caminhos que exigem revisão de segurança) e os
