@@ -32,6 +32,10 @@ executando os comandos de verdade. Nenhum formato rastreável mudou.
 - Na aprovação do plano, os ADRs da feature passam de `proposta` para `aceita`.
 - Na adoção, o commit vem depois dos ajustes (backlog, links, mapa), cada feature convertida tem o seu commit antes da próxima, e a feature é ativada só depois de estar na branch dela.
 - Na proteção estrita, o `/sdd:pipeline` desativa a feature ativa para gravar o arquivo do pipeline.
+- Duas features criadas em paralelo a partir de `develop` recebiam o mesmo número: o `sdd-estado nova` só via as pastas da branch atual. Agora conta também as branches `feature/NNN-*` (locais e remotas) e as pastas em `hotfix/` e `release/`.
+- Pré-lançamento não vai para produção: `sdd-release autorizar` e `sdd-gitflow finalizar` recusam `X.Y.Z-rc.N`, e o `aceitar` de um candidate diz o próximo passo certo.
+- Um hotfix aberto entre o `finalizar` e o `concluir` reservava a mesma versão já marcada com a tag: a release com o go (`implantacao`) passa a ser a base da próxima versão.
+- Uma feature reprovada numa release que já terminou voltava à branch da release: agora ganha uma `feature/NNN-slug` nova a partir de `develop`.
 - Documentação conferida contra a saída real: o quadro do `sdd-status`, a mensagem de bloqueio do Conventional Commits, o `git log` da simulação e o hash da transição no exemplo da adoção.
 
 ## 1.0.0 - 2026-10-29

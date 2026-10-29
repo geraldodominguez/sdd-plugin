@@ -217,6 +217,11 @@ Sem `ref`, a base é o início da feature: com o Git Flow, o ponto em que a bran
 dela saiu de `develop`; sem ele, o commit anterior ao que criou a pasta da
 feature. Saída 0 quando encontrou, 1 quando não.
 
+**Número da feature nova:** o próximo livre, contando as pastas em `specs/` e,
+com o Git Flow, as features que só existem nas suas branches (`feature/NNN-*`,
+locais e remotas, e as pastas de `hotfix/` e `release/`). Duas features criadas
+em paralelo a partir de `develop` nunca recebem o mesmo número.
+
 **Hotfix** (`--tipo hotfix`, normalmente pelo `sdd-incidente hotfix`): nível 1,
 origem obrigatória num incidente, nasce na fase `red`, sem tarefas; a entrega
 exige a spec (retroativa) aprovada.
@@ -262,7 +267,7 @@ sdd-release ver [versão] | listar | atual
 
 | Comando | Faz |
 |---|---|
-| `proxima` (ou `proxima auto`) | a próxima versão pelos commits desde a última release em produção (ou a última tag `vX.Y.Z` final): `!` ou `BREAKING CHANGE:` é major (minor antes da 1.0.0), `feat` é minor, o resto é patch. Sem versão anterior, 0.1.0 |
+| `proxima` (ou `proxima auto`) | a próxima versão pelos commits desde a última release em produção ou com o go (ou a última tag `vX.Y.Z` final; pré-lançamentos nunca contam): `!` ou `BREAKING CHANGE:` é major (minor antes da 1.0.0), `feat` é minor, o resto é patch. Sem versão anterior, 0.1.0 |
 | `proxima major\|minor\|patch` | a versão de um tipo explícito |
 | `proxima --pre rc` | o próximo pré-lançamento (`X.Y.Z-rc.N`, contando as tags existentes) |
 | `analisar` | os commits desde a última versão, por impacto, os fora do padrão e a sugestão com o motivo |
@@ -277,7 +282,7 @@ sdd-release ver [versão] | listar | atual
 | `homologar` | `preparacao` | `homologacao` | features prontas e com aprovações em dia; `testes.md` completo com `Resultado: aprovado`; roteiro (`| H-NNN |`) em `homologacao.md` |
 | `aceitar` | `homologacao` | `aceita` | roteiro com passos `H-NNN`, nenhum `pendente` ou `reprovado`, nenhum campo `{{...}}`; `--por` |
 | `reprovar` | `homologacao`, `aceita` | `preparacao` | a feature reprovada sai da release e volta ao green (com o Git Flow, a `release/<versão>` passa a ser a branch dela, onde a correção é feita); as demais voltam a `pronta`. Pronta de novo, a feature volta com `incluir` |
-| `autorizar` (go) | `aceita` | `implantacao` | `implantacao.md` (com Rollback) e `notas.md` completos |
+| `autorizar` (go) | `aceita` | `implantacao` | `implantacao.md` (com Rollback) e `notas.md` completos; não vale para pré-lançamento (`X.Y.Z-rc.N`) |
 | `concluir` | `implantacao` | `producao` | `--verificacao`; as features vão para `producao` |
 | `reverter` | `implantacao`, `producao` | `revertida` | as features voltam a `pronta` |
 | `cancelar` | `preparacao`, `homologacao`, `aceita` | `cancelada` | as features voltam a `pronta` |
@@ -484,7 +489,7 @@ completo, com cada momento do ciclo, está em [Git Flow](git-flow.md).
 | `feature` | cria a branch da feature (de `develop`; de `main` num hotfix) ou muda para ela. Se a pasta da feature não existe na branch atual (ela ainda não foi integrada), procura a branch local que a tem (`feature/`, `hotfix/` ou `release/`) e muda para ela. Numa feature reprovada na homologação, a branch é a `release/X.Y.Z`; terminada a release, volta a ser `feature/NNN-slug` | a feature não existe em nenhuma branch local; alteração pendente em código |
 | `release`, `hotfix` | cria `release/X.Y.Z` (de `develop`) ou `hotfix/X.Y.Z` (de `main`) | versão inválida; alteração pendente em código |
 | `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; foi corrigida numa `release/` (volta pela release, com `sdd-release incluir`); a branch não existe localmente; alteração não commitada (fora do `.sdd/`); conflito (o merge fica em andamento) |
-| `finalizar` | merge da `release/` (ou `hotfix/`) em `main`, tag `vX.Y.Z`, merge de `main` em `develop`; com `--apos-pr`, só a tag e o `develop`, depois do merge feito na plataforma | a release não tem o go (`implantacao` ou `producao`); a branch não existe localmente; com `--apos-pr`, a branch ainda não está em `main`; alteração não commitada; conflito |
+| `finalizar` | merge da `release/` (ou `hotfix/`) em `main`, tag `vX.Y.Z`, merge de `main` em `develop`; com `--apos-pr`, só a tag e o `develop`, depois do merge feito na plataforma | a versão é um pré-lançamento; a release não tem o go (`implantacao` ou `producao`); a branch não existe localmente; com `--apos-pr`, a branch ainda não está em `main`; alteração não commitada; conflito |
 | `pode-integrar` | saída 0 se o fluxo é permitido (`feature/*` para `develop`; `release/*` e `hotfix/*` para `main` ou `develop`; `main` para `develop`) | saída 3 nos demais |
 
 **Ao trocar de branch** (`iniciar`, `feature`, `release`, `hotfix`), as

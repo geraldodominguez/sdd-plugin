@@ -118,7 +118,9 @@ ultima_em_producao() {
   # Um pré-lançamento nunca é a referência da próxima versão.
   for v in $(versoes); do
     case "$v" in *-*) continue ;; esac
-    [ "$(situacao "$v")" = "producao" ] && ult="$v"
+    # Com o go (implantacao), a versão já foi para main com a tag: ela também é
+    # a referência (um hotfix aberto antes do concluir sai da versão seguinte).
+    case "$(situacao "$v")" in producao|implantacao) ult="$v" ;; esac
   done
   printf '%s\n' "$ult"
 }
@@ -484,7 +486,10 @@ case "$cmd" in
     h="$(sdd_hash_stdin < "$DIR/$v/homologacao.md")"
     historico "$v" aceite "por: $por | hash=$h${nota:+ | nota: $nota}"
     mudar_situacao "$v" aceita "aceite de $por"
-    echo "Aceite registrado (por $por). Próximo: plano de implantação e go/no-go (sdd-release autorizar $v)."
+    case "$v" in
+      *-*) echo "Aceite registrado (por $por). $v é um pré-lançamento: ele não vai para produção. Próximo: sdd-release cancelar $v --motivo \"substituída pela ${v%%-*}\" e a release ${v%%-*} com as mesmas features." ;;
+      *) echo "Aceite registrado (por $por). Próximo: plano de implantação e go/no-go (sdd-release autorizar $v)." ;;
+    esac
     ;;
 
   reprovar)
@@ -517,6 +522,9 @@ case "$cmd" in
 
   autorizar)
     v="${1:?uso: sdd-release autorizar <versão> [--nota texto]}"; shift
+    case "$v" in *-*)
+      echo "sdd-release autorizar: $v é um pré-lançamento, que só é homologado. Para produção, prepare a versão final (${v%%-*})." >&2; exit 1 ;;
+    esac
     nota=""
     while [ $# -gt 0 ]; do
       case "$1" in --nota) nota="${2:?}"; shift ;; *) echo "sdd-release autorizar: opção desconhecida $1" >&2; exit 1 ;; esac

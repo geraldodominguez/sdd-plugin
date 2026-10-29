@@ -173,7 +173,12 @@ specs e os históricos ficam como estão.
 
 8. **Adoção.** Se o `sdd-adotar inventario` do passo 1 do Processo não
    estava vazio, ou se veio `--adotar`, faça a **Adoção** (abaixo), já em
-   `develop` e com o commit da atualização feito.
+   `develop` e com o commit da atualização feito. Rode o inventário de novo
+   em `develop`: se ele não acha mais os artefatos, eles estão commitados só
+   na branch de onde você veio (a de uma feature). Diga isso ao usuário: a
+   adoção deles acontece depois que essa branch entrar em `develop` (pela
+   integração da feature), ou agora, se ele preferir trazer a branch com um
+   merge em `develop`.
 
 9. **Encerre** com o que mudou (bloco, `.gitattributes`, templates trocados,
    chaves acrescentadas, branches), o que ficou como estava e, se houver,

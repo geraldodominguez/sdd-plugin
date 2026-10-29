@@ -68,7 +68,9 @@ Depois: `sdd-incidente situacao INC-NNN mitigado --nota "o que foi feito"`.
    das releases e features mais recentes. As atualizações do incidente
    (`sdd-incidente nota`, `situacao`) são feitas em `develop`, antes da troca
    ou depois do `finalizar`. Uma feature que estava em andamento continua na
-   branch dela: depois, `sdd-gitflow feature <NNN-slug dela>` volta para lá.
+   branch dela: depois, `sdd-gitflow feature <NNN-slug dela>` volta para lá, e
+   só então `sdd-estado usar <NNN-slug dela>` (em `develop`, a pasta dela não
+   existe, e o `usar` recusa).
 2. Diga ao usuário para rodar `/sdd:implementar`: o escritor-de-testes escreve
    primeiro o **teste de regressão que reproduz o incidente** (ele deve falhar).
    Depois de `/sdd:aprovar` dos testes, vem a correção, com os testes congelados.

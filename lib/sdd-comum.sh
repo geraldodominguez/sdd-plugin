@@ -713,13 +713,21 @@ sdd_slug() {
 
 # sdd_proximo_numero_feature <raiz>: próximo NNN livre em specs/.
 sdd_proximo_numero_feature() {
-  local maior=0 id n
-  for id in $(sdd_features "$1"); do
-    n="$(printf '%s' "$id" | cut -c1-3)"
-    n=$((10#$n))
-    [ "$n" -gt "$maior" ] && maior="$n"
-  done
-  printf '%03d\n' $((maior + 1))
+  local specs b
+  # Com o Git Flow, uma feature ainda não integrada só existe na branch dela:
+  # os números das branches (locais e remotas) e das pastas em hotfix/ e
+  # release/ também contam, para duas features nunca nascerem com o mesmo NNN.
+  {
+    sdd_features "$1"
+    if git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      specs="$(sdd_pasta_specs "$1")"
+      git -C "$1" for-each-ref --format='%(refname:short)' refs/heads/feature refs/remotes 2>/dev/null \
+        | sed -n 's#^.*feature/\([0-9][0-9][0-9]-\)#\1#p'
+      for b in $(git -C "$1" for-each-ref --format='%(refname:short)' refs/heads/hotfix refs/heads/release 2>/dev/null); do
+        git -C "$1" ls-tree --name-only "$b" "$specs/" 2>/dev/null | sed "s#^$specs/##"
+      done
+    fi
+  } | awk '/^[0-9][0-9][0-9]-/ { n = substr($0, 1, 3) + 0; if (n > m) m = n } END { printf "%03d\n", m + 1 }'
 }
 
 # sdd_proximo_numero_adr <raiz>: próximo NNNN livre em docs/adr/.

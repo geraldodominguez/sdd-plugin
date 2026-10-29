@@ -97,7 +97,7 @@ só enxerga os commits que, por acaso, seguirem o padrão.
 
 ## 4. Como o plugin calcula a próxima versão
 
-1. **A versão de referência** é a última release em produção (`releases/X.Y.Z/` na situação `producao`). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
+1. **A versão de referência** é a última release em produção ou com o go (`releases/X.Y.Z/` na situação `producao` ou `implantacao`: com o go, ela já está em `main` com a tag). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
 2. **Os commits** são os desde a tag dessa versão, sem os merges. Se essa
    versão não tem tag, contam os desde a última tag `vX.Y.Z` final; sem tag
    nenhuma, o histórico inteiro.
@@ -151,11 +151,13 @@ Também valem `alpha` e `beta`. A ordem do SemVer é
 `sdd-release listar` mostra as releases. A release e a branch
 (`release/1.3.0-rc.1`) aceitam o sufixo.
 
-Um release candidate é **só homologado**: preparar, homologar e aceitar, sem
-`autorizar`, `finalizar` nem `concluir`. Com o aceite, o `/sdd:release` o
-cancela (`sdd-release cancelar 1.3.0-rc.1 --motivo "substituída pela 1.3.0"`,
-e as features voltam a prontas), leva a `develop` as correções feitas em
-`release/1.3.0-rc.1` e prepara a `1.3.0` com as mesmas features. Se ele fosse
+Um release candidate é **só homologado**: preparar, homologar e aceitar. O
+`sdd-release autorizar` e o `sdd-gitflow finalizar` recusam pré-lançamentos.
+Com o aceite, o `/sdd:release` o cancela (`sdd-release cancelar 1.3.0-rc.1
+--motivo "substituída pela 1.3.0"`, e as features voltam a prontas), faz o
+commit, leva `release/1.3.0-rc.1` a `develop` (as correções e o registro do
+candidate, que o próximo `--pre rc` usa para numerar) e prepara a `1.3.0` com
+as mesmas features. Se ele fosse
 até produção, viraria a versão em produção e a final não teria mais o que
 entregar.
 

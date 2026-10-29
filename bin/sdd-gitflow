@@ -256,11 +256,22 @@ feature() {
   b="$(sdd_branch_da_feature "$RAIZ" "$f")"
   case "$b" in
     release/*)
-      # Reprovada numa release: a correção é na release/, enquanto ela existir.
-      # Terminada a release, a feature volta a ter a branch dela.
-      if ! existe_branch "$b"; then
-        b="feature/$f"
-        sdd_feature_gravar "$RAIZ" "$f" branch "$b"
+      # Reprovada numa release: a correção é na release/, enquanto ela está em
+      # andamento. Terminada (foi para main, ou a situação passou do aceite), a
+      # feature volta a ter a branch dela, nova, a partir de develop.
+      local v sit
+      v="${b#release/}"
+      sit="$(sdd_kv_ler "$RAIZ/$(sdd_pasta_releases "$RAIZ")/$v/estado" fase 2>/dev/null || true)"
+      if ! existe_branch "$b" || g merge-base --is-ancestor "$b" "$P" 2>/dev/null \
+         || case "$sit" in preparacao|homologacao|aceita) false ;; *) true ;; esac; then
+        if existe_branch "feature/$f"; then
+          erro "a release $v terminou e a correção de $f vai numa branch própria, mas feature/$f (a antiga) ainda existe. Se ela já foi integrada, apague-a (git branch -d feature/$f) e rode de novo."
+        fi
+        exige_codigo_limpo
+        trocar -c "feature/$f" "$I"
+        sdd_feature_gravar "$RAIZ" "$f" branch "feature/$f"
+        echo "Criada feature/$f a partir de $I: a release $v terminou, e a correção segue na branch da feature."
+        return 0
       fi ;;
   esac
   case "$b" in
@@ -323,6 +334,7 @@ finalizar() {
   done
   [ -n "$v" ] || erro "uso: sdd-gitflow finalizar <X.Y.Z> [--apos-pr]"
   sdd_semver_valida "$v" || erro "versão inválida: $v"
+  case "$v" in *-*) erro "$v é um pré-lançamento: ele só é homologado e não vai para $P. Prepare a versão final (${v%%-*})." ;; esac
   exige_git
   [ -d "$RAIZ/.sdd" ] || erro "este projeto ainda não usa SDD."
   dir="$RAIZ/$(sdd_pasta_releases "$RAIZ")/$v"

@@ -81,10 +81,10 @@ no `CHANGELOG.md` (formato Keep a Changelog). Detalhes em
 
 **Release candidate** (`X.Y.Z-rc.N`, de `sdd-release proxima --pre rc`):
 serve para homologar antes de fechar a versão. Ele passa por preparar,
-homologar e aceitar, e **nunca** vai para produção. Com o aceite, o agente
-cancela o candidate (as features voltam a prontas), leva a `develop` as
-correções feitas na branch dele e prepara a versão final com as mesmas
-features.
+homologar e aceitar, e **nunca** vai para produção (o `autorizar` e o
+`finalizar` o recusam). Com o aceite, o agente cancela o candidate (as features
+voltam a prontas), faz o commit e leva a branch dele a `develop`, com as
+correções e o registro, e prepara a versão final com as mesmas features.
 
 ## Perguntas frequentes
 
@@ -104,8 +104,9 @@ de volta na preparação. Você decide:
 **A release não vai mais sair. E agora?**
 
 `/sdd:release cancelar`, antes do go: as features voltam a prontas e podem
-entrar noutra release. O agente pergunta se as correções commitadas na
-`release/X.Y.Z` vão para `develop` ou são descartadas. Depois do go, não se
+entrar noutra release. O agente faz o commit do cancelamento na
+`release/X.Y.Z` e recomenda levá-la a `develop`, com as correções e o registro
+(você pode preferir descartar as correções). Depois do go, não se
 cancela: o caminho é reverter.
 
 **Sou eu mesmo que homologo. Faz sentido?**

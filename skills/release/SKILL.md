@@ -166,9 +166,12 @@ candidate é só homologado: ele **nunca** vai para produção.
    `autorizar`, `finalizar` nem `concluir` num release candidate.
 3. Com o aceite, substitua o candidate pela versão final:
    - `sdd-release cancelar 1.3.0-rc.1 --motivo "substituída pela 1.3.0"`: as
-     features voltam a `pronta`;
-   - se houve correção commitada em `release/1.3.0-rc.1`, leve-a a `develop`,
-     perguntando: `git switch develop` e `git merge --no-ff release/1.3.0-rc.1`;
+     features voltam a `pronta`. Faça o commit desses registros na branch do
+     candidate (`chore(release): 1.3.0-rc.1 substituída pela 1.3.0`);
+   - leve a branch do candidate a `develop`, perguntando: `git switch develop`
+     e `git merge --no-ff release/1.3.0-rc.1`. Isso traz as correções feitas
+     nela e o registro do candidate (sem ele, `develop` não sabe que a `rc.1`
+     existiu, e o próximo `--pre rc` repetiria o número);
    - prepare a `1.3.0` com as mesmas features, a partir de `develop`. A
      homologação dela pode ser expressa: o conteúdo já foi aceito no candidate.
 
@@ -176,10 +179,12 @@ candidate é só homologado: ele **nunca** vai para produção.
 
 Quando a release não vai sair (o negócio desistiu, ou ela foi substituída):
 `sdd-release cancelar <versão> --motivo "..."`, só antes do go. As features
-dela voltam a `pronta` e podem entrar noutra release. Se houve commits de
-correção em `release/<versão>`, pergunte se vão para `develop` (`git switch
-develop` e `git merge --no-ff release/<versão>`) ou se são descartados; depois,
-ofereça apagar a branch local. Depois do go, não se cancela: o caminho é
+dela voltam a `pronta` e podem entrar noutra release. Faça o commit dos
+registros na branch da release (`chore(release): <versão> cancelada`). Depois,
+recomende levar a branch a `develop` (`git switch develop` e `git merge --no-ff
+release/<versão>`): vão o registro do cancelamento e as correções commitadas
+nela. Se o usuário preferir descartar as correções, o registro da release
+também fica só na branch. Depois, ofereça apagar a branch local. Depois do go, não se cancela: o caminho é
 `reverter`.
 
 ## Não faça

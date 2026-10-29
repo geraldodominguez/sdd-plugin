@@ -40,7 +40,7 @@ A 1.0.0 se declara de propósito (`sdd-release proxima major`).
 | `sdd-release proxima --pre rc` | o próximo pré-lançamento: `X.Y.Z-rc.1`, `-rc.2`... Um pré-lançamento só é homologado, nunca vai para produção (ver o `/sdd:release`, Release candidate) |
 | `sdd-release changelog X.Y.Z [--escrever]` | a seção da versão no `CHANGELOG.md` |
 
-A versão de referência é a última release em produção; sem nenhuma, a última
+A versão de referência é a última release em produção ou com o go; sem nenhuma, a última
 tag `vX.Y.Z` final (pré-lançamentos, em release ou em tag, não contam). Commits fora do padrão
 não contam para a versão: o `analisar` os lista.
 

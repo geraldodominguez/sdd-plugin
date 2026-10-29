@@ -954,6 +954,23 @@ out="$(cd "$W7" && sdd-release listar 2>&1)"
 (cd "$W5" && GT switch -q develop 2>/dev/null; sdd-gitflow feature 001-login >/dev/null 2>&1)
 [ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/001-login" ] && ok "gitflow feature acha a feature fora da árvore atual" || fail "feature fora da árvore" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
 
+# Pré-lançamento não vai para produção.
+(cd "$W7" && assert_exit 1 "autorizar recusa pré-lançamento" sdd-release autorizar 0.1.0-rc.1)
+(cd "$W5" && assert_exit 1 "finalizar recusa pré-lançamento" sdd-gitflow finalizar 1.0.0-rc.1)
+# A versão com o go (implantacao) já é a referência: o hotfix sai da seguinte.
+W8="$TMP/cenario-base"; mkdir -p "$W8"
+(cd "$W8" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+  && sdd-release nova 0.4.0 --objetivo x >/dev/null && printf 'fase=implantacao\ntipo=normal\natualizado=x\n' > releases/0.4.0/estado)
+[ "$(cd "$W8" && sdd-release proxima patch)" = "0.4.1" ] && ok "release em implantação é a base da próxima versão" || fail "base com implantacao" "$(cd "$W8" && sdd-release proxima patch 2>&1)"
+# Feature reprovada numa release que já terminou: a correção ganha feature/ nova.
+(cd "$W5" && GT add -A && GT commit -qm "docs(001): seguranca" && GT switch -q develop && sdd-estado nova "Perfil" >/dev/null && GT add -A && GT commit -qm "docs: perfil")
+FP="$(cd "$W5/specs" && ls -d ./*-perfil | sed 's#^\./##')"
+[ "${FP%%-*}" = "002" ] && ok "número da feature nova conta a feature que só existe na branch dela" || fail "número duplicado" "$FP"
+(cd "$W5" && mkdir -p releases/9.9.9 && : > releases/9.9.9/release.md && printf 'fase=producao\ntipo=normal\natualizado=x\n' > releases/9.9.9/estado \
+  && subst 's#^branch=.*#branch=release/9.9.9#' "specs/$FP/estado" && GT add -A && GT commit -qm "chore: x" && sdd-gitflow feature "$FP" >/dev/null 2>&1)
+[ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/$FP" ] && [ "$(sdd_feature_ler_t "$W5" "$FP" branch)" = "feature/$FP" ] \
+  && ok "feature de release terminada volta a feature/ nova" || fail "release terminada" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"
