@@ -29,6 +29,10 @@ _Evite_: migração
 Tarefa feita fora do plugin, antes da adoção, sem gate. Não se refaz; os testes dos critérios dela vêm na fase red e devem passar de início.
 _Evite_: tarefa concluída (essa é a `[x]`, feita no plugin)
 
+**Git Flow**:
+O modelo de branches do plugin, com os mesmos nomes em todo projeto: `main` (produção, tag `vX.Y.Z`), `develop` (integração), `feature/NNN-slug`, `release/X.Y.Z` e `hotfix/X.Y.Z`. As branches são criadas e juntadas pelo `sdd-gitflow`, nos momentos do ciclo.
+_Evite_: `master`, `development`, `feat/`, `bugfix/` (nomes fora do padrão)
+
 **Feature**:
 Uma unidade de mudança, com pasta própria `specs/NNN-slug/` e um **nível de rigor**.
 _Evite_: história, épico, ticket

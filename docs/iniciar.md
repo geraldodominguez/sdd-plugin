@@ -23,6 +23,15 @@ apaga o que você escreveu no `CLAUDE.md`. Com o projeto já preparado, use
 `/sdd:iniciar --adotar` quando o `/sdd:pendencias` mostrar artefatos "Fora do
 padrão".
 
+## O Git Flow
+
+Antes de qualquer commit, ela prepara a base do Git Flow: pergunta se as
+branches se juntam pelo plugin (`integracao: local`) ou por pull request
+(`integracao: pr`), propõe renomear `master` para `main` e `development` para
+`develop` quando for o caso, e cria `develop`, onde o trabalho passa a
+acontecer. Os nomes das branches são fixos em todo projeto. Ver
+[Git Flow](referencia/git-flow.md).
+
 ## A adoção
 
 | Etapa | O que acontece |

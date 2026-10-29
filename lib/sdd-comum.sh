@@ -89,8 +89,9 @@ sdd_config() {
 #   fase, nivel, origem (B-NNN ou INC-NNN), tipo (normal ou hotfix),
 #   seguranca (obrigatoria ou dispensada), capacidade (da spec do sistema),
 #   release (versão em que entrou), adocao (transicao ou regularizada, só nas
-#   features adotadas de outro processo), atualizado
-SDD_CHAVES_DA_FEATURE="fase nivel origem tipo seguranca capacidade release adocao atualizado"
+#   features adotadas de outro processo), branch (a do Git Flow: feature/NNN-slug
+#   ou, num hotfix, hotfix/X.Y.Z), atualizado
+SDD_CHAVES_DA_FEATURE="fase nivel origem tipo seguranca capacidade release adocao branch atualizado"
 
 sdd_e_chave_da_feature() {
   local c="$1" x
@@ -851,4 +852,86 @@ sdd_destino_do_tipo() {
     constituicao) echo ".sdd/constituicao.md (regras do projeto inteiro)" ;;
     *) echo "o lugar do padrão (ver /sdd:ajuda)" ;;
   esac
+}
+
+# ---------------------------------------------------------------------------
+# Git Flow
+#
+# Os nomes são fixos e iguais em todo projeto: nada de "develop" num e
+# "development" noutro. Ver docs/referencia/git-flow.md.
+#
+#   main              produção; só recebe merge de release/ e hotfix/, com tag
+#   develop           integração; recebe as features prontas
+#   feature/NNN-slug  uma por feature do SDD, de develop para develop
+#   release/X.Y.Z     uma por release, de develop para main (e de volta)
+#   hotfix/X.Y.Z      uma por hotfix, de main para main (e para develop)
+#   vX.Y.Z            a tag de cada versão em main
+# ---------------------------------------------------------------------------
+
+# shellcheck disable=SC2034  # usados por quem carrega este arquivo
+SDD_BRANCH_PRODUCAO=main
+# shellcheck disable=SC2034
+SDD_BRANCH_INTEGRACAO=develop
+
+# sdd_gitflow_ativo <raiz>: 0 se o Git Flow vale neste projeto (config
+# gitflow, ativo por padrão, e um repositório git).
+sdd_gitflow_ativo() {
+  [ "$(sdd_config "$1" gitflow ativo)" = "ativo" ] || return 1
+  git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
+# sdd_branch_tipo <nome>: imprime producao, integracao, feature, release ou
+# hotfix. Devolve 1 se o nome está fora do padrão.
+sdd_branch_tipo() {
+  local b="$1"
+  case "$b" in
+    main) echo producao; return 0 ;;
+    develop) echo integracao; return 0 ;;
+    feature/*)
+      printf '%s' "${b#feature/}" | grep -qE '^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' && { echo feature; return 0; } ;;
+    release/*) sdd_semver_valida "${b#release/}" && { echo release; return 0; } ;;
+    hotfix/*) sdd_semver_valida "${b#hotfix/}" && { echo hotfix; return 0; } ;;
+  esac
+  return 1
+}
+
+# sdd_branch_atual <raiz>: o nome da branch atual; vazio em HEAD destacado.
+sdd_branch_atual() {
+  local b
+  b="$(git -C "$1" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  [ "$b" = "HEAD" ] && b=""
+  printf '%s\n' "$b"
+}
+
+# sdd_branch_da_feature <raiz> <feature>: a branch em que a feature é feita.
+sdd_branch_da_feature() {
+  local b
+  b="$(sdd_feature_ler "$1" "$2" branch)"
+  [ -n "$b" ] || b="feature/$2"
+  printf '%s\n' "$b"
+}
+
+# sdd_merge_em_andamento <raiz>: 0 se há um merge à espera do commit.
+sdd_merge_em_andamento() { git -C "$1" rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; }
+
+# sdd_branch_sugerida <nome>: o nome do padrão para uma branch antiga, quando
+# é óbvio; vazio quando a decisão é do usuário (ex.: a feature ainda não existe).
+sdd_branch_sugerida() {
+  case "$1" in
+    master|production|producao|prod) echo main ;;
+    development|dev|devel|desenvolvimento|integracao|integration) echo develop ;;
+    *) echo "" ;;
+  esac
+}
+
+# sdd_pode_integrar <origem> <destino>: 0 se o Git Flow permite levar a
+# origem ao destino (merge ou pull request).
+sdd_pode_integrar() {
+  local to td
+  to="$(sdd_branch_tipo "$1")" || return 1
+  td="$(sdd_branch_tipo "$2")" || return 1
+  case "$to:$td" in
+    feature:integracao|release:producao|release:integracao|hotfix:producao|hotfix:integracao|producao:integracao) return 0 ;;
+  esac
+  return 1
 }

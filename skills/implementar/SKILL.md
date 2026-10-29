@@ -3,7 +3,7 @@ name: implementar
 description: Executa as tarefas da feature ativa em TDD. Na fase red, um subagent escreve os testes só a partir dos critérios; na green, a sessão principal implementa com os testes congelados.
 argument-hint: "[T-NNN para executar só uma tarefa ou grupo]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep
 ---
 
 # /sdd:implementar
@@ -26,6 +26,7 @@ Rode `sdd-estado ver` e decida por onde começar:
 | fase `green` | vá direto para a fase green, continuando da primeira tarefa aberta |
 | fase `tarefas` | comece pela fase red |
 | `adocao=transicao` | a feature veio de outro processo e a transição não foi aprovada: diga para rodar `/sdd:aprovar` e pare |
+| Git Flow ativo e a branch atual não é a de `sdd-gitflow esperada` | rode `sdd-gitflow feature NNN-slug` (ele cria ou ativa a branch da feature); se recusar, mostre o motivo ao usuário e pare |
 
 **Tarefas `[O]`** foram feitas fora do plugin, antes da adoção, sem gate. Elas
 não se implementam de novo. Na fase red, os critérios delas também ganham

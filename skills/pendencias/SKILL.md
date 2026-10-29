@@ -2,7 +2,7 @@
 name: pendencias
 description: A sua caixa de entrada no SDD. Lista tudo que espera uma decisão humana (incidentes, releases paradas, aprovações, revisões de segurança, dúvidas, delta specs, consolidações, ADRs, backlog a triar, itens da sprint sem spec, artefatos fora do padrão) e sugere por onde começar.
 disable-model-invocation: true
-allowed-tools: Bash(sdd-pendencias *), Bash(sdd-pendencias), Bash(sdd-status *), Bash(sdd-estado *), Bash(sdd-release *), Bash(sdd-incidente *), Read, Grep
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-pendencias *), Bash(sdd-pendencias), Bash(sdd-status *), Bash(sdd-estado *), Bash(sdd-release *), Bash(sdd-incidente *), Read, Grep
 ---
 
 # /sdd:pendencias

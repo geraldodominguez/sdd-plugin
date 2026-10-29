@@ -46,7 +46,7 @@ na_sprint() { # na_sprint <feature>
 }
 
 detalhe() { # detalhe <feature>
-  local f="$1" dir fase nivel prog feitas total linha p a fora
+  local f="$1" dir fase nivel prog feitas total linha p a fora b
   dir="$RAIZ/$PASTA_SPECS/$f"
   [ -d "$dir" ] || { echo "sdd-status: a feature $f não existe." >&2; exit 1; }
   fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"; nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
@@ -60,6 +60,13 @@ detalhe() { # detalhe <feature>
   echo "  revisão de segurança: $(sdd_feature_ler "$RAIZ" "$f" seguranca)"
   c="$(sdd_feature_ler "$RAIZ" "$f" capacidade)"; echo "  capacidade: ${c:-não definida}"
   r="$(sdd_feature_ler "$RAIZ" "$f" release)"; [ -n "$r" ] && echo "  release: $r"
+  if sdd_gitflow_ativo "$RAIZ"; then
+    b="$(sdd_branch_da_feature "$RAIZ" "$f")"
+    if sdd_fase_entregue "$fase" && git -C "$RAIZ" show-ref --verify --quiet "refs/heads/$b"; then
+      if git -C "$RAIZ" merge-base --is-ancestor "$b" develop 2>/dev/null; then b="$b (integrada em develop)"; else b="$b (NÃO integrada em develop: sdd-gitflow integrar $f)"; fi
+    fi
+    echo "  branch: $b"
+  fi
   if sdd_fase_entregue "$fase"; then
     if "$AQUI/sdd-sistema" consolidada "$f" >/dev/null 2>&1; then echo "  spec do sistema: consolidada"; else echo "  spec do sistema: NÃO consolidada (/sdd:sistema)"; fi
   fi
@@ -107,6 +114,14 @@ esac
 
 # ---------------------------------------------------------------- quadro
 echo "SDD: $(basename "$RAIZ") · proteção $(sdd_config "$RAIZ" protecao leve)"
+if sdd_gitflow_ativo "$RAIZ"; then
+  gf_atual="$(sdd_branch_atual "$RAIZ")"
+  gf_esperada="$("$AQUI/sdd-gitflow" esperada 2>/dev/null || true)"
+  echo "Git Flow: em ${gf_atual:-(HEAD destacado)}"
+  if [ -n "$gf_esperada" ] && [ -n "$gf_atual" ] && [ "$gf_atual" != "$gf_esperada" ]; then
+    echo "! a feature ativa é feita em $gf_esperada (sdd-gitflow feature ${gf_esperada#feature/})"
+  fi
+fi
 if [ -s "$RAIZ/.sdd/constituicao.md" ] && grep -q '{{' "$RAIZ/.sdd/constituicao.md"; then
   echo "! a constituição ainda tem campos {{...}} por preencher"
 fi

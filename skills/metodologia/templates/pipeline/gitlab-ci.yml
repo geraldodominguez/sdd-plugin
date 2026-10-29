@@ -1,8 +1,13 @@
 # Pipeline SDD para GitLab CI. Gerado a partir do template do plugin SDD
 # (/sdd:pipeline). Ajuste a imagem, a instalação da stack e os comandos.
 #
-# Estágios: verificar e seguranca (todo push e MR), homologacao (push na main),
-# producao (tag vX.Y.Z, só se a release tiver o go registrado).
+# Git Flow: features entram em develop por MR; release/X.Y.Z e hotfix/X.Y.Z
+# vão para homologação; a tag vX.Y.Z (criada em main pelo sdd-gitflow
+# finalizar, depois do go) vai para produção.
+#
+# Estágios: verificar e seguranca (todo push e MR; o sdd-verificar recusa MR
+# fora do fluxo, como feature/* direto para main), homologacao (push em
+# release/* e hotfix/*), producao (tag vX.Y.Z, só se a release tiver o go).
 stages: [verificar, implantar]
 
 variables:
@@ -31,7 +36,7 @@ seguranca:
 homologacao:
   stage: implantar
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH =~ /^(release|hotfix)\//'
   environment: homologacao
   script:
     - {{comando_deploy_homologacao}}

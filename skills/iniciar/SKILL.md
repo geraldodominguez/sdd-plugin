@@ -3,7 +3,7 @@ name: iniciar
 description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
 argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write
 ---
 
 # /sdd:iniciar
@@ -35,7 +35,22 @@ Argumentos: `$ARGUMENTS`
    | A maioria | 1 | `leve` |
    | Crítico (domínio rico, dinheiro, dados pessoais) | 2 | `estrita` |
 
-3. **Rode** `sdd-iniciar` com os parâmetros escolhidos.
+3. **Rode** `sdd-iniciar` com os parâmetros escolhidos. Em seguida, a base do
+   **Git Flow** (ver `GIT-FLOW.md` da skill metodologia), antes de qualquer
+   commit, porque o hook não deixa commitar em `main`:
+   - Pergunte como as branches se juntam e grave `integracao` no config:
+     `local` (o plugin faz o merge e a tag; bom para quem trabalha sozinho) ou
+     `pr` (pull request na plataforma; bom para time). Se o usuário não quer
+     Git Flow neste projeto, grave `gitflow: desligado` e pule o resto.
+   - Rode `sdd-gitflow conferir`. Se a produção não se chama `main`
+     (`master`, `production`) ou a integração não se chama `develop`
+     (`development`, `dev`), proponha a troca e, com aprovação, rode
+     `sdd-gitflow renomear <antiga> main` (ou `develop`). Mostre os comandos do
+     remoto que ele imprime; não os rode sem pedir.
+   - Rode `sdd-gitflow iniciar`: ele garante `main`, cria `develop` e muda para
+     ela. Todo commit daqui em diante (a preparação do SDD, a adoção) é feito
+     em `develop`. Repositório sem nenhum commit: peça o primeiro commit em
+     `main` antes.
 
 4. **Rascunhe a constituição** em `.sdd/constituicao.md`.
    - **Projeto existente:** leia os manifestos (package.json, pyproject.toml,
@@ -57,11 +72,27 @@ Argumentos: `$ARGUMENTS`
 6. **Adoção.** Se o inventário do passo 1 não estava vazio, faça a **Adoção**
    (abaixo) agora, antes do gate.
 
-7. **Gate.** Mostre o que foi criado, o rascunho da constituição, o resultado
+7. **Git Flow: as branches de trabalho.** Com o Git Flow ativo, rode
+   `sdd-gitflow conferir` de novo. Para cada branch fora do padrão que sobrou,
+   proponha o nome novo numa tabela e peça aprovação (é o usuário quem decide):
+
+   | Branch antiga | Nome do padrão |
+   |---|---|
+   | branch de uma feature adotada ou em andamento (`feat/login`, `feature-login`) | `feature/NNN-slug` da feature (a feature já existe, depois da adoção) |
+   | release antiga ainda aberta (`release-1.2`) | `release/1.2.0` |
+   | branch sem feature correspondente | pergunte: criar a feature, juntar a outra, ou deixar como está até ser apagada |
+
+   Aplique com `sdd-gitflow renomear <antiga> <nova>`, uma por vez. Ele só
+   renomeia localmente; mostre os comandos do remoto que ele imprime e não os
+   rode sem pedir. Avise que, na plataforma (GitHub, GitLab), `main` e
+   `develop` devem ser protegidas: só por pull request, com o CI obrigatório
+   (o `/sdd:pipeline` ajuda).
+
+8. **Gate.** Mostre o que foi criado, o rascunho da constituição, o resultado
    da adoção (se houve) e o que ficou em aberto. Peça ao usuário que revise e
    aprove a constituição: ela vale para todas as features.
 
-8. **Encerre** dizendo os próximos passos possíveis:
+9. **Encerre** dizendo os próximos passos possíveis:
 
    | O usuário tem | Próximo |
    |---|---|
@@ -153,6 +184,13 @@ parou.
    ou segurança, proponha o nível 2 e, com a confirmação do usuário, rode
    `sdd-estado definir nivel=2`. Defina a capacidade da spec do sistema com
    `sdd-estado definir capacidade=<nome>`.
+   **Git Flow:** a conversão é commitada na branch da feature. Se o código
+   feito fora do plugin está numa branch antiga que ainda não entrou em
+   `develop` (`feat/login`, por exemplo), renomeie-a antes, com aprovação
+   (`sdd-gitflow renomear feat/login feature/NNN-slug`), mude para ela
+   (`sdd-gitflow feature NNN-slug`) e traga a adoção que está em `develop`
+   com `git merge develop`, perguntando antes. Sem branch antiga, só
+   `sdd-gitflow feature NNN-slug`.
 
 2. **Descubra onde a feature parou.** Para cada tarefa do original, procure no
    código a evidência de que foi feita (`Grep` pelos nomes, caminho:linha). A
@@ -225,3 +263,4 @@ parou.
 - `sdd-adotar contar` dá 0, ou o usuário decidiu deixar a adoção para depois.
 - Cada feature adotada tem o `transicao.md` sem lacunas, à espera do `/sdd:aprovar`.
 - O usuário revisou a constituição.
+- Com o Git Flow ativo, `sdd-gitflow conferir` não aponta problemas (ou o usuário decidiu o que fazer com cada branch fora do padrão), e o trabalho está em `develop`.

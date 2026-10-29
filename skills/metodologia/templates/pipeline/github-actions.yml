@@ -1,13 +1,18 @@
 # Pipeline SDD para GitHub Actions. Gerado a partir do template do plugin SDD
 # (/sdd:pipeline). Ajuste a instalação da stack e os comandos ao seu projeto.
 #
-# Estágios: verificar e seguranca (todo push e PR), homologacao (push na main),
-# producao (tag vX.Y.Z, só se a release tiver o go registrado).
+# Git Flow: features entram em develop por PR; release/X.Y.Z e hotfix/X.Y.Z
+# vão para homologação; a tag vX.Y.Z (criada em main pelo sdd-gitflow
+# finalizar, depois do go) vai para produção.
+#
+# Estágios: verificar e seguranca (todo push e PR; o sdd-verificar recusa PR
+# fora do fluxo, como feature/* direto para main), homologacao (push em
+# release/** e hotfix/**), producao (tag vX.Y.Z, só se a release tiver o go).
 name: Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, 'release/**', 'hotfix/**']
     tags: ['v*.*.*']
   pull_request:
 
@@ -39,7 +44,7 @@ jobs:
         run: {{comando_seguranca}}
 
   homologacao:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/heads/hotfix/'))
     needs: [verificar, seguranca]
     runs-on: ubuntu-latest
     environment: homologacao

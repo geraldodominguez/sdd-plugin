@@ -4,6 +4,8 @@
 # Uso: sdd-verificar [--estrito] [--silencioso]
 #
 # Falhas (saída 3):
+#   - Git Flow: pull request (ou merge request) num fluxo que o padrão não
+#     permite (ex.: feature/* direto para main), lido das variáveis do CI;
 #   - feature da fase green em diante com lacuna de rastreabilidade (sdd-rastrear);
 #   - feature pronta ou em homologação com spec, testes, plano (nível 2) ou
 #     revisão de segurança (quando obrigatória) sem aprovação, ou alterados
@@ -13,6 +15,7 @@
 # Avisos (só falham com --estrito):
 #   - artefatos de processo fora do lugar do padrão (sdd-adotar inventario);
 #   - feature adotada ainda em transição (sem a transição aprovada);
+#   - Git Flow: branch atual fora do padrão;
 #   - feature pronta ou além ainda não consolidada na spec do sistema;
 #   - incidente S1 ou S2 sem estar encerrado;
 #   - hotfix sem spec aprovada.
@@ -89,6 +92,19 @@ if [ -d "$RAIZ/$PASTA_INC" ]; then
       [ "$sit" = "encerrado" ] || avisos+=("$(basename "$a" .md) ($sev) está $sit") ;;
     esac
   done
+fi
+
+if sdd_gitflow_ativo "$RAIZ"; then
+  # No CI, a branch do PR vem das variáveis do GitHub Actions ou do GitLab CI.
+  origem="${GITHUB_HEAD_REF:-${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-}}"
+  destino="${GITHUB_BASE_REF:-${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}}"
+  if [ -n "$origem" ] && [ -n "$destino" ]; then
+    sdd_pode_integrar "$origem" "$destino" || falhas+=("Git Flow: o pull request $origem -> $destino não é permitido (feature/* -> develop; release/* e hotfix/* -> main ou develop)")
+  fi
+  atual="${origem:-${GITHUB_REF_NAME:-${CI_COMMIT_BRANCH:-$(sdd_branch_atual "$RAIZ")}}}"
+  if [ -n "$atual" ] && [ "${GITHUB_REF_TYPE:-branch}" = "branch" ] && [ -z "${CI_COMMIT_TAG:-}" ]; then
+    sdd_branch_tipo "$atual" >/dev/null || avisos+=("Git Flow: a branch $atual está fora do padrão (main, develop, feature/NNN-slug, release/X.Y.Z, hotfix/X.Y.Z)")
+  fi
 fi
 
 fora="$(sdd_artefatos_fora_do_layout "$RAIZ" | grep -c . || true)"

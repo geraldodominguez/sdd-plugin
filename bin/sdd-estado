@@ -268,6 +268,8 @@ case "$cmd" in
     sdd_feature_gravar "$RAIZ" "$id" seguranca "$seguranca"
     sdd_feature_gravar "$RAIZ" "$id" capacidade "$capacidade"
     sdd_feature_gravar "$RAIZ" "$id" release ""
+    # A branch do Git Flow. A do hotfix (hotfix/X.Y.Z) é gravada pelo sdd-incidente.
+    [ "$tipo" = "hotfix" ] || sdd_feature_gravar "$RAIZ" "$id" branch "feature/$id"
     carimbar "$id"
     sdd_registrar "$RAIZ" "$id" criada "nível $nivel, $tipo${origem:+, origem $origem}: $titulo"
     sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$id"

@@ -37,6 +37,7 @@ que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 - `sdd-release proxima | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
 - `sdd-adotar inventario | contar | aplicar` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
+- `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | pode-integrar`
 - `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
 
 ## Fases da feature
@@ -110,6 +111,12 @@ fica. Nada avança antes de o usuário aprovar a transição (`/sdd:aprovar`).
 cobre só os blocos marcados com o número da feature.
 
 **Commits:** `tipo(NNN): T-XXX descrição`.
+
+**Git Flow** ([GIT-FLOW.md](GIT-FLOW.md)): nomes fixos em todo projeto.
+`main` (produção, só por merge, tag `vX.Y.Z`), `develop` (integração),
+`feature/NNN-slug` (uma por feature, de `develop`), `release/X.Y.Z` (de
+`develop`) e `hotfix/X.Y.Z` (de `main`). Branch se cria pelo `sdd-gitflow`,
+nunca à mão; o commit de uma feature ativa vai na branch dela.
 
 ## Invariantes
 

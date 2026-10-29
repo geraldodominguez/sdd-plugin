@@ -45,6 +45,14 @@ aberto -> mitigado -> resolvido -> encerrado
 | Segurança | conforme nível e área | conforme a área tocada |
 | Release | normal | patch, homologação expressa |
 
+## A branch do hotfix
+
+O hotfix nasce em `hotfix/X.Y.Z` (a próxima versão patch), a partir de
+**`main`**: a correção parte do que está em produção, não do que está em
+desenvolvimento. Depois do go da release de correção, o `sdd-gitflow
+finalizar` leva o hotfix para `main`, com a tag, e para `develop`. Ver
+[Git Flow](referencia/git-flow.md#44-um-hotfix).
+
 ## O post-mortem
 
 Sem culpados. As perguntas que importam: qual foi a causa raiz, e **qual etapa

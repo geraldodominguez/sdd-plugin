@@ -1,6 +1,6 @@
 # Utilitários
 
-Doze scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
+Treze scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
 o plugin ativo, eles ficam no PATH. Fora delas (no terminal, no CI), chame pelo
 caminho completo ou ponha `bin/` no PATH. Os comandos `/sdd:*` usam esses
 utilitários por baixo; você raramente precisa chamá-los direto, mas eles servem
@@ -20,13 +20,14 @@ para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 | [`sdd-rastrear`](#sdd-rastrear) | lacunas de rastreabilidade de uma feature |
 | [`sdd-verificar`](#sdd-verificar) | o processo do projeto inteiro, para o CI |
 | [`sdd-adotar`](#sdd-adotar) | artefatos de outros processos: inventário e mudança para o padrão |
+| [`sdd-gitflow`](#sdd-gitflow) | o Git Flow: branches com nomes fixos, integração, release e hotfix |
 
 ## Onde o estado mora
 
 | Arquivo | Conteúdo | Escrito por |
 |---|---|---|
 | `.sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual); fora do git | `sdd-estado`, `sdd-sprint` |
-| `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `adocao` (só nas adotadas: `transicao` ou `regularizada`), `atualizado` | `sdd-estado`, `sdd-release`, `sdd-adotar` |
+| `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `adocao` (só nas adotadas: `transicao` ou `regularizada`), `branch` (a do Git Flow: `feature/NNN-slug`, ou `hotfix/X.Y.Z` num hotfix), `atualizado` | `sdd-estado`, `sdd-release`, `sdd-adotar`, `sdd-incidente` |
 | `specs/NNN-slug/historico.md` | eventos da feature: criação, fases, aprovações, reaberturas, consolidação | `sdd-estado`, `sdd-sistema`, `sdd-release` |
 | `releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix) | `sdd-release` |
 | `releases/<versão>/historico.md` | testes, aceite, go, verificação, reversão | `sdd-release` |
@@ -56,8 +57,9 @@ sdd-iniciar [--forcar] [--nivel 1|2] [--protecao desligada|leve|estrita]
 
 Cria `.sdd/` (config, constituição, estado, backlog, sprints, templates),
 `specs/`, `sistema/` e `docs/adr/` no diretório atual (ou em
-`$CLAUDE_PROJECT_DIR`), e injeta o bloco de regras no `CLAUDE.md` e no
-`AGENTS.md`. Não sobrescreve nada sem `--forcar`.
+`$CLAUDE_PROJECT_DIR`), injeta o bloco de regras no `CLAUDE.md` e no
+`AGENTS.md`, e acrescenta ao `.gitattributes` o merge por união dos históricos
+(para os merges do Git Flow). Não sobrescreve nada sem `--forcar`.
 
 ## sdd-estado
 
@@ -285,7 +287,11 @@ fase green em diante; feature pronta ou em homologação com spec, testes, plano
 ou revisão de segurança sem aprovação ou alterados depois dela; release em
 andamento com feature fora da fase esperada. Avisos (falham só com
 `--estrito`): artefato de processo fora do lugar do padrão, consolidação
-pendente, incidente S1 ou S2 não encerrado, hotfix sem spec aprovada.
+pendente, incidente S1 ou S2 não encerrado, hotfix sem spec aprovada, branch
+atual fora do padrão do Git Flow. Também falha com um pull request num fluxo
+que o Git Flow não permite, lido das variáveis do CI (`GITHUB_HEAD_REF` e
+`GITHUB_BASE_REF`, ou `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` e
+`CI_MERGE_REQUEST_TARGET_BRANCH_NAME`).
 
 ## sdd-adotar
 
@@ -346,6 +352,46 @@ converte os arquivos para o padrão e preenche o "como vai ficar"; o usuário
 aprova a transição (ver [sdd-estado](#sdd-estado)), e a feature segue da fase de
 destino. Tarefas feitas fora do plugin ficam `[O]`; as abertas, `[ ]`.
 
+## sdd-gitflow
+
+```
+sdd-gitflow conferir
+sdd-gitflow iniciar
+sdd-gitflow renomear <antiga> <nova>
+sdd-gitflow feature <NNN-slug>
+sdd-gitflow release <X.Y.Z>
+sdd-gitflow hotfix <X.Y.Z>
+sdd-gitflow integrar <NNN-slug> [--apagar]
+sdd-gitflow finalizar <X.Y.Z> [--apos-pr]
+sdd-gitflow esperada
+sdd-gitflow valido <branch>
+sdd-gitflow pode-integrar <origem> <destino>
+sdd-gitflow nome feature <NNN-slug> | release <X.Y.Z> | hotfix <X.Y.Z>
+```
+
+O Git Flow com nomes fixos em todo projeto: `main`, `develop`,
+`feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z` e as tags `vX.Y.Z`. O guia
+completo, com cada momento do ciclo, está em [Git Flow](git-flow.md).
+
+| Comando | Faz | Recusa quando |
+|---|---|---|
+| `conferir` | lista branches fora do padrão (com o nome sugerido), a falta de `main` ou `develop`, e se a branch atual é a da feature ativa | saída 3 com problemas |
+| `iniciar` | garante `main`, cria `develop` a partir dela e muda para `develop` | não há commit; a produção tem outro nome (`master`) |
+| `renomear` | `git branch -m` local para um nome do padrão; imprime os passos do remoto | o nome novo está fora do padrão, já existe, ou é `feature/` de uma feature que não existe |
+| `feature` | cria a branch da feature (de `develop`; de `main` num hotfix) ou muda para ela | a feature não existe; há alterações não commitadas fora da pasta dela e do `.sdd/` |
+| `release`, `hotfix` | cria `release/X.Y.Z` (de `develop`) ou `hotfix/X.Y.Z` (de `main`) | versão inválida; alterações não commitadas |
+| `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; conflito (o merge fica em andamento) |
+| `finalizar` | merge da `release/` (ou `hotfix/`) em `main`, tag `vX.Y.Z`, merge de `main` em `develop`; com `--apos-pr`, só a tag e o `develop`, depois do merge feito na plataforma | a release não tem o go (`implantacao` ou `producao`); conflito |
+| `pode-integrar` | saída 0 se o fluxo é permitido (`feature/*` para `develop`; `release/*` e `hotfix/*` para `main` ou `develop`; `main` para `develop`) | saída 3 nos demais |
+
+Nunca faz push, nunca apaga branch remota, nunca reescreve histórico e não
+escreve nos históricos do SDD. Com `gitflow: desligado` no config, os hooks e o
+`sdd-verificar` não conferem branches.
+
+**Configuração** (`.sdd/config.yml`): `gitflow` (`ativo` ou `desligado`) e
+`integracao` (`local`: o `sdd-gitflow` faz os merges; `pr`: os merges são
+pull requests na plataforma).
+
 ## Formatos
 
 | O quê | Formato |
@@ -356,5 +402,6 @@ destino. Tarefas feitas fora do plugin ficam `[O]`; as abertas, `[ ]`.
 | Origem na spec do sistema | `(origem: 004/RF-002)` |
 | Passo de homologação | `\| H-001 \| NNN \| CA-NNN \| como testar \| esperado \| pendente \|` |
 | Evento do histórico | `- AAAA-MM-DDTHH:MM:SSZ \| evento \| detalhe \| por: Nome` |
+| Branch | `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z`; tag `vX.Y.Z` |
 | Linha do mapa de adoção | `origem -> destino`, com destino `feature:<slug>/<arquivo>`, `adr:<slug>`, `legado:<caminho>`, `arquitetura:<caminho>` ou um caminho do padrão |
 | Commit (red, green, segurança, auditoria) | `tipo(NNN): T-XXX descrição`, ou `tipo(NNN): descrição` para artefatos |

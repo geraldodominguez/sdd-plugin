@@ -3,7 +3,7 @@ name: aprovar
 description: O gate formal de cada fase da feature. Mostra o que está sendo aprovado, pede a sua confirmação e registra a aprovação no histórico (quem, quando e o hash do artefato), avançando a feature; ao chegar a pronta, conduz a consolidação na spec do sistema.
 argument-hint: "[artefato] [nota]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-sistema *), Read, Glob, Grep, Edit
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-sistema *), Read, Glob, Grep, Edit
 ---
 
 # /sdd:aprovar
@@ -84,6 +84,17 @@ do `/sdd:release`.
    inalterados, e recusa com a lista do que falta. Com a feature pronta:
    - conduza a **consolidação na spec do sistema** como no `/sdd:sistema`
      (edite `sistema/<capacidade>.md`, mostre, e rode `sdd-sistema consolidar`);
+   - **Git Flow** (com `gitflow: ativo`; não vale para hotfix, que vai para
+     `main` pela release de correção): com tudo commitado na branch da feature,
+     leve-a para `develop` conforme a chave `integracao` do config, **depois de
+     perguntar**:
+
+     | `integracao` | O que fazer |
+     |---|---|
+     | `local` | `sdd-gitflow integrar NNN-slug` (merge `--no-ff` em `develop`); ofereça `--apagar` para a branch local e diga o `git push origin develop` |
+     | `pr` | proponha `gh pr create --base develop --head feature/NNN-slug` com o título da feature e o resumo da spec |
+
+     Conflito: pare e resolva com o usuário.
    - diga o próximo passo: entrar numa release (`/sdd:release preparar`).
 
 8. **Mostre o resultado**: a linha registrada, a fase nova e o próximo comando.

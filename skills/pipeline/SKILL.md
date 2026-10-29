@@ -17,9 +17,9 @@ digitando: o que o hook não pega na hora, o CI pega antes do merge.
 
 | Estágio | Quando roda | O que faz | Falha se |
 |---|---|---|---|
-| verificar | todo push e pull request | lint, testes, `sdd-verificar` | qualquer falha |
+| verificar | todo push e pull request | lint, testes, `sdd-verificar` (que também recusa pull request fora do Git Flow) | qualquer falha |
 | seguranca | todo push e pull request | `comando_seguranca` | vulnerabilidade alta ou crítica, segredo |
-| homologacao | push na branch de integração (ex.: `main`) | `comando_deploy_homologacao` | deploy falha |
+| homologacao | push em `release/**` ou `hotfix/**` (Git Flow) | `comando_deploy_homologacao` | deploy falha |
 | producao | tag `vX.Y.Z` | `sdd-release pode-implantar X.Y.Z`, depois `comando_deploy_producao` e `comando_verificacao_producao` | a release não tem o go registrado, ou o deploy ou a verificação falham |
 
 O estágio de produção **confere o go/no-go**: sem `sdd-release autorizar`, a
@@ -34,20 +34,25 @@ tag não implanta nada.
    `comando_seguranca`, `comando_deploy_*`, `comando_verificacao_producao`),
    proponha um valor a partir da stack e confirme. Grave no config.
 3. **Parta do template** da plataforma (`sdd-estado template pipeline/github-actions.yml`
-   ou `pipeline/gitlab-ci.yml`) e adapte: instalação da stack, comandos, nomes de
-   ambiente, branch de integração. A versão do plugin usada no CI fica fixa
-   (`SDD_VERSAO`) para o pipeline não mudar sozinho.
+   ou `pipeline/gitlab-ci.yml`) e adapte: instalação da stack, comandos e
+   nomes de ambiente. Os nomes das branches **não** se adaptam: o Git Flow do
+   plugin usa `main`, `develop`, `feature/`, `release/` e `hotfix/` em todo
+   projeto (ver `docs/referencia/git-flow.md`). A versão do plugin usada no CI
+   fica fixa (`SDD_VERSAO`) para o pipeline não mudar sozinho.
 4. **Mostre o arquivo** e explique cada estágio em uma linha. Escreva só com
    aprovação. Avise o que precisa ser configurado fora do repositório
    (segredos, proteção dos ambientes, revisores obrigatórios do ambiente de
-   produção).
+   produção) e a **proteção das branches** do Git Flow na plataforma: `main` e
+   `develop` só por pull request, com o estágio `verificar` obrigatório, sem
+   push direto e sem force-push.
 5. Rode `sdd-verificar` localmente e mostre o resultado: é o que o CI vai ver.
 
 ## Conferir
 
 Leia o pipeline existente e compare com a tabela de estágios. Aponte, sem
 alterar: estágios ausentes, produção implantando sem conferir o go, comandos
-divergentes do config, segredos expostos no arquivo. Ofereça gerar a correção.
+divergentes do config, segredos expostos no arquivo, gatilhos fora do Git Flow
+(homologação na `main`, branches como `master` ou `development`). Ofereça gerar a correção.
 
 ## Não faça
 

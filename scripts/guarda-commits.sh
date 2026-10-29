@@ -5,6 +5,20 @@
 # mensagem inline cite uma tarefa (T-NNN) ou o número da feature no formato
 # "(NNN)". Exemplo: "feat(004): T-002 valida token expirado".
 #
+# Com o Git Flow ativo (gitflow: ativo no config, o padrão), nas proteções leve
+# e estrita:
+#   - criar ou renomear uma branch (git checkout -b, git switch -c, git branch,
+#     git branch -m) só com um nome do padrão: main, develop, feature/NNN-slug
+#     (de uma feature que existe), release/X.Y.Z ou hotfix/X.Y.Z;
+#   - nada de commit direto em main (que só recebe merge, pelo sdd-gitflow);
+#   - nada de commit numa branch fora do padrão;
+#   - com uma feature ativa em construção ou revisão, o commit é na branch
+#     dela (feature/NNN-slug ou hotfix/X.Y.Z), ou numa release/ ou hotfix/ em
+#     homologação; não em develop nem na branch de outra feature. (Exceção: um
+#     hotfix cuja branch ainda não existe aceita, em develop, o commit do
+#     registro do incidente.)
+#   Um merge em andamento (resolução de conflito) não é bloqueado.
+#
 # Saída: 0 permite, 2 bloqueia (o stderr é mostrado ao agente).
 # Qualquer situação inesperada permite o comando.
 
@@ -18,8 +32,12 @@ ENTRADA="$(cat 2>/dev/null || true)"
 CMD="$(sdd_json_campo "$ENTRADA" command)"
 [ -n "$CMD" ] || exit 0
 
-# Só interessa git commit.
-printf '%s' "$CMD" | grep -qE '(^|[;&|[:space:]])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$)' || exit 0
+# Só interessa git commit e a criação ou renomeação de branch.
+E_COMMIT=0
+printf '%s' "$CMD" | grep -qE '(^|[;&|[:space:]])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$)' && E_COMMIT=1
+E_BRANCH=0
+printf '%s' "$CMD" | grep -qE '(^|[;&|[:space:]])git[[:space:]]+(checkout|switch|branch)([[:space:]]|$)' && E_BRANCH=1
+[ "$E_COMMIT" -eq 1 ] || [ "$E_BRANCH" -eq 1 ] || exit 0
 
 RAIZ="${CLAUDE_PROJECT_DIR:-}"
 [ -n "$RAIZ" ] || RAIZ="$(sdd_json_campo "$ENTRADA" cwd)"
@@ -32,6 +50,67 @@ PROTECAO="$(sdd_config "$RAIZ" protecao leve)"
 
 FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
 FASE="$(sdd_estado_ler "$RAIZ" fase)"
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
+
+bloquear() {
+  {
+    printf '%s\n' "$@"
+    echo "Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir."
+  } >&2
+  exit 2
+}
+
+# O nome da branch que o comando cria ou para o qual renomeia, se houver.
+branch_nova() {
+  local c="$1" n
+  n="$(printf '%s' "$c" | sed -nE 's/.*git[[:space:]]+(checkout|switch)[[:space:]]+(-b|-B|-c|-C|--create|--force-create)[[:space:]]+([^[:space:];&|]+).*/\3/p' | head -1)"
+  [ -n "$n" ] || n="$(printf '%s' "$c" | sed -nE 's/.*git[[:space:]]+branch[[:space:]]+(-m|-M|--move)[[:space:]]+[^[:space:];&|]+[[:space:]]+([^-[:space:];&|][^[:space:];&|]*).*/\2/p' | head -1)"
+  [ -n "$n" ] || n="$(printf '%s' "$c" | sed -nE 's/.*git[[:space:]]+branch[[:space:]]+(-m|-M|--move)[[:space:]]+([^-[:space:];&|][^[:space:];&|]*)[[:space:]]*([;&|].*)?$/\2/p' | head -1)"
+  [ -n "$n" ] || n="$(printf '%s' "$c" | sed -nE 's/.*git[[:space:]]+branch[[:space:]]+([^-[:space:];&|][^[:space:];&|]*).*/\1/p' | head -1)"
+  printf '%s' "$n" | tr -d "\"'"
+}
+
+if sdd_gitflow_ativo "$RAIZ"; then
+  MSG_PADRAO="Padrão do Git Flow: main, develop, feature/NNN-slug, release/X.Y.Z, hotfix/X.Y.Z. Use o sdd-gitflow (feature, release, hotfix), que cria a branch certa."
+
+  if [ "$E_BRANCH" -eq 1 ]; then
+    NOVA="$(branch_nova "$CMD")"
+    if [ -n "$NOVA" ]; then
+      TIPO_NOVA="$(sdd_branch_tipo "$NOVA")" || bloquear "SDD (Git Flow) bloqueou a branch '$NOVA': o nome está fora do padrão." "$MSG_PADRAO"
+      if [ "$TIPO_NOVA" = "feature" ] && [ ! -f "$RAIZ/$PASTA_SPECS/${NOVA#feature/}/estado" ]; then
+        bloquear "SDD (Git Flow) bloqueou a branch '$NOVA': a feature ${NOVA#feature/} não existe em $PASTA_SPECS/." "Uma feature nasce pelo /sdd:especificar; depois, sdd-gitflow feature NNN-slug cria a branch dela."
+      fi
+    fi
+  fi
+
+  if [ "$E_COMMIT" -eq 1 ] && ! sdd_merge_em_andamento "$RAIZ"; then
+    ATUAL="$(sdd_branch_atual "$RAIZ")"
+    if [ -n "$ATUAL" ]; then
+      [ "$ATUAL" = "$SDD_BRANCH_PRODUCAO" ] && bloquear "SDD (Git Flow) bloqueou um commit direto em $SDD_BRANCH_PRODUCAO." \
+        "$SDD_BRANCH_PRODUCAO só recebe merge de release/X.Y.Z e hotfix/X.Y.Z, depois do go/no-go (sdd-gitflow finalizar). Faça o trabalho em develop ou na branch da feature."
+      TIPO_ATUAL="$(sdd_branch_tipo "$ATUAL")" || bloquear "SDD (Git Flow) bloqueou um commit na branch '$ATUAL', fora do padrão." \
+        "Renomeie a branch (sdd-gitflow renomear $ATUAL <nome do padrão>) ou mude para a branch certa." "$MSG_PADRAO"
+      if [ -n "$FEATURE" ] && [ -f "$RAIZ/$PASTA_SPECS/$FEATURE/estado" ]; then
+        case "$FASE" in pronta|homologacao|producao|cancelada|"") ;; *)
+          ESPERADA="$(sdd_branch_da_feature "$RAIZ" "$FEATURE")"
+          # Um hotfix recém-aberto ainda não tem a branch: o registro do
+          # incidente é commitado em develop antes de ela nascer de main.
+          HOTFIX_SEM_BRANCH=0
+          case "$ESPERADA" in hotfix/*)
+            [ "$TIPO_ATUAL" = "integracao" ] && ! git -C "$RAIZ" show-ref --verify --quiet "refs/heads/$ESPERADA" && HOTFIX_SEM_BRANCH=1 ;;
+          esac
+          if [ "$HOTFIX_SEM_BRANCH" -eq 0 ] && [ "$ATUAL" != "$ESPERADA" ] && [ "$TIPO_ATUAL" != "release" ] && [ "$TIPO_ATUAL" != "hotfix" ]; then
+            bloquear "SDD (Git Flow) bloqueou o commit em '$ATUAL': a feature ativa $FEATURE é feita em $ESPERADA." \
+              "Mude para ela com sdd-gitflow feature $FEATURE. Se o commit não é desta feature, troque a feature ativa (sdd-estado usar NNN-slug) ou deixe nenhuma ativa (sdd-estado definir feature=)."
+          fi
+          ;;
+        esac
+      fi
+    fi
+  fi
+fi
+
+[ "$E_COMMIT" -eq 1 ] || exit 0
 [ -n "$FEATURE" ] || exit 0
 case "$FASE" in red|green|seguranca|auditoria) ;; *) exit 0 ;; esac
 

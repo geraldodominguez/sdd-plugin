@@ -68,11 +68,12 @@ aprova nenhum dos dois.
 
 | Faça | Por quê |
 |---|---|
-| trabalhe numa branch: `git switch -c adocao-sdd` | a adoção vira dois ou três commits fáceis de revisar e de desfazer |
+| marque o ponto de partida: `git tag antes-do-sdd` | a adoção vira alguns commits comuns; a tag é o ponto para comparar ou voltar |
 | deixe a árvore limpa: `git status` sem nada pendente | o "como era" de cada arquivo fica no último commit |
 | versione os documentos que vão ser adotados (`git add`, `git commit`) | arquivo fora do git perde o original na conversão; o agente copia para `docs/legado/` nesse caso, mas é melhor ter no git |
 | confira o `git config user.name` | é o nome registrado em cada aprovação |
 | confira que os testes rodam (`npm test`, `pytest`...) | a fase red das features adotadas precisa deles |
+| liste as branches: `git branch -a` | o plugin usa o Git Flow com nomes fixos (`main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z`); as branches com outros nomes serão renomeadas, com a sua aprovação |
 
 ## 4. Instalar o plugin
 
@@ -123,9 +124,42 @@ O agente:
 1. roda o inventário e, se ele não está vazio, avisa que o projeto não nasceu com o plugin e que os artefatos serão adotados depois da preparação;
 2. pergunta o nível padrão e a proteção. Para adotar, a **proteção `leve`** é a recomendada: a `estrita` exige disciplina de fases desde o primeiro dia;
 3. cria `.sdd/`, `specs/`, `sistema/` e `docs/adr/`, e injeta o bloco de regras no `CLAUDE.md` e no `AGENTS.md` (o resto desses arquivos fica intacto);
-4. rascunha a **constituição** só com o que observou no código: stack e versões dos manifestos, camadas, convenções, comandos de teste e lint, como se implanta hoje. O que não conseguir confirmar fica `{{a definir}}`. Regra que o projeto já descumpre vai para "Exceções aprovadas", com o plano de saída;
-5. propõe o `.sdd/config.yml`: `globs_de_teste` na convenção real do projeto, `areas_sensiveis`, `comando_teste` e os comandos de entrega que conseguir descobrir;
-6. segue para a adoção (passos 7 a 10) antes de te mostrar tudo no gate.
+4. prepara a base do **Git Flow**, antes de qualquer commit: pergunta a `integracao` (`local` ou `pr`); se a produção se chama `master` ou a integração `development`, propõe renomear para `main` e `develop` (passo 6.1); e roda `sdd-gitflow iniciar`, que cria `develop` e muda para ela. Toda a adoção é commitada em `develop`;
+5. rascunha a **constituição** só com o que observou no código: stack e versões dos manifestos, camadas, convenções, comandos de teste e lint, como se implanta hoje. O que não conseguir confirmar fica `{{a definir}}`. Regra que o projeto já descumpre vai para "Exceções aprovadas", com o plano de saída;
+6. propõe o `.sdd/config.yml`: `globs_de_teste` na convenção real do projeto, `areas_sensiveis`, `comando_teste` e os comandos de entrega que conseguir descobrir;
+7. segue para a adoção (passos 7 a 10) antes de te mostrar tudo no gate.
+
+### 6.1 As branches de produção e de integração
+
+O `sdd-gitflow conferir` mostra o que está fora do padrão:
+
+```
+Git Flow: loja
+  branch atual: master
+  ✗ não existe a branch main (produção)
+  ✗ não existe a branch develop (integração): rode sdd-gitflow iniciar
+  ✗ development está fora do padrão: renomeie para develop (sdd-gitflow renomear development develop)
+  ✗ feat-exportar está fora do padrão
+  ✗ master está fora do padrão: renomeie para main (sdd-gitflow renomear master main)
+```
+
+Com a sua aprovação, o agente renomeia `master` para `main` e `development`
+para `develop` (as branches de feature ficam para o passo 9, quando as features
+existirem). O `sdd-gitflow renomear` só mexe na cópia local e imprime o que
+fazer no remoto, para você rodar quando o time estiver de acordo:
+
+```
+Renomeada localmente: master -> main
+No remoto, quando o time estiver de acordo:
+  git push -u origin main
+  troque a branch padrão do repositório para main (GitHub: Settings > Branches)
+  git push origin --delete master
+```
+
+Depois, `sdd-gitflow iniciar` cria `develop` (se ainda não existir) e muda para
+ela. Detalhes em [Git Flow](git-flow.md#8-projeto-que-já-existe-trazer-as-branches-para-o-padrão).
+
+### 6.2 O que espera a adoção
 
 Logo depois do `sdd-iniciar`, o `/sdd:pendencias` já mostra o que espera a
 adoção:
@@ -242,10 +276,11 @@ Depois, o agente:
 - atualiza os links que o `aplicar` listou;
 - preenche `excecoes_de_layout`, se você aprovou alguma;
 - apaga o `.sdd/adocao-mapa.txt` (o registro fica no `.sdd/adocao.md`);
-- sugere um commit: `chore: adoção do SDD, arquivos no padrão`.
+- sugere um commit em `develop`: `chore: adoção do SDD, arquivos no padrão`.
 
 Faça esse commit. Assim a conversão do passo seguinte fica num commit
-separado, e o diff dela mostra exatamente o que mudou em cada arquivo.
+separado (na branch de cada feature), e o diff dela mostra exatamente o que
+mudou em cada arquivo.
 
 Neste ponto, o quadro mostra a feature em transição:
 
@@ -264,6 +299,13 @@ conteúdo do outro processo. Para cada feature, o agente:
 `sdd-estado usar 001-exportar-pedidos`. Se a feature mexe em domínio, schema,
 contrato público ou segurança, ele propõe o nível 2. Ele também define a
 capacidade da spec do sistema (`sdd-estado definir capacidade=pedidos`).
+
+E vai para a **branch da feature**, onde a conversão é commitada:
+
+| O código feito fora do plugin | O que o agente faz (perguntando antes) |
+|---|---|
+| já está em `develop` (ou não há código) | `sdd-gitflow feature 001-exportar-pedidos`: cria `feature/001-exportar-pedidos` a partir de `develop` |
+| está numa branch antiga que não entrou em `develop` (`feat-exportar`) | `sdd-gitflow renomear feat-exportar feature/001-exportar-pedidos`, `sdd-gitflow feature 001-exportar-pedidos` e `git merge develop`, para a branch receber os arquivos adotados |
 
 ### 9.2 Descobre onde a feature parou
 
@@ -398,7 +440,8 @@ Feature 001-exportar-pedidos (nível 1) · ativa
   próxima: T-003 gerar PDF com o logo da loja (atende: RF-002, CA-002; depende de: T-001)
 ```
 
-Faça o commit da conversão: `docs(001): transição para o SDD`.
+Faça o commit da conversão, na branch da feature: `docs(001): transição para o
+SDD`.
 
 ## 11. Continuar de onde parou
 
@@ -427,8 +470,9 @@ não cumpre a spec. O agente para e pergunta:
 | a spec está errada | corrige-se a spec antes de aprovar os testes |
 
 A marca `[O]` fica no `tarefas.md` para sempre, como registro do que entrou sem
-gate. No fim, a feature fica pronta, é consolidada em `sistema/pedidos.md` e
-entra numa release como qualquer outra.
+gate. No fim, a feature fica pronta, é consolidada em `sistema/pedidos.md`,
+entra em `develop` (`sdd-gitflow integrar 001-exportar-pedidos`, ou o pull
+request) e vai numa release como qualquer outra.
 
 Repita os passos 9 a 11 para cada feature adotada. Enquanto alguma estiver em
 transição, o `/sdd:pendencias` cobra, e o `sdd-verificar` avisa no CI.
@@ -480,8 +524,9 @@ A adoção é feita de commits comuns, sem nada apagado:
 
 | Quer desfazer | Como |
 |---|---|
-| tudo, antes do merge | apague a branch `adocao-sdd` |
-| tudo, depois do merge | `git revert` dos commits da adoção (preparação, arquivos no padrão, conversão) |
+| tudo, antes de publicar | `git switch main` e `git branch -D develop` (e as `feature/` criadas); o `main` continua no ponto da tag `antes-do-sdd` |
+| tudo, depois de publicar | `git revert` dos commits da adoção em `develop` (preparação, arquivos no padrão) e o descarte das branches `feature/` das features adotadas |
+| a renomeação de uma branch | `sdd-gitflow` não tem desfazer: `git branch -m <nova> <antiga>` |
 | só a conversão de uma feature | `git revert` do commit da conversão; a feature volta ao conteúdo original, ainda em transição |
 
 O `.sdd/adocao.md` diz, arquivo por arquivo, de onde cada um veio.
@@ -524,6 +569,15 @@ aparecendo em "Fora do padrão" até você rodar `/sdd:iniciar --adotar` de novo
 Ele fica onde está. Ponha o caminho em `excecoes_de_layout` no
 `.sdd/config.yml`, e nem o hook nem o inventário voltam a apontá-lo.
 
+**Tenho branches com outros nomes. O que acontece com elas?**
+
+Nada sem você. O `sdd-gitflow conferir` lista cada uma com o nome sugerido, e
+o agente propõe a troca: `master` para `main`, `development` para `develop`,
+a branch de uma feature em andamento para `feature/NNN-slug`. A renomeação é
+local; o remoto você atualiza quando o time estiver de acordo. Enquanto uma
+branch fora do padrão existir, o hook não deixa commitar nela, e o
+`/sdd:pendencias` a lista na seção "Git Flow".
+
 **O que acontece com os ADRs adotados?**
 
 São renomeados para `docs/adr/NNNN-slug.md` com o conteúdo original. Se
@@ -543,3 +597,6 @@ situação "proposta" aparece nas pendências.
 | `a fase plano só existe no nível 2` | destino `plano` numa feature de nível 1 | use `tarefas` ou `red`, ou suba para o nível 2 |
 | `a feature ... veio de outro processo e está em transição. Aprove a transição primeiro` | tentativa de aprovar outro artefato ou de mudar a fase | `/sdd:aprovar` sem artefato |
 | `Ainda citam o caminho antigo` | links para os arquivos que mudaram de lugar | atualize os arquivos listados |
+| `a branch de produção se chama 'master'` | o `sdd-gitflow iniciar` exige `main` | `sdd-gitflow renomear master main`, com o time de acordo |
+| `SDD (Git Flow) bloqueou um commit na branch '...', fora do padrão` | commit numa branch antiga | renomeie a branch (`sdd-gitflow renomear`) ou mude para a certa |
+| `sdd-gitflow: há alterações não commitadas` | trocar de branch levaria o trabalho junto | faça o commit (em `develop`, se é da adoção) e rode de novo |

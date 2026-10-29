@@ -669,6 +669,120 @@ grep -q '^- \[O\] T-001' "$L/specs/$A/tarefas.md" && ok "a marca [O] fica como r
 out="$(cd "$L" && sdd-verificar 2>&1)"
 echo "$out" | grep -q '002-pagamento: adotada de outro processo, ainda em transição' && ok "verificar avisa transição pendente" || fail "aviso transição" "$out"
 
+echo "git flow: nomes"
+gf_tipo() { (. "$PLUGIN/lib/sdd-comum.sh"; sdd_branch_tipo "$1" || echo fora); }
+for par in "main:producao" "develop:integracao" "feature/001-login:feature" "release/1.2.0:release" "hotfix/1.2.1:hotfix" \
+           "master:fora" "development:fora" "feat/login:fora" "feature/login:fora" "release/1.2:fora" "bugfix/001-x:fora" "feature/001-Login:fora"; do
+  b="${par%%:*}"; e="${par#*:}"; o="$(gf_tipo "$b")"
+  [ "$o" = "$e" ] && ok "branch $b: $e" || fail "branch $b" "esperado $e, obtido $o"
+done
+assert_exit 0 "fluxo feature -> develop" sdd-gitflow pode-integrar feature/001-a develop
+assert_exit 0 "fluxo release -> main" sdd-gitflow pode-integrar release/1.0.0 main
+assert_exit 0 "fluxo hotfix -> develop" sdd-gitflow pode-integrar hotfix/1.0.1 develop
+assert_exit 3 "fluxo feature -> main recusado" sdd-gitflow pode-integrar feature/001-a main
+assert_exit 3 "fluxo develop -> main recusado" sdd-gitflow pode-integrar develop main
+assert_exit 3 "fluxo de branch fora do padrão recusado" sdd-gitflow pode-integrar feat-x develop
+
+echo "git flow: preparar o repositório"
+G="$TMP/gitflow"
+mkdir -p "$G/src" "$G/tests"
+(cd "$G" && git init -q && git symbolic-ref HEAD refs/heads/master && git config user.name Teste && git config user.email t@t \
+  && printf 'x\n' > src/a.js && git add -A && git commit -qm inicio && git branch development && git branch feat-login)
+out="$(cd "$G" && sdd-gitflow conferir 2>&1)"; code=$?
+[ "$code" -eq 3 ] && echo "$out" | grep -q 'master está fora do padrão: renomeie para main' && echo "$out" | grep -q 'development está fora do padrão: renomeie para develop' \
+  && ok "conferir aponta master e development com o nome certo" || fail "conferir nomes antigos" "$out"
+(cd "$G" && assert_exit 1 "iniciar recusa produção chamada master" sdd-gitflow iniciar)
+(cd "$G" && assert_exit 1 "renomear recusa nome fora do padrão" sdd-gitflow renomear feat-login feat/login)
+(cd "$G" && sdd-gitflow renomear master main >/dev/null && sdd-gitflow renomear development develop >/dev/null)
+(cd "$G" && git branch -q -D feat-login)
+(cd "$G" && sdd-iniciar >/dev/null)
+grep -q '^specs/\*/historico.md merge=union$' "$G/.gitattributes" && ok "iniciar põe o merge por união dos históricos" || fail ".gitattributes"
+(cd "$G" && sdd-iniciar >/dev/null)
+[ "$(grep -c '# sdd:inicio' "$G/.gitattributes")" = "1" ] && ok ".gitattributes não se duplica" || fail ".gitattributes duplicado"
+(cd "$G" && git switch -q main)
+out="$(cd "$G" && sdd-gitflow iniciar 2>&1)"
+[ "$(cd "$G" && git branch --show-current)" = "develop" ] && ok "iniciar com o .sdd/ novo: muda para develop" || fail "iniciar develop" "$out"
+(cd "$G" && git add -A && git commit -qm "chore: sdd")
+(cd "$G" && assert_exit 0 "conferir: tudo no padrão" sdd-gitflow conferir)
+
+echo "git flow: hook"
+(cd "$G" && assert_exit 2 "commit em main bloqueado" bash -c "git switch -q main && $(printf '%q' "$PLUGIN/scripts/guarda-commits.sh") < <(printf '%s' '$(bash_json "$G" 'git commit -m "x"')'); r=\$?; git switch -q develop; exit \$r")
+assert_exit 2 "criar branch fora do padrão bloqueado" guard_commit "$G" 'git checkout -b feat-x'
+assert_exit 2 "renomear para fora do padrão bloqueado" guard_commit "$G" 'git branch -m develop2'
+assert_exit 2 "feature/ de feature que não existe bloqueada" guard_commit "$G" 'git switch -c feature/009-nada'
+assert_exit 0 "release/X.Y.Z permitida" guard_commit "$G" 'git switch -c release/1.0.0'
+assert_exit 0 "commit em develop sem feature ativa" guard_commit "$G" 'git commit -m "chore: ajuste"'
+(cd "$G" && sdd-estado nova "Login com e-mail" >/dev/null)
+GF=001-login-com-e-mail
+[ "$(sdd_feature_ler_t "$G" $GF branch)" = "feature/$GF" ] && ok "a feature registra a branch" || fail "branch no estado"
+assert_exit 2 "commit da feature ativa em develop bloqueado" guard_commit "$G" 'git commit -m "docs(001): spec"'
+out="$(guard_commit "$G" 'git commit -m "docs(001): spec"' 2>&1)"
+echo "$out" | grep -q "sdd-gitflow feature $GF" && ok "a mensagem diz como ir para a branch" || fail "mensagem da branch" "$out"
+assert_exit 0 "feature/ de feature que existe permitida" guard_commit "$G" "git switch -c feature/$GF"
+printf 'y\n' >> "$G/src/a.js"
+(cd "$G" && assert_exit 1 "feature: recusa trocar de branch com alteração pendente" sdd-gitflow feature $GF)
+(cd "$G" && git checkout -q -- src/a.js)
+(cd "$G" && assert_exit 0 "feature: cria a branch a partir de develop" sdd-gitflow feature $GF)
+[ "$(cd "$G" && git branch --show-current)" = "feature/$GF" ] && ok "agora na branch da feature" || fail "branch da feature"
+[ -f "$G/specs/$GF/spec.md" ] && ok "a spec nova vai junto para a branch" || fail "spec na branch"
+assert_exit 0 "commit da feature na branch dela" guard_commit "$G" 'git commit -m "docs(001): spec"'
+(cd "$G" && git add -A && git commit -qm "docs(001): spec")
+out="$(cd "$G" && sdd-status)"
+echo "$out" | grep -q "Git Flow: em feature/$GF" && ok "o quadro mostra a branch" || fail "quadro branch" "$out"
+(cd "$G" && assert_exit 1 "integrar recusa feature que não está pronta" sdd-gitflow integrar $GF)
+assert_exit 0 "merge em andamento não é bloqueado" bash -c "cd '$G' && git switch -q develop && printf 'a\n' > m.txt && git add m.txt && git commit -qm m && git switch -q feature/$GF && printf 'b\n' > m.txt && git add m.txt && git commit -qm 'docs(001): m' && ! git merge -q develop >/dev/null 2>&1; $(printf '%q' "$PLUGIN/scripts/guarda-commits.sh") < <(printf '%s' '$(bash_json "$G" 'git commit -m "x"')')"
+(cd "$G" && git merge --abort && git reset -q --hard HEAD~1)
+subst 's/^gitflow: .*/gitflow: desligado/' "$G/.sdd/config.yml"
+assert_exit 0 "gitflow desligado: nada é conferido" guard_commit "$G" 'git checkout -b qualquer-nome'
+subst 's/^gitflow: .*/gitflow: ativo/' "$G/.sdd/config.yml"
+
+echo "git flow: integrar, release e finalizar"
+printf '# Spec\n- **RF-001**: entra\n- **CA-001** (valida RF-001)\n' > "$G/specs/$GF/spec.md"
+printf -- '- [x] T-001 entra (atende: RF-001, CA-001; depende de: nada)\n' > "$G/specs/$GF/tarefas.md"
+printf 'it("entra") // sdd:001:CA-001\n' > "$G/tests/login.test.js"
+(cd "$G" && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null)
+[ "$(sdd_feature_ler_t "$G" $GF fase)" = "pronta" ] && ok "feature pronta na branch dela" || fail "pronta"
+(cd "$G" && git add -A && git commit -qm "feat(001): T-001 login")
+out="$(cd "$G" && sdd-pendencias)"
+echo "$out" | grep -q "$GF está pronta e feature/$GF ainda não foi integrada em develop" && ok "pendências cobram a integração" || fail "pendência integração" "$out"
+(cd "$G" && assert_exit 0 "integrar a feature pronta" sdd-gitflow integrar $GF --apagar)
+(cd "$G" && git merge-base --is-ancestor HEAD develop && [ "$(git branch --show-current)" = "develop" ]) && ok "feature em develop, e de volta em develop" || fail "integrada"
+(cd "$G" && git show-ref --verify --quiet "refs/heads/feature/$GF") && fail "branch local apagada" || ok "--apagar remove a branch local"
+[ "$(cd "$G" && git log -1 --format=%P | wc -w | tr -d ' ')" = "2" ] && ok "merge --no-ff (commit de merge)" || fail "no-ff"
+(cd "$G" && assert_exit 0 "release cria release/X.Y.Z" sdd-gitflow release 0.1.0)
+[ "$(cd "$G" && git branch --show-current)" = "release/0.1.0" ] && ok "agora em release/0.1.0" || fail "release branch"
+(cd "$G" && sdd-release nova 0.1.0 >/dev/null && sdd-release incluir 0.1.0 $GF >/dev/null && git add -A && git commit -qm "chore(release): 0.1.0")
+(cd "$G" && assert_exit 1 "finalizar recusa sem o go" sdd-gitflow finalizar 0.1.0)
+GR="$G/releases/0.1.0"
+subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "$GR/testes.md" "$GR/homologacao.md"
+(cd "$G" && sdd-release homologar 0.1.0 >/dev/null)
+subst 's/| pendente |/| aprovado |/' "$GR/homologacao.md"; subst 's/{{[^}]*}}/ok/g' "$GR/implantacao.md" "$GR/notas.md"
+(cd "$G" && sdd-release aceitar 0.1.0 --por "Bia" >/dev/null && sdd-release autorizar 0.1.0 >/dev/null && git add -A && git commit -qm "chore(release): go")
+out="$(cd "$G" && sdd-pendencias)"
+echo "$out" | grep -q 'a release 0.1.0 tem o go e ainda não foi para main' && ok "pendências cobram a ida para main" || fail "pendência finalizar" "$out"
+(cd "$G" && assert_exit 0 "finalizar com o go" sdd-gitflow finalizar 0.1.0)
+[ "$(cd "$G" && git describe --tags --exact-match main 2>/dev/null)" = "v0.1.0" ] && ok "tag v0.1.0 em main" || fail "tag"
+(cd "$G" && git merge-base --is-ancestor release/0.1.0 main && git merge-base --is-ancestor main develop) && ok "release em main, e main de volta em develop" || fail "merges da release"
+[ "$(cd "$G" && git branch --show-current)" = "develop" ] && ok "termina em develop" || fail "termina em develop"
+(cd "$G" && assert_exit 0 "finalizar de novo não repete nada" sdd-gitflow finalizar 0.1.0)
+
+echo "git flow: hotfix"
+(cd "$G" && sdd-release concluir 0.1.0 --verificacao ok >/dev/null && sdd-incidente abrir "Login falha" --severidade S2 >/dev/null && git add -A && git commit -qm "docs: INC-001")
+(cd "$G" && sdd-incidente hotfix INC-001 "Corrigir login" >/dev/null)
+HF=002-corrigir-login
+[ "$(sdd_feature_ler_t "$G" $HF branch)" = "hotfix/0.1.1" ] && ok "o hotfix reserva hotfix/X.Y.Z (próxima patch)" || fail "branch do hotfix" "$(sdd_feature_ler_t "$G" $HF branch)"
+assert_exit 0 "registro do incidente em develop antes da branch do hotfix" guard_commit "$G" 'git commit -m "docs(002): INC-001 hotfix aberto"'
+(cd "$G" && git add -A ':!specs/' && git commit -qm "docs(002): INC-001 hotfix aberto")
+(cd "$G" && assert_exit 0 "feature do hotfix cria a branch a partir de main" sdd-gitflow feature $HF)
+(cd "$G" && [ "$(git branch --show-current)" = "hotfix/0.1.1" ] && [ "$(git merge-base HEAD main)" = "$(git rev-parse main)" ]) && ok "hotfix/0.1.1 nasce de main" || fail "hotfix de main"
+assert_exit 2 "com a branch criada, develop volta a ser bloqueada" bash -c "cd '$G' && git switch -q develop && $(printf '%q' "$PLUGIN/scripts/guarda-commits.sh") < <(printf '%s' '$(bash_json "$G" 'git commit -m "fix(002): x"')'); r=\$?; git switch -q hotfix/0.1.1; exit \$r"
+(cd "$G" && assert_exit 1 "integrar recusa hotfix (vai pela release)" sdd-gitflow integrar $HF)
+
+echo "git flow: CI"
+(cd "$G" && assert_exit 3 "verificar recusa PR feature -> main" env GITHUB_HEAD_REF=feature/$GF GITHUB_BASE_REF=main sdd-verificar --silencioso)
+out="$(cd "$G" && env CI_MERGE_REQUEST_SOURCE_BRANCH_NAME=feat-x CI_MERGE_REQUEST_TARGET_BRANCH_NAME=develop sdd-verificar 2>&1)"
+echo "$out" | grep -q 'o pull request feat-x -> develop não é permitido' && ok "verificar lê o merge request do GitLab" || fail "verificar gitlab" "$out"
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"

@@ -20,6 +20,15 @@ configuração) sempre sobem a versão maior.
 
 - Guias passo a passo: [começar um projeto novo](docs/referencia/projeto-novo.md) e [adotar o SDD num projeto em andamento](docs/referencia/projeto-em-andamento.md), com as saídas reais dos comandos e o que olhar em cada gate, e o exemplo [`exemplos/adocao/`](exemplos/adocao/), com o antes e o depois de uma adoção.
 
+- **Git Flow com nomes fixos** em todo projeto: `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z` e as tags `vX.Y.Z`, ligado ao ciclo: o `/sdd:iniciar` cria `develop`, o `/sdd:especificar` cria a branch da feature, o `/sdd:aprovar` integra a feature pronta, o `/sdd:release` cria a `release/` e, depois do go, a leva a `main` com a tag, e o `/sdd:incidente` cria o `hotfix/` a partir de `main`. Ver [docs/referencia/git-flow.md](docs/referencia/git-flow.md) e o [ADR 0015](.agents/adr/0015-git-flow-com-nomes-fixos.md).
+- Utilitário `sdd-gitflow` (`conferir`, `iniciar`, `renomear`, `feature`, `release`, `hotfix`, `integrar`, `finalizar`, `esperada`, `valido`, `pode-integrar`, `nome`). Nunca faz push nem reescreve histórico.
+- Chaves novas: `gitflow` (`ativo` ou `desligado`) e `integracao` (`local` ou `pr`) no `.sdd/config.yml`; `branch` em `specs/NNN/estado`.
+- O hook `guarda-commits` bloqueia branch com nome fora do padrão, commit em `main`, commit numa branch fora do padrão e commit da feature ativa fora da branch dela.
+- O `sdd-verificar` falha com pull request fora do Git Flow (variáveis do GitHub Actions e do GitLab CI) e avisa sobre branch fora do padrão; o `sdd-pendencias` ganha a seção "Git Flow" (develop ausente, branches fora do padrão, feature pronta não integrada, release com o go fora de `main`); o `sdd-status` mostra a branch.
+- Os modelos de pipeline seguem o Git Flow: homologação no push de `release/**` e `hotfix/**`, produção na tag.
+- O `/sdd:iniciar` põe os históricos do SDD com `merge=union` no `.gitattributes`, para os merges do Git Flow não darem conflito neles.
+- A simulação do ciclo roda o Git Flow inteiro, com branches, merges e tags reais.
+
 ### Mudanças
 
 - O aviso de links para o caminho antigo ignora o bloco de regras do SDD, os registros da adoção e as citações parciais (`TODO.md` não casa com `docs/legado/TODO.md`).

@@ -164,7 +164,8 @@ Tarefas pequenas, cada uma ligada aos requisitos que atende.
 | a mudança tocou uma área sensível | avisa que a revisão de segurança passou a ser obrigatória |
 
 Commits citam a tarefa: `feat(004): T-002 valida token expirado`. O hook
-recusa commit sem isso nas fases de construção e revisão.
+recusa commit sem isso nas fases de construção e revisão. Todos vão na branch
+`feature/004-slug`, criada pelo `/sdd:especificar` (ver [Git Flow](git-flow.md)).
 
 ### 4.6 Revisar
 
@@ -276,6 +277,8 @@ Comandos de terminal para casos pontuais (todos aceitam `--ajuda`):
 | conferir uma aprovação | `sdd-estado aprovado spec.md` |
 | ver a história de uma feature | `sdd-estado historico` |
 | rodar o que o CI roda | `sdd-verificar` |
+| ver as branches e o que está fora do padrão | `sdd-gitflow conferir` |
+| ir para a branch da feature ativa | `sdd-gitflow feature NNN-slug` |
 
 Referência completa em [utilitários](utilitarios.md).
 
@@ -291,6 +294,8 @@ Referência completa em [utilitários](utilitarios.md).
 | reabrir uma feature em produção | recusado | mudança nova é feature nova; defeito é incidente |
 | implantar pela tag sem go | o pipeline falha | a decisão de ir para produção é humana |
 | commit sem `T-XXX` durante a implementação | o hook bloqueia | rastreabilidade do commit à tarefa |
+| commit em `main`, ou fora da branch da feature ativa | o hook bloqueia | `main` só recebe releases depois do go; cada feature na sua branch |
+| branch com nome fora do padrão (`feat/x`, `development`) | o hook bloqueia | os mesmos nomes em todo projeto (ver [Git Flow](git-flow.md)) |
 
 Os hooks são trilhos contra deslizes, não um sandbox; o pipeline é a garantia
 determinística. Ver [proteção por hooks](protecao-por-hooks.md).

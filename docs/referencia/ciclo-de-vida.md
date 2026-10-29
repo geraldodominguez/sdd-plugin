@@ -55,6 +55,19 @@ Separar os dois evita colocar etapas de implantação dentro de cada feature e
 permite entregar várias features juntas, com um único aceite e uma única janela
 de implantação.
 
+## O Git Flow acompanha o ciclo
+
+Cada etapa tem a sua branch, com o mesmo nome em todo projeto:
+
+| Etapa | Branch | Criada por |
+|---|---|---|
+| Análise a Revisão (uma feature) | `feature/NNN-slug`, a partir de `develop` | `/sdd:especificar` |
+| feature pronta | entra em `develop` | `/sdd:aprovar` |
+| Entrega (uma release) | `release/X.Y.Z`, a partir de `develop`; depois do go, `main` com a tag `vX.Y.Z` | `/sdd:release` |
+| Manutenção (um hotfix) | `hotfix/X.Y.Z`, a partir de `main`; depois do go, `main` com a tag | `/sdd:incidente` |
+
+O detalhe está em [Git Flow](git-flow.md).
+
 ## Os níveis de rigor decidem o caminho
 
 | Nível | Exemplos | Caminho |
@@ -212,7 +225,7 @@ automática:
 |---|---|---|
 | verificar | todo push e pull request | lint, testes e `sdd-verificar`: rastreabilidade e aprovações de todas as features |
 | seguranca | todo push e pull request | varreduras de dependências, segredos e código |
-| homologacao | push na branch de integração | o ambiente de homologação acompanha o código |
+| homologacao | push em `release/**` ou `hotfix/**` | o ambiente de homologação recebe a versão que está sendo homologada |
 | producao | tag `vX.Y.Z` | `sdd-release pode-implantar` confere o go antes de implantar |
 
 O hook pega deslizes na hora; o pipeline pega o resto antes do merge, de forma

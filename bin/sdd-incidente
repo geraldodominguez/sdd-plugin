@@ -139,9 +139,13 @@ case "$cmd" in
     saida="$("$AQUI/sdd-estado" nova "$titulo" --tipo hotfix --origem "$id" ${cap[@]+"${cap[@]}"})"
     printf '%s\n' "$saida"
     f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
+    # Git Flow: o hotfix é feito em hotfix/X.Y.Z, a próxima versão patch.
+    vh="$("$AQUI/sdd-release" proxima patch)"
+    sdd_feature_gravar "$RAIZ" "$f" branch "hotfix/$vh"
     sdd_md_gravar_campo "$(arquivo "$id")" "Correção" "$f (hotfix)"
     linha_do_tempo "$id" "hotfix aberto: $f"
     sdd_registrar "$RAIZ" "" incidente "$id hotfix $f"
+    echo "Branch: hotfix/$vh (a partir de main: sdd-gitflow hotfix $vh). A release de correção será a $vh."
     echo "Próximo: teste de regressão do incidente (fase red), /sdd:aprovar, correção (green), spec retroativa e /sdd:aprovar."
     ;;
 

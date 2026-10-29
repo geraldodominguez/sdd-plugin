@@ -23,7 +23,12 @@ E mantém você no controle: cada aprovação fica registrada com o hash do que 
 aprovado, um quadro mostra a situação de todas as features e releases, e uma
 caixa de entrada lista o que espera a sua decisão.
 
-É pequeno de propósito: vinte skills, seis subagents, dois hooks e doze
+E usa o mesmo **Git Flow** em todo projeto: `main`, `develop`,
+`feature/NNN-slug`, `release/X.Y.Z` e `hotfix/X.Y.Z`, com as branches criadas,
+juntadas e marcadas com a tag `vX.Y.Z` nos momentos certos do ciclo. Nenhum
+agente inventa outro nome. Ver [Git Flow](docs/referencia/git-flow.md).
+
+É pequeno de propósito: vinte skills, seis subagents, dois hooks e treze
 utilitários em bash. Tudo em markdown legível. Adapte à vontade.
 
 > **Primeira vez?** Escolha o guia passo a passo da sua situação:
@@ -386,12 +391,13 @@ chamar skills do modelo, nunca outra skill do usuário.
 ### Hooks e utilitários
 
 - **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`, e os artefatos novos fora do lugar do padrão.
-- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar` e `sdd-adotar`, as transições de fase e onde o estado e o histórico moram.
+- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-adotar` e `sdd-gitflow`, as transições de fase e onde o estado e o histórico moram.
 
 ### Guias
 
 - [Começar um projeto novo, passo a passo](docs/referencia/projeto-novo.md)
 - [Adotar o SDD num projeto em andamento, passo a passo](docs/referencia/projeto-em-andamento.md)
+- [Git Flow: as branches de cada momento do ciclo](docs/referencia/git-flow.md)
 - [Guia do desenvolvedor: do zero ao primeiro deploy](docs/referencia/guia-do-desenvolvedor.md)
 - [Ciclo de vida: o processo inteiro, etapa por etapa](docs/referencia/ciclo-de-vida.md)
 - [Guia de acompanhamento: a rotina do humano](docs/referencia/acompanhamento.md)
@@ -415,6 +421,16 @@ incidentes/INC-NNN.md    um incidente, com linha do tempo e post-mortem
 docs/adr/NNNN-slug.md    decisões de arquitetura
 docs/arquitetura/        documentos e diagramas de arquitetura, como referência
 docs/legado/             o que veio de outro processo e não entra no fluxo
+```
+
+E as branches, sempre com estes nomes:
+
+```
+main                     produção; só recebe merge de release/ e hotfix/, com a tag vX.Y.Z
+develop                  integração; recebe as features prontas
+feature/NNN-slug         uma por feature, com o id da pasta em specs/
+release/X.Y.Z            uma por release, de develop para main
+hotfix/X.Y.Z             uma por hotfix, de main para main e develop
 ```
 
 Tudo é markdown ou texto, versionado no git, legível sem o plugin. Esse layout

@@ -14,7 +14,9 @@
 #   sistema/               a spec viva do sistema, por capacidade (o que ele faz hoje)
 #   releases/, incidentes/ criadas sob demanda por /sdd:release e /sdd:incidente
 #   docs/adr/              decisões arquiteturais duráveis
-# E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente).
+# E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente), e
+# acrescenta ao .gitattributes o merge por união dos históricos: com o Git Flow,
+# duas branches acrescentam linhas ao mesmo histórico, e o merge junta as duas.
 set -euo pipefail
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -130,6 +132,20 @@ injetar_bloco() {
 }
 injetar_bloco "$RAIZ/CLAUDE.md"
 injetar_bloco "$RAIZ/AGENTS.md"
+
+# Históricos só recebem linhas novas: no merge entre branches do Git Flow, o
+# driver "union" do git junta as linhas dos dois lados em vez de dar conflito.
+ATRIB="$RAIZ/.gitattributes"
+if ! grep -qF '# sdd:inicio' "$ATRIB" 2>/dev/null; then
+  PS_="$(sdd_pasta_specs "$RAIZ")"; PR_="$(sdd_pasta_releases "$RAIZ")"
+  {
+    [ -s "$ATRIB" ] && printf '\n'
+    printf '# sdd:inicio (históricos do SDD só recebem linhas: o merge junta os dois lados)\n'
+    printf '.sdd/historico.md merge=union\n%s/*/historico.md merge=union\n%s/*/historico.md merge=union\n' "$PS_" "$PR_"
+    printf '# sdd:fim\n'
+  } >> "$ATRIB"
+  criados+=(".gitattributes (merge por união dos históricos)")
+fi
 
 echo "SDD iniciado em: $RAIZ"
 echo "  nível padrão: $NIVEL | proteção: $PROTECAO"

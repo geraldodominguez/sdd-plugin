@@ -12,6 +12,18 @@ nivel_padrao: 1
 #              testes na fase red e qualquer edição de código na auditoria
 protecao: leve
 
+# Git Flow (ver docs/referencia/git-flow.md no plugin). Os nomes das branches
+# são fixos, iguais em todo projeto: main (produção), develop (integração),
+# feature/NNN-slug, release/X.Y.Z, hotfix/X.Y.Z, e as tags vX.Y.Z em main.
+#   ativo      o plugin cria as branches, confere os commits e o CI confere os PRs
+#   desligado  o plugin não cria nem confere branches
+gitflow: ativo
+
+# Como uma branch entra em outra no Git Flow:
+#   local  o sdd-gitflow faz o merge --no-ff (e a tag) e você publica com git push
+#   pr     o agente abre o pull request (gh) e o merge acontece na plataforma
+integracao: local
+
 # Pastas, relativas à raiz do projeto.
 pasta_specs: specs             # uma pasta por feature: o que cada mudança alterou
 pasta_sistema: sistema         # spec viva do sistema, por capacidade: o que ele faz hoje

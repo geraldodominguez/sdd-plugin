@@ -36,6 +36,7 @@ o [adotar o SDD num projeto em andamento](projeto-em-andamento.md).
 | A spec viva do sistema | `sistema/<capacidade>.md` | o que o sistema faz hoje |
 | As regras para os agentes | bloco no `CLAUDE.md` e no `AGENTS.md` | todo agente do projeto segue o mesmo processo e o mesmo layout |
 | O CI | `.github/workflows/` ou `.gitlab-ci.yml` | confere o processo em todo push e só implanta com o go |
+| O Git Flow | `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z`, tags `vX.Y.Z` | os mesmos nomes de branch em todo projeto; os comandos criam e juntam as branches |
 
 O layout é fixo e igual em todo projeto que usa o plugin. Nenhum agente cria
 pastas ou nomes próprios: o hook bloqueia (ver
@@ -81,9 +82,13 @@ ainda não usa SDD. Rode /sdd:iniciar para começar."
 
 ```bash
 mkdir loja && cd loja
-git init
+git init -b main
 git commit --allow-empty -m "chore: início"
 ```
+
+A branch de produção se chama **`main`** em todo projeto do SDD (ver
+[Git Flow](git-flow.md)). Com um git antigo, sem a opção `-b`, rode `git init`
+e depois `git symbolic-ref HEAD refs/heads/main`.
 
 Se você já sabe a stack, crie o esqueleto antes (`npm init`, `dotnet new`,
 `poetry new`, o que for) e faça o commit. O `/sdd:iniciar` lê os manifestos
@@ -133,6 +138,29 @@ docs/adr/             decisões de arquitetura
 CLAUDE.md, AGENTS.md  com o bloco de regras do SDD (o resto do arquivo fica intacto)
 ```
 
+**O Git Flow.** Logo depois, o agente pergunta como as branches se juntam e
+prepara a `develop`:
+
+| `integracao` | Para quem | O que acontece numa feature pronta |
+|---|---|---|
+| `local` | quem trabalha sozinho, ou time sem revisão de código | o plugin faz o merge em `develop` (perguntando antes) |
+| `pr` | time com revisão de código no GitHub ou no GitLab | o agente abre o pull request para `develop` |
+
+Então ele roda `sdd-gitflow iniciar`, que cria `develop` a partir de `main` e
+muda para ela:
+
+```
+Criada develop a partir de main.
+Agora em develop: o trabalho do dia a dia parte daqui.
+Lembre de publicar: git push -u origin main develop
+```
+
+Daqui em diante, ninguém faz commit em `main`: o hook bloqueia. Ela só recebe
+as releases, depois do go.
+
+Ele também acrescenta ao `.gitattributes` o merge por união dos históricos do
+SDD, para que os merges do Git Flow não deem conflito neles.
+
 Num projeto novo, o inventário de artefatos de outro processo vem vazio, e não
 há adoção. Se ele encontrar alguma coisa, siga o
 [guia de projeto em andamento](projeto-em-andamento.md).
@@ -175,16 +203,19 @@ Abra `.sdd/config.yml`. O agente sugere os valores; você confirma:
 | `comando_deploy_homologacao`, `comando_deploy_producao` | como se implanta | `./deploy.sh homolog` |
 | `comando_verificacao_producao` | o teste depois do deploy | `curl -fsS https://loja.exemplo/saude` |
 | `excecoes_de_layout` | documentos com nome de artefato que não são do SDD (raro num projeto novo) | `docs/manual/**` |
+| `gitflow` | `ativo` (padrão) ou `desligado` | `ativo` |
+| `integracao` | `local` ou `pr` | `local` |
 
 Os comandos de entrega podem ficar vazios até a primeira release. O
 `comando_teste`, não: sem ele, o escritor de testes e o auditor perguntam a
 cada vez.
 
-Faça o commit:
+Faça o commit, em `develop`, e publique as duas branches:
 
 ```bash
 git add -A
 git commit -m "chore: sdd iniciado"
+git push -u origin main develop
 ```
 
 O `.sdd/estado` (a sua feature ativa) já fica fora do git. O resto é do time.
@@ -202,6 +233,11 @@ release tiver o go registrado. Revise e faça o commit.
 
 **Deu certo se** o primeiro push passa no CI. O `sdd-verificar` num projeto sem
 features responde "Nenhuma falha".
+
+Na plataforma, proteja `main` e `develop`: só por pull request, com o estágio
+`verificar` obrigatório, sem push direto e sem force-push. O pipeline também
+recusa pull request fora do Git Flow (uma feature direto para `main`, por
+exemplo).
 
 ## 9. Organizar o trabalho: backlog e sprint
 
@@ -246,12 +282,15 @@ feature de nível 2 inteira, com os arquivos de verdade.
 | classifica o nível e pergunta | confirma o nível |
 | escolhe a capacidade (`sistema/`) | confirma o nome |
 | cria `specs/001-exportar-pedidos/` pelo `sdd-estado nova` | nada |
+| cria a branch `feature/001-exportar-pedidos` a partir de `develop` e muda para ela (`sdd-gitflow feature`) | nada |
 | escreve a spec: requisitos (RF) em EARS e critérios de aceitação (CA) em Dado, Quando, Então | lê: é isso que você quer? |
 | marca o que não sabe com `[PRECISA ESCLARECER]` | nada ainda |
 
-A pasta da feature **sempre** nasce pelo `sdd-estado nova`, numerada. Um agente
-que tentar criar `docs/specs/exportar.md` ou `specs/exportar/` à mão é
-bloqueado pelo hook.
+A pasta da feature **sempre** nasce pelo `sdd-estado nova`, numerada, e a
+branch tem o mesmo nome: `feature/` mais o id da pasta. Um agente que tentar
+criar `docs/specs/exportar.md`, `specs/exportar/` ou uma branch `feat/exportar`
+à mão é bloqueado pelo hook. Toda a feature, da spec ao código, é commitada na
+branch dela.
 
 ### 10.2 Esclarecer e aprovar a spec
 
@@ -306,6 +345,17 @@ O `/sdd:aprovar` confere que spec e testes estão aprovados e inalterados e
 conduz a **consolidação**: o agente atualiza `sistema/pedidos.md` com o
 comportamento novo e mostra o diff para você confirmar.
 
+Depois, ele pergunta se pode levar a feature para `develop`. Com
+`integracao: local`, roda `sdd-gitflow integrar 001-exportar-pedidos`:
+
+```
+Integrada: feature/001-exportar-pedidos em develop.
+Publique quando quiser: git push origin develop
+```
+
+Com `integracao: pr`, ele abre o pull request `feature/001-exportar-pedidos`
+para `develop`, e o merge acontece na plataforma.
+
 ### 10.6 O que muda no nível 2, ou numa área sensível
 
 | Situação | O que entra a mais |
@@ -321,15 +371,23 @@ Perdeu o fio em qualquer ponto? `/sdd:status` mostra onde a feature está e qual
 ## 11. Entregar: a primeira release
 
 ```
-/sdd:release preparar      # escolhe as features prontas e a versão; testes de sistema
+/sdd:release preparar      # escolhe as features prontas e a versão; cria release/X.Y.Z; testes de sistema
 /sdd:release homologar     # implanta em homologação e entrega o roteiro em linguagem de negócio
 /sdd:release aceitar       # quem homologou aprova
 /sdd:release implantar     # plano de implantação e rollback; você diz go ou no-go
 /sdd:release concluir      # depois da verificação em produção
 ```
 
-Com o pipeline do passo 8, a produção acontece pela tag `vX.Y.Z`, e o CI se
-recusa a implantar sem o go. Detalhes no [release](../release.md).
+O Git Flow da release:
+
+| Momento | No git |
+|---|---|
+| `preparar` | `release/0.1.0` nasce de `develop`; o push dela implanta em homologação |
+| correção pedida na homologação | commit em `release/0.1.0` |
+| "go" no `implantar` | `sdd-gitflow finalizar 0.1.0`: merge em `main`, tag `v0.1.0`, merge de volta em `develop` |
+| você publica | `git push origin main develop v0.1.0`: a tag dispara o deploy de produção, que confere o go |
+
+Detalhes no [release](../release.md) e no [Git Flow](git-flow.md).
 
 ## 12. A rotina depois disso
 
@@ -340,7 +398,8 @@ recusa a implantar sem o go. Detalhes no [release](../release.md).
 | mudar comportamento | `/sdd:especificar` |
 | fim de cada fase | `/sdd:aprovar` |
 | voltar a uma feature | `/sdd:retomar` |
-| quebrou em produção | `/sdd:incidente abrir` |
+| quebrou em produção | `/sdd:incidente abrir` (o hotfix nasce em `hotfix/X.Y.Z`, a partir de `main`) |
+| ver as branches | `sdd-gitflow conferir` |
 | fim da sprint | `/sdd:sprint encerrar` |
 | não sei qual comando | `/sdd:ajuda` |
 
@@ -361,6 +420,7 @@ Depois da primeira feature pronta:
 - [ ] `sdd-verificar` passa no CI.
 - [ ] `/sdd:pendencias` diz "Nada esperando por você", ou só o que você já sabe.
 - [ ] Nenhum arquivo de processo fora do layout: a seção "Fora do padrão" não aparece nas pendências.
+- [ ] `sdd-gitflow conferir` diz "Tudo no padrão", e o `git log --graph` mostra a feature entrando em `develop` e a release em `main` com a tag.
 
 ### Problemas comuns no começo
 
@@ -372,5 +432,7 @@ Depois da primeira feature pronta:
 | o hook bloqueou um `tasks.md` de um manual seu | o arquivo tem nome de artefato | ponha o caminho em `excecoes_de_layout` |
 | "spec.md não está aprovado ou mudou depois da aprovação" | a spec foi editada depois do "sim" | `git diff`; aprove de novo ou desfaça |
 | `sdd-rastrear` diz que um CA não tem teste | a marca está sem o número da feature | use `sdd:001:CA-001`, não `sdd:CA-001` |
+| o hook bloqueou um commit em `develop` | há uma feature ativa, e o commit dela é na branch dela | `sdd-gitflow feature NNN-slug`; ou `sdd-estado definir feature=` se o commit não é dela |
+| `sdd-gitflow iniciar` diz que a produção se chama `master` | o `git init` criou `master` | `sdd-gitflow renomear master main` |
 
 Mais em [guia do desenvolvedor](guia-do-desenvolvedor.md#10-problemas-comuns).

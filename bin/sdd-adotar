@@ -262,6 +262,7 @@ aplicar() {
       sdd_feature_gravar "$RAIZ" "$f" capacidade ""
       sdd_feature_gravar "$RAIZ" "$f" release ""
       sdd_feature_gravar "$RAIZ" "$f" adocao transicao
+      sdd_feature_gravar "$RAIZ" "$f" branch "feature/$f"
       sdd_feature_gravar "$RAIZ" "$f" atualizado "$(sdd_agora)"
       sdd_registrar "$RAIZ" "$f" criada "nível $nivel, normal, adotada de outro processo (em transição)"
     done <<< "$features_novas"

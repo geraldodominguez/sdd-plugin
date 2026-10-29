@@ -96,9 +96,14 @@ Os `globs_de_contrato`, vazios por padrão. Preencha se quiser que o
 globs_de_contrato: src/domain/contracts/**,db/migrations/**
 ```
 
-## guarda-commits: mensagens de commit
+## guarda-commits: commits e branches
 
-Intercepta `Bash`, e só age quando:
+Intercepta `Bash`. Faz duas coisas: confere a mensagem dos commits e, com o
+Git Flow ativo, as branches.
+
+### A mensagem do commit
+
+Só age quando:
 
 - o comando tem `git commit` com mensagem inline (`-m`, `-am`, `--message`, `-F`);
 - a proteção não é `desligada`;
@@ -114,6 +119,24 @@ A mensagem precisa citar `T-NNN` ou `(NNN)`:
 
 Commits sem mensagem inline (editor, `--amend --no-edit`) não são inspecionados.
 
+### As branches do Git Flow
+
+Com `gitflow: ativo` no config (o padrão), nas proteções `leve` e `estrita`:
+
+| Tentativa | Resultado |
+|---|---|
+| criar ou renomear uma branch com nome fora do padrão (`git checkout -b feat-x`, `git switch -c bugfix/x`, `git branch -m dev2`) | bloqueada |
+| criar `feature/NNN-slug` de uma feature que não existe em `specs/` | bloqueada |
+| `git commit` em `main` | bloqueado: `main` só recebe merge, pelo `sdd-gitflow finalizar` |
+| `git commit` numa branch fora do padrão | bloqueado |
+| `git commit` com uma feature ativa em andamento, fora da branch dela (em `develop`, ou na branch de outra feature) | bloqueado |
+| `git commit` na branch da feature ativa, ou em `release/` e `hotfix/` | permitido |
+| `git commit` em `develop` do registro de um incidente, antes de a branch do hotfix existir | permitido |
+| `git commit` com um merge em andamento (resolução de conflito) | permitido |
+
+Os nomes do padrão: `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`,
+`hotfix/X.Y.Z`. O guia completo está em [Git Flow](git-flow.md).
+
 ## O que os hooks não pegam
 
 Os hooks são trilhos contra deslizes, não um sandbox:
@@ -121,6 +144,7 @@ Os hooks são trilhos contra deslizes, não um sandbox:
 | Brecha | O que cobre |
 |---|---|
 | Edição pelo shell (`echo > tests/x.test.ts`) | as instruções das skills e dos subagents, e a auditoria, que procura testes mexidos depois da red |
+| Branch criada de um jeito que o hook não lê (`git worktree add`, um script) | o `sdd-gitflow conferir`, o `/sdd:pendencias` (seção "Git Flow") e o `sdd-verificar` no CI |
 | Artefato criado fora do padrão pelo shell (`mkdir docs/specs`) | o `sdd-verificar` na CI, que avisa, e o `/sdd:pendencias`, que lista em "Fora do padrão" |
 | O agente trocando a fase ou aprovando pelo shell (`sdd-estado definir`, `sdd-estado aprovar`, `sdd-release aceitar`) | as instruções (só o `/sdd:aprovar`, digitado por você, aprova), o autor registrado em cada aprovação e a auditoria, que confere as aprovações |
 | Subagent com ferramenta de escrita | as instruções dele e, na proteção estrita, o hook da fase |

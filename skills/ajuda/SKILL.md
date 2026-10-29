@@ -32,6 +32,12 @@ aprovação, traz para o padrão. Com o projeto já preparado, rode
 "Fora do padrão". Cada feature adotada fica em transição até o usuário aprovar
 o `transicao.md` com **`/sdd:aprovar`**; depois, continua de onde parou.
 
+Todo projeto usa o mesmo **Git Flow**: `main`, `develop`, `feature/NNN-slug`,
+`release/X.Y.Z` e `hotfix/X.Y.Z`. Os comandos criam as branches sozinhos
+(`/sdd:especificar`, `/sdd:release`, `/sdd:incidente`); a situação aparece no
+`/sdd:status`, e o `sdd-gitflow conferir` mostra o que está fora do padrão.
+Detalhes em `docs/referencia/git-flow.md`.
+
 Para quem pede um passo a passo, aponte o guia da situação:
 `docs/referencia/projeto-novo.md` (repositório novo) ou
 `docs/referencia/projeto-em-andamento.md` (projeto que já existe).

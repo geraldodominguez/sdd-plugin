@@ -56,6 +56,13 @@ plano (nível 2) e a revisão de segurança (quando obrigatória) estão aprovad
 reaprovar. Com a feature pronta, o `/sdd:aprovar` conduz a consolidação na
 [spec do sistema](sistema.md).
 
+## Feature pronta entra em develop
+
+Quando a feature fica pronta, ele pergunta se pode levá-la para `develop`:
+pelo `sdd-gitflow integrar` (merge `--no-ff`, com `integracao: local`) ou por
+pull request (com `integracao: pr`). Um hotfix não passa por aqui: ele vai para
+`main` pela release de correção. Ver [Git Flow](referencia/git-flow.md).
+
 ## Perguntas frequentes
 
 **Mudei uma vírgula na spec. Preciso aprovar de novo?**
