@@ -25,8 +25,8 @@ Fluxos permitidos (o `sdd-verificar` recusa o resto nos pull requests):
 | trabalhar na feature | todas as fases | commits em `feature/NNN-slug`, no formato `tipo(NNN): T-XXX descrição` |
 | feature pronta | `/sdd:aprovar` | `sdd-gitflow integrar NNN-slug` (merge `--no-ff` em `develop`), ou pull request para `develop` |
 | preparar a release | `/sdd:release preparar` | `sdd-gitflow release X.Y.Z`: cria `release/X.Y.Z` a partir de `develop`; a homologação usa esta branch |
-| correção durante a homologação | `/sdd:release` (feature reprovada) | commits em `release/X.Y.Z` |
-| go/no-go | `/sdd:release implantar` | depois do go: `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag `vX.Y.Z`, merge em `develop`); o push da tag dispara o deploy |
+| correção durante a homologação | `/sdd:release` (feature reprovada) | o `sdd-release reprovar` grava `release/X.Y.Z` como a branch da feature; os commits da correção vão nela, e ela volta à release com `sdd-release incluir`, sem `integrar` |
+| go/no-go | `/sdd:release implantar` | depois do go, o commit dos registros (`chore(release): X.Y.Z autorizada`) e `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag `vX.Y.Z`, merge em `develop`); o push da tag dispara o deploy |
 | incidente | `/sdd:incidente hotfix` | o registro do incidente é commitado em `develop`, sem a pasta do hotfix em `specs/`; `sdd-gitflow feature NNN-slug` cria `hotfix/X.Y.Z` (a versão reservada) a partir de `main` e leva a pasta; a release de correção tem a mesma versão |
 
 ## Regras
@@ -46,7 +46,7 @@ A chave `integracao` do `.sdd/config.yml` diz como uma branch entra em outra:
 | `integracao` | Feature pronta | Release com o go |
 |---|---|---|
 | `local` | `sdd-gitflow integrar NNN-slug` | `sdd-gitflow finalizar X.Y.Z` |
-| `pr` | `gh pr create --base develop --head feature/NNN-slug` | `gh pr create --base main --head release/X.Y.Z`; depois do merge na plataforma e do `git pull` em `main`, `sdd-gitflow finalizar X.Y.Z --apos-pr` (tag e `develop`) |
+| `pr` | o usuário publica a branch (`git push -u origin feature/NNN-slug`), e `gh pr create --base develop --head feature/NNN-slug` | o usuário publica a branch; `gh pr create --base main --head release/X.Y.Z` (ou `hotfix/X.Y.Z`); depois do merge na plataforma e do `git pull` em `main`, `sdd-gitflow finalizar X.Y.Z --apos-pr` (tag e `develop`) |
 
 Com `gitflow: desligado` no config, nada disto vale: o plugin não cria nem
 confere branches.

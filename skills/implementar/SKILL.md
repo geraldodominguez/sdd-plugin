@@ -3,7 +3,7 @@ name: implementar
 description: Executa as tarefas da feature ativa em TDD. Na fase red, um subagent escreve os testes só a partir dos critérios; na green, a sessão principal implementa com os testes congelados.
 argument-hint: "[T-NNN para executar só uma tarefa ou grupo]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep, Bash(git merge-base *), Bash(git status *), Bash(git diff *)
+allowed-tools: Bash(git show *), Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep, Bash(git merge-base *), Bash(git status *), Bash(git diff *)
 ---
 
 # /sdd:implementar
@@ -20,13 +20,14 @@ Rode `sdd-estado ver` e decida por onde começar:
 | Situação | O que fazer |
 |---|---|
 | hotfix (`tipo=hotfix`) na fase `red`, sem testes marcados ainda | comece pela fase red, com o incidente como entrada (não há tarefas nem spec ainda) |
-| `sdd-estado aprovado tarefas.md` não sai com 0 (exceto hotfix) | diga ao usuário para rodar `/sdd:aprovar` (ou `/sdd:tarefas`) e pare |
+| `sdd-estado aprovado tarefas.md` não sai com 0 (exceto hotfix) | diga ao usuário para rodar `/sdd:aprovar` (ou `/sdd:tarefas`) e pare. Marcar tarefas com `[x]` não conta como alteração |
+| `sdd-estado aprovado spec.md` (e, no nível 2, `plano.md`) sai com 4 (exceto hotfix) | a spec (ou o plano) mudou depois de aprovada: mostre o `git diff` e diga para rodar `/sdd:aprovar spec.md` (ou desfazer a mudança) e pare. Implementar sobre uma spec não aprovada é o drift que o método evita |
 | fase `red` e testes já aprovados (`sdd-estado aprovado testes` sai com 0) | a aprovação deveria ter levado ao green: rode `sdd-estado definir fase=green` e vá para a fase green |
 | fase `red`, testes marcados existem e não estão aprovados | os testes já foram escritos: mostre-os e diga para rodar `/sdd:aprovar` |
 | fase `green` | vá direto para a fase green, continuando da primeira tarefa aberta |
 | fase `tarefas` | comece pela fase red |
 | `adocao=transicao` | a feature veio de outro processo e a transição não foi aprovada: diga para rodar `/sdd:aprovar` e pare |
-| Git Flow ativo e a branch atual não é a de `sdd-gitflow esperada` | rode `sdd-gitflow feature NNN-slug` (ele cria ou ativa a branch da feature); se recusar, mostre o motivo ao usuário e pare |
+| Git Flow ativo e a branch atual não é a de `sdd-gitflow esperada` | rode `sdd-gitflow feature NNN-slug` (ele cria ou ativa a branch da feature; numa feature reprovada na homologação, a branch é a `release/X.Y.Z`); se recusar, mostre o motivo ao usuário e pare |
 
 **Tarefas `[O]`** foram feitas fora do plugin, antes da adoção, sem gate. Elas
 não se implementam de novo. Na fase red, os critérios delas também ganham
@@ -63,8 +64,11 @@ tarefa faz para quem usa o sistema:
      tabela "Testes que já existiam" do `transicao.md`, com a instrução de
      marcar os testes listados e de escrever os que faltam para os CAs delas;
    - **num hotfix** (feature com `tipo=hotfix`, sem tarefas nem spec ainda): o
-     caminho de `incidentes/INC-NNN.md` (a origem) e a instrução de escrever o
-     teste de regressão que reproduz o incidente, com a marca `sdd:NNN:CA-001`.
+     registro do incidente (a origem) e a instrução de escrever o teste de
+     regressão que reproduz o incidente, com a marca `sdd:NNN:CA-001`. A
+     branch `hotfix/X.Y.Z` sai de `main`, e o registro foi commitado em
+     `develop`: ele não está nesta branch. Leia com `git show
+     develop:incidentes/INC-NNN.md` e passe o conteúdo.
 
    **Não passe código de produção nem a sua ideia de implementação.** O valor
    do escritor-de-testes está em conhecer só o comportamento especificado.
@@ -107,7 +111,9 @@ tarefa faz para quem usa o sistema:
 ## Encerramento
 
 1. Rode a suíte completa, o `comando_lint` (se houver) e o `sdd-rastrear`.
-2. Rode `sdd-estado sensivel <ref base>` (a base é o `git merge-base HEAD develop` com o Git Flow ativo, ou `HEAD main` com `gitflow: desligado`).
+2. Rode `sdd-estado sensivel`, sem argumento: ele compara desde o início da
+   feature (o ponto em que a branch saiu de `develop`, ou, com `gitflow:
+   desligado`, o commit anterior ao que criou a pasta dela).
    Se a mudança tocou uma área sensível, ele torna a revisão de segurança
    obrigatória para esta feature, e você avisa o usuário.
 3. Apresente as tarefas concluídas, o resultado dos testes, as lacunas

@@ -63,6 +63,18 @@ for f in $(sdd_features "$RAIZ"); do
       aprov+=("$f: $art espera aprovação (fase $fase)")
     fi
   fi
+  # Artefatos de fases anteriores, já aprovados, que mudaram depois: a cobrança
+  # final é na entrega, mas quanto antes aparecer, menos trabalho se refaz.
+  if [ "$(sdd_feature_ler "$RAIZ" "$f" adocao)" != "transicao" ]; then
+    idx="$(sdd_indice_fase "$fase")"
+    for a in spec.md plano.md tarefas.md testes; do
+      [ "$a" = "$art" ] && continue
+      [ "$(sdd_indice_fase "$(sdd_fase_do_artefato "$a")")" -lt "$idx" ] || continue
+      [ -n "$(sdd_ultima_aprovacao "$RAIZ" "$f" "$a")" ] || continue
+      sdd_aprovado_ok "$RAIZ" "$f" "$a" \
+        || aprov+=("$f: $a foi alterado depois de aprovado (a feature está em $fase): reaprove (/sdd:aprovar $a) ou desfaça a mudança")
+    done
+  fi
   n="$(sdd_duvidas_abertas "$RAIZ" "$f")"
   [ "${n:-0}" -gt 0 ] && duv+=("$f: $n dúvida(s) em aberto na spec")
   if [ -f "$RAIZ/$PASTA_SPECS/$f/delta-spec.md" ] && grep -qE '^\| Situação \| proposta \|' "$RAIZ/$PASTA_SPECS/$f/delta-spec.md"; then

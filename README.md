@@ -59,7 +59,11 @@ claude plugin install sdd@sdd-plugin
 ```
 
 Para atualizar: `claude plugin marketplace update sdd-plugin` e depois
-`claude plugin update sdd`.
+`claude plugin update sdd`. Em seguida, rode `/sdd:iniciar` em cada projeto
+que já usa o SDD: ele atualiza o bloco de regras, mostra os templates e as
+chaves de configuração novas e pergunta o que trocar, sem mexer na
+constituição. Antes de atualizar de versão maior, leia o
+[CHANGELOG](CHANGELOG.md).
 
 </details>
 

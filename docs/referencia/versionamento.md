@@ -86,6 +86,7 @@ SDD bloqueou o commit: a mensagem "ajustes" não segue o Conventional Commits.
 Formato: tipo(escopo): descrição. Tipos: feat (funcionalidade, sobe o minor), fix (correção, sobe o patch), perf, docs, chore, refactor, test, build, ci, style, revert.
 Mudança incompatível: tipo(escopo)!: descrição, ou o rodapé BREAKING CHANGE: (sobe o major).
 O escopo é o número da feature. Exemplo: feat(004): T-002 valida token expirado.
+Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir.
 ```
 
 Mensagens `Merge ...` e `Revert ...` (as que o git gera) e commits feitos pelo
@@ -96,7 +97,7 @@ só enxerga os commits que, por acaso, seguirem o padrão.
 
 ## 4. Como o plugin calcula a próxima versão
 
-1. **A versão de referência** é a última release em produção (`releases/X.Y.Z/` na situação `producao`). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
+1. **A versão de referência** é a maior entre a última release em produção ou com o go (`releases/X.Y.Z/` na situação `producao` ou `implantacao`: com o go, ela já está em `main` com a tag) e a última tag `vX.Y.Z` final alcançável (uma versão revertida continua com a tag em `main`, e a próxima não pode andar para trás). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
 2. **Os commits** são os desde a tag dessa versão, sem os merges. Se essa
    versão não tem tag, contam os desde a última tag `vX.Y.Z` final; sem tag
    nenhuma, o histórico inteiro.
@@ -109,6 +110,10 @@ só enxerga os commits que, por acaso, seguirem o padrão.
 | só `fix` ou `perf` | patch | 1.4.3 |
 | só manutenção | patch | 1.4.3 |
 | (não há versão anterior) | 0.1.0 | |
+
+Uma versão já usada não se repete: se a calculada já tem pasta em `releases/`
+(uma release cancelada, por exemplo), tag ou branch `release/` ou `hotfix/`
+reservada, o plugin sobe o patch até achar uma livre.
 
 O `sdd-release analisar` mostra a conta inteira:
 
@@ -142,12 +147,23 @@ Para homologar uma versão grande antes de fechá-la, use um release candidate:
 | Comando | Resultado |
 |---|---|
 | `sdd-release proxima --pre rc` | `1.3.0-rc.1` |
-| (depois da tag `v1.3.0-rc.1`) `sdd-release proxima --pre rc` | `1.3.0-rc.2` |
-| `sdd-release proxima` | `1.3.0` (a tag de pré-lançamento não vira a base) |
+| (com a release `1.3.0-rc.1` criada, ou a tag `v1.3.0-rc.1`) `sdd-release proxima --pre rc` | `1.3.0-rc.2` |
+| `sdd-release proxima` | `1.3.0` (o pré-lançamento nunca vira a base) |
 
 Também valem `alpha` e `beta`. A ordem do SemVer é
-`1.3.0-alpha.1 < 1.3.0-beta.1 < 1.3.0-rc.1 < 1.3.0`. A release, a branch
-(`release/1.3.0-rc.1`) e a tag (`v1.3.0-rc.1`) aceitam o sufixo.
+`1.3.0-alpha.1 < 1.3.0-beta.1 < 1.3.0-rc.1 < 1.3.0`, e é nessa ordem que o
+`sdd-release listar` mostra as releases. A release e a branch
+(`release/1.3.0-rc.1`) aceitam o sufixo.
+
+Um release candidate é **só homologado**: preparar, homologar e aceitar. O
+`sdd-release autorizar` e o `sdd-gitflow finalizar` recusam pré-lançamentos.
+Com o aceite, o `/sdd:release` o cancela (`sdd-release cancelar 1.3.0-rc.1
+--motivo "substituída pela 1.3.0"`, e as features voltam a prontas), faz o
+commit, leva `release/1.3.0-rc.1` a `develop` (as correções e o registro do
+candidate, que o próximo `--pre rc` usa para numerar) e prepara a `1.3.0` com
+as mesmas features. Se ele fosse
+até produção, viraria a versão em produção e a final não teria mais o que
+entregar.
 
 ## 6. O CHANGELOG.md
 
@@ -195,6 +211,7 @@ negócio, para quem usa o sistema.
 | `/sdd:release preparar` | o agente roda `sdd-release analisar` e propõe a versão, com o motivo; você confirma ou escolhe outra |
 | a versão está decidida | `sdd-gitflow release X.Y.Z` cria `release/X.Y.Z`; `sdd-release nova X.Y.Z` cria `releases/X.Y.Z/` |
 | `/sdd:release implantar`, antes do go | `sdd-release changelog X.Y.Z --escrever`, revisado com você, e o commit `docs(release): changelog X.Y.Z` na branch da release |
+| o go | `sdd-release autorizar X.Y.Z` e o commit `chore(release): X.Y.Z autorizada` na branch da release |
 | depois do go | `sdd-gitflow finalizar X.Y.Z`: a tag `vX.Y.Z` em `main`, que o pipeline implanta |
 
 Um hotfix é sempre patch: `hotfix/X.Y.Z` já nasce com a próxima patch.

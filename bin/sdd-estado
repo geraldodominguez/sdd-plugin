@@ -20,11 +20,16 @@
 #                                              volta sempre à especificacao; em homologação, use
 #                                              sdd-release reprovar)
 #   sdd-estado sensivel [ref]                  lista arquivos alterados em áreas sensíveis e, se
-#                                              houver, torna a revisão de segurança obrigatória
+#                                              houver, torna a revisão de segurança obrigatória.
+#                                              Sem ref, compara desde o início da feature: o
+#                                              ponto em que a branch saiu de develop (Git Flow)
+#                                              ou o commit anterior ao que criou a pasta dela
 #   sdd-estado listar                          todas as features
 #   sdd-estado historico [NNN-slug|--projeto] [--desde AAAA-MM-DD]
 #   sdd-estado caminho [arquivo]               caminho da pasta da feature ativa
 #   sdd-estado template <nome.md>              caminho do template (local ou do plugin)
+#   sdd-estado template --plugin <nome.md>     caminho do template do plugin (para comparar
+#                                              com a cópia do projeto numa atualização)
 #   sdd-estado transicionar <NNN-slug> <fase> "nota"
 #                                              uso interno do sdd-release (homologacao, producao, pronta)
 #
@@ -450,7 +455,7 @@ case "$cmd" in
     aprovado="$(sdd_ultima_aprovacao "$RAIZ" "$f" "$art")"
     if [ -z "$aprovado" ]; then
       echo "$art: não aprovado"; exit 5
-    elif [ "$aprovado" != "$atual" ]; then
+    elif ! sdd_aprovado_ok "$RAIZ" "$f" "$art"; then
       echo "$art: alterado depois da aprovação (aprovado $aprovado, atual $atual)"; exit 4
     fi
     quando="$( { grep -F "| aprovacao | $art | hash=$aprovado" "$(sdd_arquivo_historico "$RAIZ" "$f")" || true; } | tail -1 | sed -E 's/^- ([^ ]+) .*por: (.*)$/\1 por \2/')"
@@ -460,6 +465,21 @@ case "$cmd" in
   sensivel)
     ref="${1:-}"
     f="$(feature_ativa)"
+    if [ -z "$ref" ] && git -C "$RAIZ" rev-parse -q --verify HEAD >/dev/null 2>&1; then
+      # Sem ref, a base é onde a feature começou: com o Git Flow, o ponto em que
+      # a branch saiu de develop; sem ele, o commit anterior ao que criou a
+      # pasta da feature. Assim os commits da feature entram na conta.
+      if sdd_gitflow_ativo "$RAIZ" && git -C "$RAIZ" show-ref --verify --quiet refs/heads/develop \
+         && [ "$(sdd_branch_atual "$RAIZ")" != "develop" ]; then
+        ref="$(git -C "$RAIZ" merge-base HEAD develop 2>/dev/null || true)"
+      fi
+      if [ -z "$ref" ]; then
+        c="$(git -C "$RAIZ" log --diff-filter=A --format=%H -- "$PASTA_SPECS/$f/estado" 2>/dev/null | tail -1)"
+        if [ -n "$c" ]; then
+          ref="$(git -C "$RAIZ" rev-parse -q --verify "$c^" 2>/dev/null || echo "$c")"
+        fi
+      fi
+    fi
     lista="$(sdd_arquivos_sensiveis "$RAIZ" "$ref")"
     if [ -z "$lista" ]; then
       echo "Nenhum arquivo alterado em área sensível."
@@ -519,7 +539,14 @@ case "$cmd" in
     ;;
 
   template)
-    sdd_template "$RAIZ" "${1:?uso: sdd-estado template <nome.md>}"
+    if [ "${1:-}" = "--plugin" ]; then
+      n="${2:?uso: sdd-estado template --plugin <nome.md>}"
+      t="$(sdd_raiz_plugin)/skills/metodologia/templates/$n"
+      [ -f "$t" ] || { echo "sdd-estado: o plugin não tem o template $n" >&2; exit 1; }
+      printf '%s\n' "$t"
+    else
+      sdd_template "$RAIZ" "${1:?uso: sdd-estado template [--plugin] <nome.md>}"
+    fi
     ;;
 
   transicionar)

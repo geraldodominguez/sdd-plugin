@@ -37,7 +37,7 @@ Para um repositório vazio, o guia certo é o
 | só código, sem nenhum documento de processo | 3 a 6, e depois 12 e 13 (não há adoção) |
 | specs, planos, tarefas ou ADRs soltos, de outro agente ou de outra ferramenta (`docs/specs/`, `tasks/`, `TODO.md`, `PLAN.md`, `.kiro/`, `.specify/`, `docs/decisions/`) | todos |
 | uma feature pela metade, com parte das tarefas feita | todos, com atenção aos passos 9 a 11 |
-| já usa o SDD, mas um agente criou arquivos fora do padrão | 7 a 11, com `/sdd:iniciar --adotar` |
+| já usa o SDD, mas um agente criou arquivos fora do padrão | 7 a 11, com `/sdd:iniciar --adotar` (que antes atualiza o projeto para a versão do plugin) |
 
 ## 2. Como a adoção funciona, em uma página
 
@@ -163,8 +163,9 @@ Se o projeto já publicou versões, a última precisa da tag `vX.Y.Z` em `main`:
 Conventional Commits, ficam antes da tag e não contam (ver
 [versionamento](versionamento.md#8-projeto-que-já-existe)).
 
-Depois, `sdd-gitflow iniciar` cria `develop` (se ainda não existir) e, se você
-está em `main`, muda para ela. As alterações que o `/sdd:iniciar` já fez
+Depois, `sdd-gitflow iniciar` cria `develop` (se ainda não existir) e muda
+para ela, de qualquer branch em que você esteja, desde que não haja código
+pendente. As alterações que o `/sdd:iniciar` já fez
 (`.sdd/`, `CLAUDE.md`, `AGENTS.md`) vão junto na troca. Se `develop` já existia
 e está à frente de `main` com outra versão do `CLAUDE.md`, o git recusa a troca
 para não perder nada, e o `sdd-gitflow` mostra a mensagem dele. Nesse caso:
@@ -314,15 +315,16 @@ conteúdo do outro processo. Para cada feature, o agente:
 
 ### 9.1 Ativa a feature e acerta o nível
 
-`sdd-estado usar 001-exportar-pedidos` e, primeiro, a **branch da feature**,
-onde a conversão é commitada:
+Primeiro, a **branch da feature**, onde a conversão é commitada (o commit da
+adoção, no passo 8, precisa estar feito):
 
 | O código feito fora do plugin | O que o agente faz (perguntando antes) |
 |---|---|
 | já está em `develop` (ou não há código) | `sdd-gitflow feature 001-exportar-pedidos`: cria `feature/001-exportar-pedidos` a partir de `develop` |
 | está numa branch antiga que não entrou em `develop` (`feat-exportar`) | `sdd-gitflow renomear feat-exportar feature/001-exportar-pedidos`, `sdd-gitflow feature 001-exportar-pedidos` e `git merge develop`, para a branch receber os arquivos adotados |
 
-Já na branch, ele acerta o nível e a capacidade, para que a mudança no `estado`
+Já na branch, ele ativa a feature (`sdd-estado usar 001-exportar-pedidos`) e
+acerta o nível e a capacidade, para que a mudança no `estado`
 fique na branch da feature: se a feature mexe em domínio, schema, contrato
 público ou segurança, propõe o nível 2 (`sdd-estado definir nivel=2`); e define
 a capacidade da spec do sistema (`sdd-estado definir capacidade=pedidos`).
@@ -402,6 +404,11 @@ completo está em [exemplos/adocao](../../exemplos/adocao/)):
 O "como era" dos arquivos vem do utilitário; o resto, da conversão. Nenhum
 campo `{{...}}` pode sobrar: o utilitário recusa a aprovação enquanto houver.
 
+O agente termina a conversão com o commit dela, na branch da feature:
+`docs(001): transição para o SDD`. Com mais de uma feature adotada, ele faz uma
+de cada vez, cada uma com o seu commit: sem o commit, as alterações de uma
+iriam junto para a branch da próxima.
+
 ## 10. Aprovar a transição
 
 ```
@@ -433,7 +440,7 @@ O que a aprovação registrou no `historico.md` da feature:
 ```
 - ... | aprovacao | spec.md | hash=fc76fa2181b4 | decisao: transicao | por: Ana (tech lead)
 - ... | aprovacao | tarefas.md | hash=c4f8c4e8ab91 | decisao: transicao | por: Ana (tech lead)
-- ... | aprovacao | transicao.md | hash=d19f70bb82d6 | decisao: transicao | por: Ana (tech lead)
+- ... | aprovacao | transicao.md | hash=6e805d5df57d | decisao: transicao | por: Ana (tech lead)
 - ... | fase | especificacao para red (transição aprovada) | por: Ana (tech lead)
 ```
 
@@ -460,8 +467,8 @@ Feature 001-exportar-pedidos (nível 1) · ativa
   próxima: T-003 gerar PDF com o logo da loja (atende: RF-002, CA-002; depende de: T-001)
 ```
 
-Faça o commit da conversão, na branch da feature: `docs(001): transição para o
-SDD`.
+Os registros da aprovação (o `estado` e o `historico.md` da feature) entram
+no próximo commit da feature, já na fase de destino.
 
 ## 11. Continuar de onde parou
 
@@ -535,8 +542,10 @@ Exemplos do que o hook bloqueia e permite:
 | `src/qualquer.ts`, `docs/guia.md` | permitido: não é artefato de processo |
 
 Editar um arquivo que já existe continua livre. Se algo escapou (criado pelo
-shell, por exemplo), rode `/sdd:iniciar --adotar`: ele repete os passos 7 a 10
-só para o que está fora do padrão.
+shell, por exemplo), rode `/sdd:iniciar --adotar`. Num projeto que já usa o
+SDD, ele faz primeiro a atualização (o bloco de regras, os templates e as
+chaves novas do config, cada um com a sua pergunta, e o Git Flow) e depois
+repete os passos 7 a 10 só para o que está fora do padrão.
 
 ## 14. Desfazer
 

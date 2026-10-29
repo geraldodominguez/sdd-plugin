@@ -39,7 +39,7 @@ do `/sdd:release`.
    | `red` | os testes marcados `sdd:NNN:` | `green` |
    | `green`, nível 1 sem revisão de segurança obrigatória | a entrega | `pronta` |
    | `green`, nível 2 ou com segurança obrigatória | nada: diga para rodar `/sdd:seguranca` | |
-   | `green`, hotfix | primeiro a spec retroativa (`spec.md`), depois a entrega | `pronta` |
+   | `green`, hotfix | primeiro a spec retroativa: `sdd-estado aprovar spec.md` (sem o artefato, ele recusa); depois a entrega, `sdd-estado aprovar` | `pronta` |
    | `seguranca` | a decisão sobre `seguranca.md` | `auditoria` (nível 2), `pronta` (nível 1) ou `green` (corrigir) |
    | `auditoria` | a decisão sobre `auditoria.md` | `pronta` ou `green` (corrigir) |
 
@@ -63,6 +63,17 @@ do `/sdd:release`.
    claro, rode `sdd-estado aprovar` (com `--nota "..."` se o usuário quiser).
    Sem confirmação, não registre nada.
 
+   **Plano aprovado:** os ADRs que o `/sdd:planejar` criou para esta feature
+   (em `docs/adr/`, com a situação `proposta` e citando a feature) passam a
+   `aceita`. Edite a situação de cada um logo depois do `sdd-estado aprovar`
+   e diga quais mudaram. Um ADR que o usuário recusou fica `descontinuada`, com o motivo.
+
+   **Artefato de uma fase anterior alterado depois de aprovado** (o
+   `/sdd:pendencias` e o `/sdd:status` apontam): mostre o `git diff` e
+   pergunte se aprova de novo. Com o "sim", `sdd-estado aprovar <artefato>
+   --sem-avancar`; com o "não", desfaça a mudança. A entrega recusa enquanto
+   isso não se resolver.
+
 5. **Decisões da revisão de segurança** (fase `seguranca`):
 
    | Decisão | Comando |
@@ -83,18 +94,23 @@ do `/sdd:release`.
    plano (nível 2) e revisão de segurança (se obrigatória) estão aprovados e
    inalterados, e recusa com a lista do que falta. Com a feature pronta:
    - conduza a **consolidação na spec do sistema** como no `/sdd:sistema`
-     (edite `sistema/<capacidade>.md`, mostre, e rode `sdd-sistema consolidar`);
+     (edite `sistema/<capacidade>.md`, mostre, e rode `sdd-sistema consolidar NNN-slug`);
    - **Git Flow** (com `gitflow: ativo`; não vale para hotfix, que vai para
      `main` pela release de correção): primeiro, proponha o commit do que a
      aprovação e a consolidação mudaram, na branch da feature
-     (`docs(NNN): feature pronta`), porque o merge exige tudo commitado. Depois
-     leve a feature para `develop` conforme a chave `integracao` do config,
-     **perguntando antes**:
+     (`docs(NNN): feature pronta`), porque o merge exige tudo commitado.
+     **Feature corrigida numa release** (reprovada na homologação; a branch
+     dela é `release/X.Y.Z`, como diz o `sdd-status`): o commit vai na
+     `release/X.Y.Z`, não há integração (ela chega a `develop` pelo
+     `finalizar` da release), e o próximo passo é `sdd-release incluir X.Y.Z
+     NNN-slug` (ver `/sdd:release`, Aceitar). Nos outros casos, leve a feature
+     para `develop` conforme a chave `integracao` do config, **perguntando
+     antes**:
 
      | `integracao` | O que fazer |
      |---|---|
      | `local` | `sdd-gitflow integrar NNN-slug` (merge `--no-ff` em `develop`); ofereça `--apagar` para a branch local e diga o `git push origin develop` |
-     | `pr` | proponha `gh pr create --base develop --head feature/NNN-slug` com o título da feature e o resumo da spec |
+     | `pr` | peça ao usuário para publicar a branch (`git push -u origin feature/NNN-slug`: o plugin não faz push) e proponha `gh pr create --base develop --head feature/NNN-slug` com o título da feature e o resumo da spec |
 
      Conflito: pare e resolva com o usuário.
    - diga o próximo passo: entrar numa release (`/sdd:release preparar`).

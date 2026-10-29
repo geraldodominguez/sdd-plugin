@@ -3,7 +3,7 @@ name: retomar
 description: Para voltar ao trabalho depois de uma pausa ou numa sessão nova. Conta o que aconteceu na feature desde a última vez (aprovações, fases, tarefas, commits), onde ela está agora e qual é o próximo passo.
 argument-hint: "[NNN-slug] [desde AAAA-MM-DD]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-status *), Bash(sdd-rastrear *), Bash(sdd-pendencias), Bash(sdd-sprint *), Bash(sdd-release *), Bash(sdd-incidente *), Bash(git log *), Bash(git status *), Bash(git diff *), Read, Glob, Grep
+allowed-tools: Bash(sdd-estado *), Bash(sdd-status *), Bash(sdd-rastrear *), Bash(sdd-pendencias), Bash(sdd-sprint *), Bash(sdd-release *), Bash(sdd-incidente *), Bash(git log *), Bash(git status *), Bash(git branch --list *), Bash(git diff *), Read, Glob, Grep
 ---
 
 # /sdd:retomar
@@ -14,6 +14,11 @@ Argumentos: `$ARGUMENTS` (vazio significa a feature ativa, desde o último event
 
 1. **Escolha a feature.** Use a informada nos argumentos ou a ativa
    (`sdd-estado ver`). Sem nenhuma, rode `sdd-status` e pergunte qual retomar.
+   Com o Git Flow, a pasta de uma feature ainda não integrada só existe na
+   branch dela: se `sdd-estado historico <feature>` disser que ela não existe,
+   procure a branch (`git branch --list 'feature/<feature>'`) e diga ao usuário
+   para voltar a ela com `sdd-gitflow feature <feature>` (esta skill não troca
+   de branch).
 
 2. **Junte os fatos, sem inventar nada:**
    - `sdd-estado historico <feature>` (com `--desde` se o usuário deu uma data);

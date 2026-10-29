@@ -137,10 +137,15 @@ conferir() {
   atual="$(sdd_branch_atual "$RAIZ")"
   esperada="$(branch_esperada)"
   if [ -n "$esperada" ] && [ -n "$atual" ] && [ "$atual" != "$esperada" ]; then
-    avisos+=("a feature ativa é feita em $esperada, e você está em $atual (sdd-gitflow feature ${esperada#feature/})")
+    avisos+=("a feature ativa é feita em $esperada, e você está em $atual (sdd-gitflow feature $(sdd_kv_ler "$RAIZ/.sdd/estado" feature))")
   fi
   echo "Git Flow: $(basename "$RAIZ")"
-  echo "  branch atual: ${atual:-(HEAD destacado)}${esperada:+ · esperada para a feature ativa: $esperada}"
+  local rotulo="$atual"
+  if [ -z "$rotulo" ]; then
+    if g rev-parse -q --verify HEAD >/dev/null 2>&1; then rotulo="(HEAD destacado)"
+    else rotulo="$(g symbolic-ref --short -q HEAD 2>/dev/null || true) (sem nenhum commit ainda)"; fi
+  fi
+  echo "  branch atual: ${rotulo}${esperada:+ · esperada para a feature ativa: $esperada}"
   if [ ${#problemas[@]} -eq 0 ] && [ ${#avisos[@]} -eq 0 ]; then
     echo "  ✓ Tudo no padrão."
     return 0
@@ -187,12 +192,13 @@ iniciar() {
   fi
   local atual
   atual="$(sdd_branch_atual "$RAIZ")"
-  if [ "$atual" = "$P" ]; then
-    # develop recém-criada aponta para o mesmo commit de main: trocar leva as
-    # alterações em andamento (o .sdd/, o CLAUDE.md) sem risco. Senão, exige limpo.
+  if [ "$atual" != "$I" ]; then
+    # A preparação e a atualização do SDD são commitadas em develop, venha você
+    # de main ou de uma branch de trabalho. As alterações nos arquivos do SDD
+    # vão junto; alteração pendente em código é recusada.
     exige_codigo_limpo
     trocar "$I"
-    echo "Agora em $I: o trabalho do dia a dia parte daqui."
+    echo "Agora em $I${atual:+ (você estava em $atual)}: o trabalho do dia a dia parte daqui."
   fi
   echo "Lembre de publicar: git push -u origin $P $I"
 }
@@ -235,8 +241,48 @@ feature() {
   local f="${1:?uso: sdd-gitflow feature <NNN-slug>}" specs b
   [ -d "$RAIZ/.sdd" ] || erro "este projeto ainda não usa SDD. Rode /sdd:iniciar."
   specs="$(sdd_pasta_specs "$RAIZ")"
-  [ -f "$RAIZ/$specs/$f/estado" ] || erro "a feature '$f' não existe em $specs/."
+  if [ ! -f "$RAIZ/$specs/$f/estado" ]; then
+    # A pasta da feature só existe na branch dela (ainda não integrada): procure
+    # a branch que a tem e mude para ela.
+    exige_git
+    for b in $(g for-each-ref --format='%(refname:short)' "refs/heads/feature/$f" refs/heads/hotfix/ refs/heads/release/); do
+      if g cat-file -e "$b:$specs/$f/estado" 2>/dev/null; then
+        criar_ou_ativar "$b" "$I"
+        return 0
+      fi
+    done
+    # Só no remoto (um clone novo, ou a branch local apagada): cria a local
+    # rastreando a remota.
+    if g cat-file -e "origin/feature/$f:$specs/$f/estado" 2>/dev/null; then
+      exige_codigo_limpo
+      g branch -q --track "feature/$f" "origin/feature/$f" || erro "não consegui criar feature/$f a partir de origin/feature/$f."
+      trocar "feature/$f"
+      echo "Criada feature/$f a partir de origin/feature/$f."
+      return 0
+    fi
+    erro "a feature '$f' não existe em $specs/ nem em nenhuma branch (local ou origin/)."
+  fi
   b="$(sdd_branch_da_feature "$RAIZ" "$f")"
+  case "$b" in
+    release/*)
+      # Reprovada numa release: a correção é na release/, enquanto ela está em
+      # andamento. Terminada (foi para main, ou a situação passou do aceite), a
+      # feature volta a ter a branch dela, nova, a partir de develop.
+      local v sit
+      v="${b#release/}"
+      sit="$(sdd_kv_ler "$RAIZ/$(sdd_pasta_releases "$RAIZ")/$v/estado" fase 2>/dev/null || true)"
+      if ! existe_branch "$b" || g merge-base --is-ancestor "$b" "$P" 2>/dev/null \
+         || case "$sit" in preparacao|homologacao|aceita) false ;; *) true ;; esac; then
+        if existe_branch "feature/$f"; then
+          erro "a release $v terminou e a correção de $f vai numa branch própria, mas feature/$f (a antiga) ainda existe. Se ela já foi integrada, apague-a (git branch -d feature/$f) e rode de novo."
+        fi
+        exige_codigo_limpo
+        trocar -c "feature/$f" "$I"
+        sdd_feature_gravar "$RAIZ" "$f" branch "feature/$f"
+        echo "Criada feature/$f a partir de $I: a release $v terminou, e a correção segue na branch da feature."
+        return 0
+      fi ;;
+  esac
   case "$b" in
     hotfix/*) criar_ou_ativar "$b" "$P" "$specs/$f" ;;
     *) criar_ou_ativar "$b" "$I" "$specs/$f" ;;
@@ -270,7 +316,10 @@ integrar() {
     erro "a feature $f está em '$fase'. Só uma feature pronta entra em $I (/sdd:aprovar)." ;;
   esac
   b="$(sdd_branch_da_feature "$RAIZ" "$f")"
-  case "$b" in hotfix/*) erro "$f é um hotfix: ele vai para $P e $I pelo 'sdd-gitflow finalizar' da release de correção." ;; esac
+  case "$b" in
+    hotfix/*) erro "$f é um hotfix: ele vai para $P e $I pelo 'sdd-gitflow finalizar' da release de correção." ;;
+    release/*) erro "$f foi corrigida em $b, depois de reprovada na homologação: ela volta pela release (sdd-release incluir ${b#release/} $f), não por $I." ;;
+  esac
   existe_branch "$b" || erro "a branch $b não existe localmente."
   if g merge-base --is-ancestor "$b" "$I" 2>/dev/null; then
     echo "$b já está integrada em $I."
@@ -294,6 +343,7 @@ finalizar() {
   done
   [ -n "$v" ] || erro "uso: sdd-gitflow finalizar <X.Y.Z> [--apos-pr]"
   sdd_semver_valida "$v" || erro "versão inválida: $v"
+  case "$v" in *-*) erro "$v é um pré-lançamento: ele só é homologado e não vai para $P. Prepare a versão final (${v%%-*})." ;; esac
   exige_git
   [ -d "$RAIZ/.sdd" ] || erro "este projeto ainda não usa SDD."
   dir="$RAIZ/$(sdd_pasta_releases "$RAIZ")/$v"

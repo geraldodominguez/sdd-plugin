@@ -39,6 +39,11 @@ mandando corrigir (S-001) e a segunda aceitando um risco (S-002); e a
 reaprovação da spec depois da delta spec da auditoria, antes de a feature ficar
 pronta. Depois vêm a consolidação, a release e o incidente.
 
+Os hashes desse histórico são ilustrativos: o código e os testes da feature não
+estão aqui, então, se você montar esta pasta como projeto, o `sdd-status` vai
+apontar os artefatos como alterados depois da aprovação. O exemplo da
+[adoção](#a-adoção-de-um-projeto-em-andamento), abaixo, usa os hashes reais.
+
 ## Depois de pronta
 
 | Arquivo | No projeto fica em | O que mostra |

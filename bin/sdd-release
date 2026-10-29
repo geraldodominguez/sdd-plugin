@@ -104,12 +104,32 @@ versoes() { # versões existentes, em ordem SemVer crescente
   local d
   for d in "$DIR"/*/; do
     [ -f "$d/release.md" ] && basename "$d"
-  done | sort -t. -k1,1n -k2,2n -k3,3n
+  done | ordenar_semver
+}
+
+ordenar_semver() { # lê versões (uma por linha) e as imprime em ordem SemVer crescente
+  awk 'NF {
+    # Chave de ordenação: o pré-lançamento (1.3.0-rc.1) vem antes da final, e os
+    # identificadores numéricos dele se comparam como números (rc.2 < rc.10).
+    v = $0; base = v; pre = ""
+    i = index(v, "-"); if (i) { base = substr(v, 1, i - 1); pre = substr(v, i + 1) }
+    split(base, n, ".")
+    k = ""
+    m = split(pre, p, ".")
+    for (j = 1; j <= m; j++) k = k (j > 1 ? "." : "") (p[j] ~ /^[0-9]+$/ ? sprintf("%09d", p[j]) : p[j])
+    printf "%09d %09d %09d %d %s %s\n", n[1], n[2], n[3], (pre == "" ? 1 : 0), (k == "" ? "-" : k), v
+  }' | sort | awk '{ print $NF }'
 }
 
 ultima_em_producao() {
   local v ult=""
-  for v in $(versoes); do [ "$(situacao "$v")" = "producao" ] && ult="$v"; done
+  # Um pré-lançamento nunca é a referência da próxima versão.
+  for v in $(versoes); do
+    case "$v" in *-*) continue ;; esac
+    # Com o go (implantacao), a versão já foi para main com a tag: ela também é
+    # a referência (um hotfix aberto antes do concluir sai da versão seguinte).
+    case "$(situacao "$v")" in producao|implantacao) ult="$v" ;; esac
+  done
   printf '%s\n' "$ult"
 }
 
@@ -137,11 +157,14 @@ transicionar_features() { # transicionar_features <versão> <fase> <nota>
 # A versão de referência: a última em produção; sem nenhuma, a última tag
 # vX.Y.Z alcançável a partir de HEAD.
 versao_base() {
+  # A maior entre a última release em produção (ou com o go) e a última tag
+  # vX.Y.Z final alcançável: uma versão revertida já tem tag em main, e a
+  # próxima não pode andar para trás.
   local ult tag
   ult="$(ultima_em_producao)"
-  if [ -n "$ult" ]; then printf '%s\n' "$ult"; return; fi
-  tag="$(ultima_tag)"
-  if [ -n "$tag" ] && sdd_semver_valida "${tag#v}"; then printf '%s\n' "${tag#v}"; fi
+  tag="$(ultima_tag)"; tag="${tag#v}"
+  sdd_semver_valida "$tag" 2>/dev/null || tag=""
+  printf '%s\n%s\n' "$ult" "$tag" | ordenar_semver | tail -1
   return 0
 }
 
@@ -190,9 +213,21 @@ proxima_versao() { # proxima_versao <auto|major|minor|patch> [id de pré-lançam
     fi
     prox="$(sdd_semver_somar "$base" "$tipo")"
   fi
+  # Uma versão já usada (pasta em releases/, tag, ou branch release/ ou hotfix/
+  # reservada) não se repete: uma release cancelada, por exemplo, guarda o número.
+  while [ -z "$pre" ] && { [ -d "$DIR/$prox" ] \
+      || git -C "$RAIZ" rev-parse -q --verify "refs/tags/v$prox" >/dev/null 2>&1 \
+      || git -C "$RAIZ" show-ref --verify --quiet "refs/heads/release/$prox" 2>/dev/null \
+      || git -C "$RAIZ" show-ref --verify --quiet "refs/heads/hotfix/$prox" 2>/dev/null; }; do
+    prox="$(sdd_semver_somar "$prox" patch)"
+  done
   if [ -n "$pre" ]; then
     printf '%s' "$pre" | grep -qE '^[0-9A-Za-z-]+$' || { echo "sdd-release proxima: identificador de pré-lançamento inválido: $pre" >&2; exit 1; }
-    n="$(git -C "$RAIZ" tag --list "v$prox-$pre.*" 2>/dev/null | sed -E "s/^v$prox-$pre\.//" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)"
+    # O número do pré-lançamento segue o maior já usado, em tag ou em releases/.
+    n="$( { git -C "$RAIZ" tag --list "v$prox-$pre.*" 2>/dev/null | sed -E "s/^v//"
+            for d in "$DIR/$prox-$pre".*/; do if [ -d "$d" ]; then basename "$d"; fi; done
+            true
+          } | sed -E "s/^$prox-$pre\.//" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)"
     prox="$prox-$pre.$(( ${n:-0} + 1 ))"
   fi
   printf '%s\n' "$prox"
@@ -470,7 +505,10 @@ case "$cmd" in
     h="$(sdd_hash_stdin < "$DIR/$v/homologacao.md")"
     historico "$v" aceite "por: $por | hash=$h${nota:+ | nota: $nota}"
     mudar_situacao "$v" aceita "aceite de $por"
-    echo "Aceite registrado (por $por). Próximo: plano de implantação e go/no-go (sdd-release autorizar $v)."
+    case "$v" in
+      *-*) echo "Aceite registrado (por $por). $v é um pré-lançamento: ele não vai para produção. Próximo: sdd-release cancelar $v --motivo \"substituída pela ${v%%-*}\" e a release ${v%%-*} com as mesmas features." ;;
+      *) echo "Aceite registrado (por $por). Próximo: plano de implantação e go/no-go (sdd-release autorizar $v)." ;;
+    esac
     ;;
 
   reprovar)
@@ -484,15 +522,28 @@ case "$cmd" in
     existe "$v"; exige "$v" homologacao aceita
     features "$v" | grep -qx "$f" || { echo "sdd-release: $f não está na release $v." >&2; exit 1; }
     "$AQUI/sdd-estado" reabrir "$f" --pela-release --fase green --motivo "reprovada na homologação da $v: $motivo" >/dev/null
+    # Com o Git Flow, a correção é feita na branch da release, e a feature passa
+    # a ser trabalhada nela (sdd-gitflow esperada, o hook e o integrar sabem disso).
+    if sdd_gitflow_ativo "$RAIZ" && git -C "$RAIZ" show-ref --verify --quiet "refs/heads/release/$v"; then
+      sdd_feature_gravar "$RAIZ" "$f" branch "release/$v"
+    fi
     reescrever_features "$v" "$(features "$v" | grep -vx "$f" || true)"
     for g in $(features "$v"); do "$AQUI/sdd-estado" transicionar "$g" pronta "release $v voltou à preparação" >/dev/null; done
     historico "$v" reprovacao "$f: $motivo"
     mudar_situacao "$v" preparacao "feature $f reprovada"
-    echo "$f reprovada e reaberta no green. A release $v voltou à preparação: refaça os testes de sistema e a homologação."
+    echo "$f reprovada e reaberta no green. A release $v voltou à preparação."
+    if [ "$(sdd_feature_ler "$RAIZ" "$f" branch)" = "release/$v" ]; then
+      echo "A correção é feita em release/$v. Com a feature pronta de novo: sdd-release incluir $v $f, e refaça os testes de sistema e a homologação."
+    else
+      echo "Com a feature pronta de novo: sdd-release incluir $v $f, e refaça os testes de sistema e a homologação."
+    fi
     ;;
 
   autorizar)
     v="${1:?uso: sdd-release autorizar <versão> [--nota texto]}"; shift
+    case "$v" in *-*)
+      echo "sdd-release autorizar: $v é um pré-lançamento, que só é homologado. Para produção, prepare a versão final (${v%%-*})." >&2; exit 1 ;;
+    esac
     nota=""
     while [ $# -gt 0 ]; do
       case "$1" in --nota) nota="${2:?}"; shift ;; *) echo "sdd-release autorizar: opção desconhecida $1" >&2; exit 1 ;; esac

@@ -101,7 +101,8 @@ O mesmo ciclo, como fica no `git log --graph` de um projeto real (a
 |\
 | *   (tag: v0.1.1, main) release: hotfix/0.1.1 em main
 | |\
-| | * (hotfix/0.1.1) fix(002): T-001 invalida o link após o uso
+| | * (hotfix/0.1.1) docs(release): changelog 0.1.1
+| | * fix(002): T-001 invalida o link após o uso
 | |/
 * | docs(002): INC-001 hotfix aberto
 * | docs: INC-001 aberto e mitigado
@@ -111,6 +112,8 @@ O mesmo ciclo, como fica no `git log --graph` de um projeto real (a
 | *   (tag: v0.1.0) release: release/0.1.0 em main
 | |\
 | | * (release/0.1.0) chore(release): 0.1.0 pronta para produção
+| | * chore(release): 0.1.0 volta à homologação com a correção da 001
+| | * fix(001): T-002 o e-mail leva o nome da loja
 | |/
 |/|
 * |   merge: feature/001-redefinicao-de-senha em develop (feature 001-redefinicao-de-senha pronta)
@@ -136,8 +139,11 @@ do terminal na coluna do meio são os que o agente roda (e você pode rodar).
 | | commit `chore: sdd iniciado` | em `develop` |
 | publica | | `git push -u origin main develop` |
 
-Depois, proteja `main` e `develop` na plataforma (só por pull request, CI
-obrigatório, sem force-push). O `/sdd:pipeline` lembra disso.
+Depois, proteja as branches na plataforma: `main` só por pull request, com CI
+obrigatório e sem force-push. `develop` depende da `integracao`: com `pr`,
+também só por pull request; com `local`, o merge é feito na sua máquina e
+publicado com `git push origin develop`, então `develop` precisa aceitar esse
+push (proteja só contra force-push). O `/sdd:pipeline` lembra disso.
 
 ### 4.2 Uma feature
 
@@ -145,7 +151,7 @@ obrigatório, sem force-push). O `/sdd:pipeline` lembra disso.
 |---|---|---|
 | `/sdd:especificar <mudança>` | `sdd-estado nova` e `sdd-gitflow feature NNN-slug` | cria `feature/NNN-slug` a partir de `develop` e muda para ela |
 | todas as fases, até pronta | commits `tipo(NNN): T-XXX descrição` | em `feature/NNN-slug` |
-| `/sdd:aprovar` (entrega) | commit do que a aprovação e a consolidação mudaram (`docs(NNN): feature pronta`); pergunta se integra; `sdd-gitflow integrar NNN-slug` (ou o pull request) | merge `--no-ff` em `develop` |
+| `/sdd:aprovar` (entrega) | commit do que a aprovação e a consolidação mudaram (`docs(NNN): feature pronta`); pergunta se integra; `sdd-gitflow integrar NNN-slug` (com `integracao: pr`, pede o `git push -u origin feature/NNN-slug` e abre o pull request) | merge `--no-ff` em `develop` |
 | publica | | `git push origin develop` |
 
 ### 4.3 Uma release
@@ -154,9 +160,9 @@ obrigatório, sem force-push). O `/sdd:pipeline` lembra disso.
 |---|---|---|
 | `/sdd:release preparar` | `sdd-release analisar` sugere a versão pelos commits ([versionamento](versionamento.md)); confere que as features estão em `develop`; **primeiro** `sdd-gitflow release X.Y.Z`, depois `sdd-release nova` e `incluir`, já na branch | cria `release/X.Y.Z` a partir de `develop` |
 | `/sdd:release homologar` | implanta em homologação | o push de `release/X.Y.Z` dispara o deploy de homologação no pipeline |
-| (correção pedida na homologação) | commits da correção | em `release/X.Y.Z` |
+| passo reprovado na homologação | `sdd-release reprovar`: a feature sai da release, volta ao green e passa a ter `release/X.Y.Z` como branch; a correção, a nova aprovação e o `sdd-release incluir` acontecem nela | commits da correção em `release/X.Y.Z`; o `sdd-gitflow integrar` recusa essa feature (ela chega a `develop` pelo `finalizar`) |
 | `/sdd:release implantar`, antes do go | `sdd-release changelog X.Y.Z --escrever` | commit `docs(release): changelog X.Y.Z` em `release/X.Y.Z` |
-| `/sdd:release implantar`, e "go" | `sdd-release autorizar`; pergunta e roda `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge de `main` em `develop` |
+| `/sdd:release implantar`, e "go" | `sdd-release autorizar`; o commit dos registros do go (`chore(release): X.Y.Z autorizada`), porque o `finalizar` exige tudo commitado; pergunta e roda `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge de `main` em `develop` |
 | publica | | `git push origin main develop vX.Y.Z`; a tag dispara o deploy de produção, que confere o go |
 | `/sdd:release concluir` | depois da verificação, em `develop`; commit `chore(release): X.Y.Z em produção` | `git branch -d release/X.Y.Z` (local) |
 
@@ -165,8 +171,8 @@ obrigatório, sem force-push). O `/sdd:pipeline` lembra disso.
 | Você | O agente | No git |
 |---|---|---|
 | `/sdd:incidente abrir` | registra o incidente | commit do registro em `develop` |
-| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit do registro em `develop` **sem** a pasta nova em `specs/` (`git add -A ':!specs/'`, mensagem `docs(NNN): INC-NNN hotfix aberto`); `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`**, levando a pasta do hotfix, que é commitada lá |
-| red, green, spec retroativa | commits `fix(NNN): T-XXX ...` | em `hotfix/X.Y.Z` |
+| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit do registro em `develop` **sem** a pasta nova em `specs/` (`git add -A ':!specs/NNN-slug/'`, mensagem `docs(NNN): INC-NNN hotfix aberto`); `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`**, levando a pasta do hotfix, que é commitada lá |
+| red, green, spec retroativa | commits `test(NNN): ...` e `fix(NNN): ...` (o hotfix não tem `tarefas.md`: o número no escopo basta) | em `hotfix/X.Y.Z` |
 | release de correção (`--hotfix`, mesma versão) e "go" | `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge em `develop` |
 
 ## 5. Integração local ou por pull request
@@ -175,8 +181,8 @@ obrigatório, sem force-push). O `/sdd:pipeline` lembra disso.
 |---|---|---|
 | para quem | quem trabalha sozinho, ou time pequeno sem revisão de código | time com revisão de código na plataforma |
 | feature pronta | `sdd-gitflow integrar NNN-slug` faz o merge `--no-ff` em `develop` | o agente propõe `gh pr create --base develop --head feature/NNN-slug` |
-| release com o go | `sdd-gitflow finalizar X.Y.Z` faz o merge em `main`, a tag e o merge em `develop` | pull request `release/X.Y.Z` para `main`; depois do merge na plataforma e do `git pull` em `main`, `sdd-gitflow finalizar X.Y.Z --apos-pr` faz a tag e o merge em `develop` |
-| push | você publica (`git push`); o plugin nunca faz push | a plataforma faz o merge; você publica a tag |
+| release com o go | `sdd-gitflow finalizar X.Y.Z` faz o merge em `main`, a tag e o merge em `develop` | pull request `release/X.Y.Z` (ou `hotfix/X.Y.Z`) para `main`; depois do merge na plataforma e do `git pull` em `main`, `sdd-gitflow finalizar X.Y.Z --apos-pr` faz a tag e o merge de `main` em `develop` |
+| push | você publica (`git push`); o plugin nunca faz push | você publica a branch antes do pull request (`git push -u origin <branch>`) e a tag depois; se `develop` só aceita pull request, o merge de `main` em `develop` vira um pull request `main` para `develop` |
 
 Nos dois casos, o plugin pergunta antes de cada merge e nunca faz push,
 force-push, rebase de branch publicada ou exclusão de branch remota.
@@ -269,7 +275,7 @@ O `/sdd:iniciar` faz isto na adoção (ver o guia
      git push origin --delete master
    ```
 
-4. `sdd-gitflow iniciar` cria `develop` (se não existir) e, se você está em `main`, muda para ela.
+4. `sdd-gitflow iniciar` cria `develop` (se não existir) e muda para ela, de qualquer branch (sem código pendente).
 
 Avise o time antes de renomear branches publicadas: quem tem um clone precisa
 atualizar (`git fetch --prune` e `git branch -u origin/main main`).
@@ -300,7 +306,7 @@ qualquer código; nesse caso o agente para e resolve com você.
 | Comando | O que faz |
 |---|---|
 | `sdd-gitflow conferir` | lista branches fora do padrão, a falta de `main` ou `develop`, e se você está na branch da feature ativa. Saída 3 com problemas |
-| `sdd-gitflow iniciar` | garante `main`, cria `develop` a partir dela e, se você está em `main`, muda para `develop` |
+| `sdd-gitflow iniciar` | garante `main`, cria `develop` a partir dela e muda para `develop`, de qualquer branch (sem código pendente) |
 | `sdd-gitflow renomear <antiga> <nova>` | renomeia uma branch local para um nome do padrão e diz o que fazer no remoto |
 | `sdd-gitflow feature <NNN-slug>` | cria (a partir de `develop`, ou de `main` num hotfix) ou ativa a branch da feature |
 | `sdd-gitflow release <X.Y.Z>` | cria `release/X.Y.Z` a partir de `develop` |

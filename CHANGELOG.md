@@ -6,6 +6,42 @@ configuração) sempre sobem a versão maior.
 
 ## Não lançado
 
+## 1.0.1 - 2026-10-29
+
+Correções achadas numa auditoria que percorreu cada cenário das skills
+executando os comandos de verdade. Nenhum formato rastreável mudou.
+
+### Correções
+
+- **Atualização de um projeto que já usa o SDD:** o `/sdd:iniciar` ganhou um caminho próprio. Antes, ele seguia os passos de projeto novo e podia reescrever a constituição e o config, ou ia direto à adoção sem atualizar o bloco de regras. Agora roda o `sdd-iniciar` sem `--forcar`, apresenta um a um os templates que diferem dos do plugin e as chaves novas do config, prepara o Git Flow e só então faz a adoção, se houver. Funciona também com uma feature ativa ou estando na branch de uma feature.
+- O `sdd-iniciar` lista os templates diferentes dos do plugin e as chaves que faltam no config, mostra o nível e a proteção do config (não os padrões) e não sugere mais `--forcar`. Novo `sdd-estado template --plugin <nome>`.
+- O hook de edição dava resultados diferentes conforme o diretório em que rodava: os globs (`tests/**`) eram expandidos contra os arquivos existentes. Um teste novo podia ser permitido ou bloqueado na fase green.
+- Marcar uma tarefa como feita (`[x]`) fazia o `tarefas.md` aparecer como alterado depois da aprovação, e o `/sdd:implementar` parava. As caixas `[ ]` e `[x]` agora entram iguais no hash; aprovações antigas continuam valendo.
+- `sdd-estado sensivel` sem argumento compara desde o início da feature. Sem o Git Flow, a base anterior (`main`) não existia ou não via os commits da feature, e a revisão de segurança deixava de ser exigida.
+- Artefato de fase anterior alterado depois de aprovado (a spec mexida durante o green): o `sdd-status` marca com `✗`, o `sdd-pendencias` aponta e o `/sdd:implementar` para. Antes, só a entrega acusava.
+- `sdd-gitflow iniciar` muda para `develop` vindo de qualquer branch (antes, só de `main`), e o `conferir` mostra a branch inicial num repositório sem commit.
+- `sdd-gitflow feature` acha a feature que só existe na branch dela (ainda não integrada), em vez de dizer que ela não existe.
+- **Feature reprovada na homologação:** o `sdd-release reprovar` grava a `release/X.Y.Z` como a branch dela, então a correção é feita na release (antes, o `/sdd:implementar` criava uma branch nova a partir de `develop`). O `integrar` recusa essa feature, e o `/sdd:aprovar` e o `/sdd:release` descrevem a volta com `sdd-release incluir`.
+- **Release candidate:** o `/sdd:release` ganhou o caminho do `X.Y.Z-rc.N`, que só é homologado. O pré-lançamento nunca vira a versão de referência, as releases são ordenadas pelo SemVer (o `rc` antes da final), e o próximo número de `rc` conta as releases já criadas, não só as tags.
+- O `finalizar` recusava logo depois do go, porque o `autorizar` deixa registros a commitar: a skill e as docs agora fazem o commit `chore(release): X.Y.Z autorizada` antes.
+- `/sdd:release cancelar` documentado (skill e página), inclusive o que fazer com as correções commitadas na `release/`.
+- Hotfix: o commit do registro do incidente em `develop` funciona estando no meio de outra feature, e o agente lê o incidente de `develop` (`git show`), porque a `hotfix/X.Y.Z` sai de `main` e não o tem.
+- O aviso de branch errada sugeria `sdd-gitflow feature hotfix/X.Y.Z`, que não existe; agora sugere o id da feature.
+- O `sdd-status` diz "integrada em develop; branch apagada" depois do `integrar --apagar`, em vez de só o nome da branch.
+- Com `integracao: pr`, a skill pede para publicar a branch antes do pull request, cobre o `hotfix/` e o caso de `develop` só aceitar pull request. A proteção recomendada para `develop` passa a depender da `integracao`.
+- Na aprovação do plano, os ADRs da feature passam de `proposta` para `aceita`.
+- Na adoção, o commit vem depois dos ajustes (backlog, links, mapa), cada feature convertida tem o seu commit antes da próxima, e a feature é ativada só depois de estar na branch dela.
+- Na proteção estrita, o `/sdd:pipeline` desativa a feature ativa para gravar o arquivo do pipeline.
+- Duas features criadas em paralelo a partir de `develop` recebiam o mesmo número: o `sdd-estado nova` só via as pastas da branch atual. Agora conta também as branches `feature/NNN-*` (locais e remotas) e as pastas em `hotfix/` e `release/`.
+- Pré-lançamento não vai para produção: `sdd-release autorizar` e `sdd-gitflow finalizar` recusam `X.Y.Z-rc.N`, e o `aceitar` de um candidate diz o próximo passo certo.
+- Um hotfix aberto entre o `finalizar` e o `concluir` reservava a mesma versão já marcada com a tag: a release com o go (`implantacao`) passa a ser a base da próxima versão.
+- Uma feature reprovada numa release que já terminou voltava à branch da release: agora ganha uma `feature/NNN-slug` nova a partir de `develop`.
+- A versão de referência é a maior entre a última release em produção (ou com o go) e a última tag final: depois de uma versão revertida, a próxima não anda mais para trás. E uma versão já usada (release cancelada, tag, branch reservada) não é reproposta.
+- O `sdd-release listar` ordena os pré-lançamentos pelo SemVer (`rc.2` antes de `rc.10`).
+- `sdd-gitflow feature` cria a branch local de uma feature que só existe no remoto.
+- O commit do registro do incidente exclui só a pasta do hotfix (`':!specs/NNN-slug/'`), não a pasta `specs/` inteira, que deixava de fora o histórico da feature de origem e travava a troca de branch.
+- Documentação conferida contra a saída real: o quadro do `sdd-status`, a mensagem de bloqueio do Conventional Commits, o `git log` da simulação e o hash da transição no exemplo da adoção.
+
 ## 1.0.0 - 2026-10-29
 
 Versão maior: muda formatos rastreáveis e o comportamento padrão. Ver

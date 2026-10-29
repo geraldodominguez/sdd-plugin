@@ -64,6 +64,26 @@ n="$(grep -c '<!-- sdd:inicio -->' "$P/CLAUDE.md")"
 grep -q 'Texto do usuário.' "$P/CLAUDE.md" && ok "preserva conteúdo do usuário no CLAUDE.md" || fail "preserva conteúdo do usuário"
 (cd "$P" && assert_exit 1 "rejeita proteção inválida" sdd-iniciar --protecao talvez)
 
+# Atualização de um projeto que já usa o SDD (sem --forcar).
+U="$TMP/atualizacao"; mkdir -p "$U"
+(cd "$U" && sdd-iniciar --protecao estrita >/dev/null 2>&1)
+subst '/^gitflow:/d; /^commits:/d' "$U/.sdd/config.yml"
+printf 'customizado\n' >> "$U/.sdd/templates/tarefas.md"
+printf 'Regra do time.\n' >> "$U/.sdd/constituicao.md"
+saida="$(cd "$U" && sdd-iniciar 2>&1)"
+grep -q 'Regra do time.' "$U/.sdd/constituicao.md" && ok "atualização preserva a constituição" || fail "atualização preserva a constituição"
+grep -q '^protecao: estrita' "$U/.sdd/config.yml" && ok "atualização preserva o config" || fail "atualização preserva o config"
+grep -q 'customizado' "$U/.sdd/templates/tarefas.md" && ok "atualização preserva template customizado" || fail "template customizado"
+printf '%s' "$saida" | grep -q '~ .sdd/templates/tarefas.md' && ok "atualização lista o template diferente do plugin" || fail "lista template diferente" "$saida"
+printf '%s' "$saida" | grep -q '~ .sdd/constituicao.md' && fail "constituição não entra nos diferentes" || ok "constituição não entra nos diferentes"
+printf '%s' "$saida" | grep -q '? gitflow: ativo' && printf '%s' "$saida" | grep -q '? commits: convencional' \
+  && ok "atualização lista as chaves novas do config com o padrão" || fail "lista chaves novas" "$saida"
+printf '%s' "$saida" | grep -q 'Projeto atualizado' && ok "atualização diz que a constituição e o config não mudaram" || fail "mensagem de atualização" "$saida"
+printf '%s' "$saida" | grep -q 'use --forcar' && fail "atualização não sugere --forcar" || ok "atualização não sugere --forcar"
+tp="$(cd "$U" && sdd-estado template --plugin tarefas.md)"
+case "$tp" in "$U"/*) fail "template --plugin aponta para o plugin" "$tp" ;; */skills/metodologia/templates/tarefas.md) ok "template --plugin aponta para o plugin" ;; *) fail "template --plugin" "$tp" ;; esac
+(cd "$U" && assert_exit 1 "template --plugin recusa template inexistente" sdd-estado template --plugin nao-existe.md)
+
 Q3="$TMP/outro-plugin"; mkdir -p "$Q3"
 (cd "$Q3" && CLAUDE_PLUGIN_ROOT=/caminho/de/outro/plugin sdd-iniciar >/dev/null 2>&1)
 [ -f "$Q3/.sdd/constituicao.md" ] && ok "ignora CLAUDE_PLUGIN_ROOT de outro plugin" || fail "CLAUDE_PLUGIN_ROOT de outro plugin"
@@ -869,6 +889,106 @@ for b in "$PLUGIN"/bin/*; do
   [ "$code" -eq 0 ] && printf '%s' "$out" | head -1 | grep -q "^$n" && ! printf '%s' "$out" | grep -qE '^(set -|AQUI=)' \
     && ok "$n --ajuda funciona fora de um projeto" || fail "$n --ajuda" "$out"
 done
+
+echo "auditoria por cenários (1.0.1)"
+GT() { git -c user.name=T -c user.email=t@t "$@"; }
+# sdd-gitflow iniciar troca para develop vindo de uma branch de trabalho.
+W="$TMP/cenario-iniciar"; mkdir -p "$W"
+(cd "$W" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && git switch -q -c feat-x && sdd-iniciar >/dev/null && sdd-gitflow iniciar >/dev/null 2>&1)
+[ "$(git -C "$W" rev-parse --abbrev-ref HEAD)" = "develop" ] && ok "gitflow iniciar troca para develop vindo de outra branch" || fail "gitflow iniciar troca de feat-x" "$(git -C "$W" rev-parse --abbrev-ref HEAD)"
+[ -d "$W/.sdd" ] && ok "a preparação vai junto para develop" || fail "preparação em develop"
+# conferir num repositório sem commit mostra a branch inicial.
+W2="$TMP/cenario-vazio"; mkdir -p "$W2"
+(cd "$W2" && git init -q -b master && sdd-iniciar >/dev/null)
+out="$(cd "$W2" && sdd-gitflow conferir 2>&1 || true)"
+printf '%s' "$out" | grep -q 'branch atual: master (sem nenhum commit ainda)' && ok "conferir sem commit mostra a branch inicial" || fail "conferir sem commit" "$out"
+# sdd-iniciar na atualização mostra o nível e a proteção do config.
+W3="$TMP/cenario-valores"; mkdir -p "$W3"
+(cd "$W3" && sdd-iniciar --nivel 2 --protecao estrita >/dev/null)
+out="$(cd "$W3" && sdd-iniciar 2>&1)"
+printf '%s' "$out" | grep -q 'nível padrão: 2 | proteção: estrita (do .sdd/config.yml, mantido)' && ok "atualização mostra os valores do config" || fail "valores do config na atualização" "$out"
+# sensivel sem ref, sem Git Flow: conta os commits da feature.
+W4="$TMP/cenario-sensivel"; mkdir -p "$W4/src/auth"
+(cd "$W4" && git init -q -b master && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && subst 's/^gitflow: .*/gitflow: desligado/; s#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' .sdd/config.yml \
+  && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Login" >/dev/null && GT add -A && GT commit -qm "docs(001): spec" \
+  && printf 'x\n' > src/auth/a.js && GT add -A && GT commit -qm "feat(001): T-001 login")
+(cd "$W4" && assert_exit 0 "sensivel sem ref acha o commit sensível da feature (sem Git Flow)" sdd-estado sensivel)
+[ "$(sdd_feature_ler_t "$W4" 001-login seguranca)" = "obrigatoria" ] && ok "sensivel torna a segurança obrigatória" || fail "segurança obrigatória sem Git Flow"
+# sensivel sem ref, com Git Flow: base no ponto em que a branch saiu de develop.
+W5="$TMP/cenario-sensivel-gf"; mkdir -p "$W5/src/auth"
+(cd "$W5" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && subst 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' .sdd/config.yml && sdd-gitflow iniciar >/dev/null 2>&1 \
+  && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Login" >/dev/null && sdd-gitflow feature 001-login >/dev/null 2>&1 \
+  && GT add -A && GT commit -qm "docs(001): spec" && printf 'x\n' > src/auth/a.js && GT add -A && GT commit -qm "feat(001): T-001 login")
+(cd "$W5" && assert_exit 0 "sensivel sem ref acha o commit sensível da feature (Git Flow)" sdd-estado sensivel)
+# Artefato aprovado que muda depois: status marca ✗ e pendências apontam.
+W6="$TMP/cenario-alterado"; mkdir -p "$W6"
+(cd "$W6" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml && sdd-estado nova "Cupom" >/dev/null \
+  && printf '# Spec\n\n- RF-001: o sistema DEVE aplicar o cupom.\n- CA-001: Dado x, Quando y, Então z.\n' > specs/001-cupom/spec.md \
+  && sdd-estado aprovar >/dev/null && printf '# Tarefas\n\n- [ ] T-001 aplica o cupom (atende: RF-001, CA-001; depende de: nenhuma)\n' > specs/001-cupom/tarefas.md \
+  && sdd-estado aprovar >/dev/null && printf 'mudou\n' >> specs/001-cupom/spec.md)
+out="$(cd "$W6" && sdd-status 001-cupom 2>&1)"
+printf '%s' "$out" | grep -q '✗ spec.md (alterado depois da aprovação' && ok "status marca ✗ o artefato alterado depois de aprovado" || fail "status ✗" "$out"
+out="$(cd "$W6" && sdd-pendencias 2>&1)"
+printf '%s' "$out" | grep -q 'spec.md foi alterado depois de aprovado (a feature está em red)' && ok "pendências apontam spec alterada numa fase seguinte" || fail "pendências spec alterada" "$out"
+
+# O casamento de globs não depende do diretório atual.
+(cd "$PLUGIN" && . lib/sdd-comum.sh && cd "$W6" && mkdir -p tests && : > tests/existente.test.js && sdd_casa_glob "tests/novo.test.js" "tests/**") \
+  && ok "glob casa arquivo novo com o cwd no projeto" || fail "glob depende do cwd"
+(cd "$PLUGIN" && . lib/sdd-comum.sh && cd / && sdd_casa_glob "tests/novo.test.js" "tests/**") \
+  && ok "glob casa arquivo novo com o cwd na raiz do disco" || fail "glob com cwd /"
+# Marcar [x] não invalida a aprovação do tarefas.md; mudar o texto, sim.
+subst 's/^- \[ \] T-001/- [x] T-001/' "$W6/specs/001-cupom/tarefas.md"
+(cd "$W6" && assert_exit 0 "marcar [x] não invalida a aprovação das tarefas" sdd-estado aprovado tarefas.md 001-cupom)
+printf -- '- [ ] T-002 outra (atende: RF-001; depende de: nenhuma)\n' >> "$W6/specs/001-cupom/tarefas.md"
+(cd "$W6" && assert_exit 4 "acrescentar tarefa invalida a aprovação" sdd-estado aprovado tarefas.md 001-cupom)
+# Versões: o pré-lançamento vem antes da final e não vira referência.
+W7="$TMP/cenario-rc"; mkdir -p "$W7"
+(cd "$W7" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+  && sdd-release nova 1.0.0 --objetivo x >/dev/null && sdd-release nova 1.0.0-rc.1 --objetivo x >/dev/null)
+out="$(cd "$W7" && sdd-release listar 2>&1)"
+[ "$(printf '%s\n' "$out" | grep -oE '1\.0\.0(-rc\.1)?' | head -1)" = "1.0.0-rc.1" ] && ok "listar põe o rc antes da final" || fail "ordem SemVer" "$out"
+(cd "$W7" && sdd-release nova 0.1.0-rc.1 --objetivo x >/dev/null && sdd-release proxima --pre rc 2>/dev/null | grep -qx '0\.1\.0-rc\.2') && ok "próximo rc conta as releases já criadas" || fail "rc.2" "$(cd "$W7" && sdd-release proxima --pre rc 2>&1)"
+# sdd-gitflow feature acha a feature que só existe na branch dela.
+(cd "$W5" && GT switch -q develop 2>/dev/null; sdd-gitflow feature 001-login >/dev/null 2>&1)
+[ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/001-login" ] && ok "gitflow feature acha a feature fora da árvore atual" || fail "feature fora da árvore" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
+
+# Pré-lançamento não vai para produção.
+(cd "$W7" && assert_exit 1 "autorizar recusa pré-lançamento" sdd-release autorizar 0.1.0-rc.1)
+(cd "$W5" && assert_exit 1 "finalizar recusa pré-lançamento" sdd-gitflow finalizar 1.0.0-rc.1)
+# A versão com o go (implantacao) já é a referência: o hotfix sai da seguinte.
+W8="$TMP/cenario-base"; mkdir -p "$W8"
+(cd "$W8" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+  && sdd-release nova 0.4.0 --objetivo x >/dev/null && printf 'fase=implantacao\ntipo=normal\natualizado=x\n' > releases/0.4.0/estado)
+[ "$(cd "$W8" && sdd-release proxima patch)" = "0.4.1" ] && ok "release em implantação é a base da próxima versão" || fail "base com implantacao" "$(cd "$W8" && sdd-release proxima patch 2>&1)"
+# Feature reprovada numa release que já terminou: a correção ganha feature/ nova.
+(cd "$W5" && GT add -A && GT commit -qm "docs(001): seguranca" && GT switch -q develop && sdd-estado nova "Perfil" >/dev/null && GT add -A && GT commit -qm "docs: perfil")
+FP="$(cd "$W5/specs" && ls -d ./*-perfil | sed 's#^\./##')"
+[ "${FP%%-*}" = "002" ] && ok "número da feature nova conta a feature que só existe na branch dela" || fail "número duplicado" "$FP"
+(cd "$W5" && mkdir -p releases/9.9.9 && : > releases/9.9.9/release.md && printf 'fase=producao\ntipo=normal\natualizado=x\n' > releases/9.9.9/estado \
+  && subst 's#^branch=.*#branch=release/9.9.9#' "specs/$FP/estado" && GT add -A && GT commit -qm "chore: x" && sdd-gitflow feature "$FP" >/dev/null 2>&1)
+[ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/$FP" ] && [ "$(sdd_feature_ler_t "$W5" "$FP" branch)" = "feature/$FP" ] \
+  && ok "feature de release terminada volta a feature/ nova" || fail "release terminada" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
+
+# Feature que só existe no remoto: sdd-gitflow feature cria a branch local.
+RB="$TMP/remoto.git"; git init -q --bare "$RB"
+(cd "$W5" && git remote add origin "$RB" && GT switch -q "feature/$FP" 2>/dev/null; GT push -q origin "feature/$FP" 2>/dev/null \
+  && GT switch -q develop && git branch -q -D "feature/$FP" && GT fetch -q origin && sdd-gitflow feature "$FP" >/dev/null 2>&1)
+[ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/$FP" ] && ok "gitflow feature cria a branch local a partir do remoto" || fail "feature só no remoto" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
+# Versões: uma versão já usada não se repete; o rc.10 vem depois do rc.2.
+W9="$TMP/cenario-usadas"; mkdir -p "$W9"
+(cd "$W9" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+  && for v in 0.1.0-rc.1 0.1.0-rc.10 0.1.0-rc.2 0.1.0; do sdd-release nova "$v" --objetivo x >/dev/null; done)
+[ "$(cd "$W9" && sdd-release listar | awk '{print $1}' | tr '\n' ' ')" = "0.1.0-rc.1 0.1.0-rc.2 0.1.0-rc.10 0.1.0 " ] && ok "listar ordena os identificadores numéricos do rc" || fail "ordem rc.10" "$(cd "$W9" && sdd-release listar)"
+[ "$(cd "$W9" && sdd-release proxima 2>/dev/null)" = "0.1.1" ] && ok "versão já usada (release cancelada) não é reproposta" || fail "versão usada" "$(cd "$W9" && sdd-release proxima 2>&1)"
+# Base: uma tag mais nova que a última em produção (versão revertida) vale.
+W10="$TMP/cenario-revertida"; mkdir -p "$W10"
+(cd "$W10" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml && sdd-release nova 0.1.0 --objetivo x >/dev/null \
+  && printf 'fase=producao\ntipo=normal\natualizado=x\n' > releases/0.1.0/estado && GT add -A && GT commit -qm "chore: x" && git tag v0.1.0 \
+  && GT commit -q --allow-empty -m "feat: y" && git tag v0.2.0)
+[ "$(cd "$W10" && sdd-release proxima patch)" = "0.2.1" ] && ok "a tag mais nova é a base, mesmo com a release dela revertida" || fail "base revertida" "$(cd "$W10" && sdd-release proxima patch 2>&1)"
 
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
