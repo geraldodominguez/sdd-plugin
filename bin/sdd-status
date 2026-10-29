@@ -10,6 +10,7 @@ set -uo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 if [ ! -d "$RAIZ/.sdd" ]; then
@@ -108,7 +109,7 @@ case "${1:-}" in
     [ -n "$ATIVA" ] || { echo "Nenhuma feature ativa."; exit 0; }
     detalhe "$ATIVA"; exit 0 ;;
   "") ;;
-  -h|--ajuda|--help) sed -n '2,7p' "$0"; exit 0 ;;
+  -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;;
   *) detalhe "$1"; exit 0 ;;
 esac
 

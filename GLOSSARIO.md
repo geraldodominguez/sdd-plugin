@@ -26,7 +26,7 @@ Trazer para o **layout** os artefatos que outro processo ou outro agente deixou 
 _Evite_: importação
 
 **Transição**:
-A situação de uma feature adotada (`adocao=transicao`) até o usuário aprovar o `transicao.md`, que mostra como ela era no outro processo e como fica no SDD. A aprovação registra os artefatos convertidos e leva a feature à **fase de destino**, para continuar de onde parou.
+A situação de uma feature adotada (`adocao=transicao`) até o usuário aprovar o `transicao.md`, que mostra como ela era no outro processo e como fica no SDD. A aprovação registra os artefatos convertidos e leva a feature à **fase de destino** (a fase em que ela estava no outro processo: `especificacao`, `plano`, `tarefas` ou `red`), para continuar de onde parou. Depois disso, ela fica **regularizada** (`adocao=regularizada`) e segue o fluxo como qualquer outra.
 _Evite_: migração
 
 **Tarefa `[O]`**:
@@ -34,7 +34,7 @@ Tarefa feita fora do plugin, antes da adoção, sem gate. Não se refaz; os test
 _Evite_: tarefa concluída (essa é a `[x]`, feita no plugin)
 
 **Conventional Commits**:
-O formato da mensagem de commit, `tipo(NNN): descrição`. O tipo (`feat`, `fix`, `perf`, `docs`, `chore`...) e o `!` decidem a próxima **versão** e o `CHANGELOG.md`.
+O formato da mensagem de commit, `tipo(NNN): T-XXX descrição` (o escopo é o número da feature, e a tarefa vem no começo da descrição). Uma mudança incompatível leva `!` depois do escopo ou o rodapé `BREAKING CHANGE:`. O tipo (`feat`, `fix`, `perf`, `docs`, `chore`...) e o `!` decidem a próxima **versão** e o `CHANGELOG.md`.
 _Evite_: mensagem livre ("ajustes", "wip")
 
 **Git Flow**:
@@ -132,7 +132,7 @@ _Evite_: ciclo, iteração
 A visão de todas as **features** por coluna (especificação, planejamento, implementação, revisão, pronta, homologação), com a **release** em andamento e os **incidentes** abertos, mostrada pelo `/sdd:status`.
 
 **Pendência**:
-Algo que espera uma decisão humana: **incidente** aberto, **release** esperando **aceite** ou **go**, **aprovação**, **revisão de segurança** devida, dúvida na spec, **delta spec** ou ADR proposto, **consolidação** pendente, item a triar, item da sprint sem spec. Listado pelo `/sdd:pendencias`.
+Algo que espera uma decisão humana: **incidente** aberto, **release** esperando **aceite** ou **go**, **aprovação**, **revisão de segurança** devida, dúvida na spec, **delta spec** ou ADR proposto, **consolidação** pendente, item a triar, item da sprint sem spec, **transição** a aprovar, artefato fora do padrão, problema de Git Flow. Listado pelo `/sdd:pendencias`.
 
 **Feature ativa**:
 A feature em que a pessoa está trabalhando agora, apontada em `.sdd/estado`. Cada pessoa tem a sua.

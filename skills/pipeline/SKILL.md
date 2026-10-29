@@ -38,7 +38,11 @@ tag não implanta nada.
    nomes de ambiente. Os nomes das branches **não** se adaptam: o Git Flow do
    plugin usa `main`, `develop`, `feature/`, `release/` e `hotfix/` em todo
    projeto (ver `docs/referencia/git-flow.md`). A versão do plugin usada no CI
-   fica fixa (`SDD_VERSAO`) para o pipeline não mudar sozinho.
+   fica fixa (`SDD_VERSAO`) para o pipeline não mudar sozinho: use a tag da
+   versão instalada (o campo `version` do `.claude-plugin/plugin.json` do plugin,
+   com `v` na frente). As conferências de Git Flow, layout e transição do
+   `sdd-verificar` só existem a partir da versão que as trouxe: com uma versão
+   anterior, o CI não as faz.
 4. **Mostre o arquivo** e explique cada estágio em uma linha. Escreva só com
    aprovação. Avise o que precisa ser configurado fora do repositório
    (segredos, proteção dos ambientes, revisores obrigatórios do ambiente de

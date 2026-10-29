@@ -81,7 +81,8 @@ Uma vez por repositório, normalmente feito pelo tech lead:
 
 | O agente faz | Você decide |
 |---|---|
-| cria `.sdd/`, `specs/`, `sistema/`, `docs/adr/` | o nível padrão (1 ou 2) e a proteção (`leve` ou `estrita`) |
+| cria `.sdd/`, `specs/`, `sistema/`, `docs/adr/` | o nível padrão (1 ou 2) e a proteção (`desligada`, `leve` ou `estrita`) |
+| prepara o **Git Flow**: renomeia `master` e `development` (com o seu "sim"), cria `develop` e muda para ela | como as branches se juntam: `integracao: local` (o plugin faz o merge) ou `pr` (pull request) |
 | lê o código e rascunha a **constituição** só com o que observou | revisa e completa as regras: stack, arquitetura, testes, segurança, ambientes, operação |
 | propõe as **áreas sensíveis** e os comandos (teste, lint, segurança, deploy) | confirma ou corrige no `.sdd/config.yml` |
 | injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md` | nada |
@@ -97,7 +98,10 @@ gera o CI/CD que confere o processo em todo push e só implanta em produção co
 o go registrado. Num sistema que já está em produção, comece também a
 **spec do sistema** pela área que mais muda: `/sdd:sistema mapear`.
 
-Faça commit de tudo. O `.sdd/estado` (sua feature ativa) já fica fora do git.
+Faça commit de tudo em `develop` (`chore: sdd iniciado`) e publique as duas
+branches (`git push -u origin main develop`). O `.sdd/estado` (sua feature
+ativa) já fica fora do git. Daqui em diante, `main` não recebe commit: só o
+merge de uma release depois do go (ver [Git Flow](git-flow.md)).
 
 ## 4. O dia a dia de uma feature
 
@@ -165,7 +169,8 @@ Tarefas pequenas, cada uma ligada aos requisitos que atende.
 
 Commits seguem o Conventional Commits e citam a tarefa:
 `feat(004): T-002 valida token expirado`. O tipo decide a próxima versão
-(`feat` minor, `fix` patch, `!` major; ver [versionamento](versionamento.md)).
+(`feat` o minor, `fix` o patch, `!` o major, ou o minor antes da 1.0.0; ver
+[versionamento](versionamento.md)).
 O hook recusa mensagem fora do formato e, nas fases de construção e revisão,
 sem a tarefa. Todos vão na branch
 `feature/004-slug`, criada pelo `/sdd:especificar` (ver [Git Flow](git-flow.md)).
@@ -180,13 +185,18 @@ sem a tarefa. Todos vão na branch
 ```
 
 No nível 1 sem segurança obrigatória, a entrega é direta: `/sdd:aprovar` no green.
+O `/sdd:auditar` e o `/sdd:seguranca` comparam com `develop`, de onde a feature
+nasceu.
 
 ### 4.7 Pronta
 
 Quando a feature fica pronta, o `/sdd:aprovar` conduz a **consolidação** na spec
 do sistema: o agente atualiza `sistema/<capacidade>.md` para descrever o
-comportamento vigente e mostra o diff para você confirmar. A feature agora
-espera a próxima release.
+comportamento vigente e mostra o diff para você confirmar. Depois, faz o commit
+na branch da feature (`docs(004): feature pronta`) e pergunta se pode levá-la
+para `develop`: com o seu "sim", `sdd-gitflow integrar 004-slug` faz o merge
+(com `integracao: pr`, abre o pull request). Você publica com
+`git push origin develop`. A feature agora espera a próxima release.
 
 ### 4.8 Resumo do fluxo de uma feature
 
@@ -198,7 +208,7 @@ espera a próxima release.
 | | `/sdd:planejar`, `/sdd:aprovar` |
 | `/sdd:tarefas`, `/sdd:aprovar` | `/sdd:tarefas`, `/sdd:aprovar` |
 | `/sdd:implementar`, `/sdd:aprovar`, `/sdd:implementar` | `/sdd:implementar`, `/sdd:aprovar`, `/sdd:implementar` |
-| (`/sdd:seguranca`, se área sensível) | `/sdd:seguranca`, `/sdd:aprovar` |
+| (`/sdd:seguranca`, `/sdd:aprovar`, se área sensível) | `/sdd:seguranca`, `/sdd:aprovar` |
 | `/sdd:aprovar` (entrega) | `/sdd:auditar`, `/sdd:aprovar` |
 
 ## 5. Entregando: a release
@@ -211,23 +221,32 @@ espera a próxima release.
 
 | O agente faz | Você decide |
 |---|---|
-| lista as prontas e propõe o conjunto | quais entram |
-| sugere a versão (major, minor ou patch) | a versão |
+| lista as prontas (já em `develop`) e propõe o conjunto | quais entram |
+| calcula a versão pelos commits (`sdd-release analisar`) e mostra o motivo | a versão: confirma ou escolhe outra |
+| cria a branch `release/X.Y.Z` a partir de `develop` (`sdd-gitflow release X.Y.Z`) e só depois `releases/X.Y.Z/` | nada |
 | chama o `testador-de-sistema`: regressão, ponta a ponta, RNFs | o que fazer com falhas: corrigir ou tirar a feature |
 | escreve o roteiro de homologação em linguagem de negócio e as notas | quem vai homologar |
 
 ```
-/sdd:release homologar     # implanta em homologação e entrega o roteiro
+/sdd:release homologar     # o push de release/X.Y.Z implanta em homologação; entrega o roteiro
 /sdd:release aceitar       # quem homologou aprova (ou reprova uma feature)
-/sdd:release implantar     # plano de implantação e rollback; você diz go ou no-go
+/sdd:release implantar     # changelog, plano de implantação e rollback; você diz go ou no-go
 /sdd:release concluir      # depois da verificação em produção
 ```
+
+| Momento | O que acontece no git |
+|---|---|
+| uma feature reprovada | a correção é commitada em `release/X.Y.Z` |
+| antes do go | `sdd-release changelog X.Y.Z --escrever` gera a seção do `CHANGELOG.md`; você revisa, e o commit `docs(release): changelog X.Y.Z` vai na branch da release |
+| depois do go | `sdd-gitflow finalizar X.Y.Z`: merge em `main`, tag `vX.Y.Z`, merge de volta em `develop`; você publica com `git push origin main develop vX.Y.Z` |
+| depois do `concluir` | commit em `develop` (`chore(release): X.Y.Z em produção`) e `git branch -d release/X.Y.Z` |
 
 Se a implantação der errado: `/sdd:release reverter`, que executa o rollback do
 plano com sua confirmação, e `/sdd:incidente abrir`.
 
-Com o pipeline gerado, a implantação em produção acontece pela tag `vX.Y.Z`, e
-o CI se recusa a implantar sem o go registrado.
+Com o pipeline gerado, a implantação em produção acontece pelo push da tag
+`vX.Y.Z`, e o CI se recusa a implantar sem o go registrado. A tag nasce no
+`finalizar`, não no `concluir`.
 
 ## 6. Quando algo quebra em produção
 
@@ -239,8 +258,8 @@ o CI se recusa a implantar sem o go registrado.
 |---|---|
 | Registrar | o agente propõe a severidade (S1 a S4) e tenta achar a feature e a release de origem |
 | Mitigar | em S1 e S2, primeiro parar o impacto: rollback, desligar a função, contorno |
-| Hotfix | `/sdd:incidente hotfix`: uma feature de correção que **começa na fase red**, com o teste que reproduz o incidente; a spec é escrita depois, mas a feature não fica pronta sem ela |
-| Entregar | release de correção (versão patch), com homologação expressa |
+| Hotfix | `/sdd:incidente hotfix`: uma feature de correção que **começa na fase red**, com o teste que reproduz o incidente; a spec é escrita depois, mas a feature não fica pronta sem ela. Ele reserva a branch `hotfix/X.Y.Z` (a próxima patch), faz o commit do registro do incidente em `develop` e `sdd-gitflow feature NNN-slug` cria `hotfix/X.Y.Z` a partir de `main` |
+| Entregar | release de correção com a **mesma versão** da branch, com homologação expressa; o `finalizar` leva o hotfix para `main` (com a tag) e para `develop` |
 | Post-mortem | sem culpados: causa raiz, qual etapa do processo deixou passar, ações no backlog |
 
 ## 7. Organizando o trabalho: backlog e sprint
@@ -314,5 +333,11 @@ determinística. Ver [proteção por hooks](protecao-por-hooks.md).
 | "a feature X está em pronta" ao tentar mudar a fase | ela já saiu da construção | `sdd-estado reabrir --motivo` |
 | o CI falha em `sdd-verificar` | aprovação invalidada ou lacuna | rode `sdd-verificar` localmente e siga a lista |
 | `sdd-*: command not found` | plugin fora da sessão | `/reload-plugins`; no Windows, confirme o Git Bash |
+| "a mensagem ... não segue o Conventional Commits" | commit como "ajustes" ou "wip" | reescreva: `tipo(NNN): T-XXX descrição` (ver [versionamento](versionamento.md)) |
+| commit bloqueado em `develop` | há uma feature ativa em construção ou revisão, e o commit dela vai na branch dela | `sdd-gitflow esperada` diz a branch; `sdd-gitflow feature NNN-slug` muda para ela |
+| commit bloqueado em `main` | `main` só recebe merge de release | mude para `develop` ou para a branch da feature |
+| o repositório tem `master` (o padrão do `git init`) | o nome fora do padrão | `sdd-gitflow renomear master main` (o `/sdd:iniciar` propõe isso) |
+| "há alteração pendente em código" ao trocar de branch | o `sdd-gitflow` leva só os arquivos do SDD | faça o commit (ou `git stash`) do código antes |
+| conflito no `.sdd/historico.md` num merge | repositório sem o `.gitattributes` do SDD | rode `/sdd:iniciar` de novo; ele acrescenta o merge por união |
 
 Mais em [FAQ e projetos existentes](projetos-existentes.md).

@@ -24,6 +24,7 @@ set -uo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 if [ ! -d "$RAIZ/.sdd" ]; then

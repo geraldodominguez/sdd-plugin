@@ -3,7 +3,7 @@ name: implementar
 description: Executa as tarefas da feature ativa em TDD. Na fase red, um subagent escreve os testes só a partir dos critérios; na green, a sessão principal implementa com os testes congelados.
 argument-hint: "[T-NNN para executar só uma tarefa ou grupo]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep, Bash(git merge-base *), Bash(git status *), Bash(git diff *)
 ---
 
 # /sdd:implementar
@@ -107,7 +107,7 @@ tarefa faz para quem usa o sistema:
 ## Encerramento
 
 1. Rode a suíte completa, o `comando_lint` (se houver) e o `sdd-rastrear`.
-2. Rode `sdd-estado sensivel <ref base>` (a base é o `git merge-base HEAD main`).
+2. Rode `sdd-estado sensivel <ref base>` (a base é o `git merge-base HEAD develop` com o Git Flow ativo, ou `HEAD main` com `gitflow: desligado`).
    Se a mudança tocou uma área sensível, ele torna a revisão de segurança
    obrigatória para esta feature, e você avisa o usuário.
 3. Apresente as tarefas concluídas, o resultado dos testes, as lacunas

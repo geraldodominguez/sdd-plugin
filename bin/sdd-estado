@@ -16,7 +16,9 @@
 #   sdd-estado aprovado <artefato> [NNN-slug]  confere se o artefato está aprovado e inalterado
 #   sdd-estado cancelar --motivo "texto"       cancela a feature ativa
 #   sdd-estado reabrir [NNN-slug] --motivo "texto" [--fase especificacao|green] [--origem X]
-#                                              reabre uma feature pronta, em homologação ou cancelada
+#                                              reabre uma feature pronta ou cancelada (cancelada
+#                                              volta sempre à especificacao; em homologação, use
+#                                              sdd-release reprovar)
 #   sdd-estado sensivel [ref]                  lista arquivos alterados em áreas sensíveis e, se
 #                                              houver, torna a revisão de segurança obrigatória
 #   sdd-estado listar                          todas as features
@@ -37,6 +39,7 @@ set -euo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 if [ ! -d "$RAIZ/.sdd" ]; then
@@ -312,10 +315,11 @@ case "$cmd" in
     ;;
 
   reabrir)
-    alvo=""; motivo=""; fase_alvo=especificacao; origem=""
+    alvo=""; motivo=""; fase_alvo=especificacao; origem=""; pela_release=0
     while [ $# -gt 0 ]; do
       case "$1" in
         --motivo) motivo="${2:?}"; shift ;;
+        --pela-release) pela_release=1 ;;
         --fase) fase_alvo="${2:?}"; shift ;;
         --origem) origem="${2:?}"; shift ;;
         -*) echo "sdd-estado reabrir: opção desconhecida $1" >&2; exit 1 ;;
@@ -329,7 +333,12 @@ case "$cmd" in
     existe_feature "$alvo"
     fase="$(sdd_feature_ler "$RAIZ" "$alvo" fase)"
     case "$fase" in
-      pronta|homologacao|cancelada) ;;
+      pronta|cancelada) ;;
+      homologacao)
+        if [ "$pela_release" -ne 1 ]; then
+          echo "sdd-estado: a feature $alvo está em homologação, dentro de uma release. Para devolvê-la, use 'sdd-release reprovar <versão> $alvo --motivo \"...\"', que também acerta a release." >&2
+          exit 1
+        fi ;;
       producao) echo "sdd-estado: a feature $alvo já está em produção e não se reabre. Abra uma feature nova com a mudança, ou um incidente (/sdd:incidente)." >&2; exit 1 ;;
       *) echo "sdd-estado: a feature $alvo está em '$fase', ainda em construção. Não há o que reabrir." >&2; exit 1 ;;
     esac
@@ -521,7 +530,7 @@ case "$cmd" in
     ;;
 
   -h|--ajuda|--help|ajuda)
-    sed -n '2,33p' "$0"
+    sdd_ajuda "$0"
     ;;
 
   *)

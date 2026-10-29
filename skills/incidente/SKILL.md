@@ -3,7 +3,7 @@ name: incidente
 description: Trilha de incidentes em produção. Registra o incidente com severidade, ajuda a mitigar, abre o hotfix (correção expressa com teste de regressão e spec retroativa obrigatória) e conduz o post-mortem sem culpados, transformando as ações em itens de backlog.
 argument-hint: "[abrir <o que aconteceu> | ver | mitigar | hotfix | resolver | post-mortem]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-incidente *), Bash(sdd-incidente), Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-release *), Bash(sdd-status *), Bash(git log *), Bash(git diff *), Bash(git show *), Read, Write, Edit, Glob, Grep
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-incidente *), Bash(sdd-incidente), Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-release *), Bash(sdd-status *), Bash(git log *), Bash(git diff *), Bash(git show *), Read, Write, Edit, Glob, Grep, Bash(git status *)
 ---
 
 # /sdd:incidente

@@ -203,18 +203,19 @@ stateDiagram-v2
 
 | Passo | O que acontece | Artefato | Gate e quem decide |
 |---|---|---|---|
-| Preparar | escolher as prontas, definir a versão SemVer, rodar os testes de sistema, escrever o roteiro de homologação e as notas | `release.md`, `testes.md`, `homologacao.md`, `notas.md` | testes de sistema aprovados (dev) |
-| Homologar | implantar em homologação; quem homologa executa o roteiro, passo a passo, em linguagem de negócio | `homologacao.md` preenchido | aceite do negócio (dono do produto ou cliente) |
-| Implantar | escrever o plano com verificação e rollback; decidir | `implantacao.md` | **go/no-go** (tech lead e operação) |
-| Concluir | implantar, verificar, encerrar; tag `vX.Y.Z` | `historico.md` da release | verificação pós-implantação |
+| Preparar | escolher as prontas (já em `develop`); calcular a versão SemVer pelos commits (`sdd-release analisar`) e decidir; criar a branch `release/X.Y.Z` (`sdd-gitflow release`) e só então `releases/X.Y.Z/`; rodar os testes de sistema, escrever o roteiro de homologação e as notas | `release.md`, `testes.md`, `homologacao.md`, `notas.md` | a versão (dev) e os testes de sistema aprovados (dev) |
+| Homologar | o push de `release/X.Y.Z` implanta em homologação; quem homologa executa o roteiro, passo a passo, em linguagem de negócio | `homologacao.md` preenchido | aceite do negócio (dono do produto ou cliente) |
+| Implantar | gerar e revisar a seção do `CHANGELOG.md` (`sdd-release changelog X.Y.Z --escrever`, commit `docs(release): changelog X.Y.Z` na branch da release); escrever o plano com verificação e rollback; decidir; depois do go, `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag `vX.Y.Z`, merge em `develop`) e `git push origin main develop vX.Y.Z`, que dispara a implantação | `implantacao.md`, `CHANGELOG.md` | **go/no-go** (tech lead e operação) |
+| Concluir | verificar em produção e encerrar; commit em `develop` (`chore(release): X.Y.Z em produção`) e apagar a branch local `release/X.Y.Z`. A tag já existe: veio do `finalizar` | `historico.md` da release | verificação pós-implantação |
 
 **Testes de sistema.** O `testador-de-sistema` cobre o que o TDD por feature
 não cobre: a regressão completa, os fluxos ponta a ponta afetados e a medição
 dos requisitos não funcionais com número.
 
 **Reprovação.** Um passo reprovado na homologação devolve a feature ao green
-(`sdd-release reprovar`) e a release à preparação. A release pode seguir sem
-ela.
+(`sdd-release reprovar`) e a release à preparação. A correção é commitada na
+branch `release/X.Y.Z`, que volta para `develop` no `finalizar`. A release
+também pode seguir sem ela.
 
 ## Etapa 6: DevOps
 
@@ -249,8 +250,8 @@ stateDiagram-v2
 | Registrar | severidade, impacto, feature e release de origem | `/sdd:incidente abrir` |
 | Mitigar (S1, S2) | parar o impacto: rollback, desligar a função, contorno | `/sdd:release reverter`, `sdd-incidente situacao ... mitigado` |
 | Corrigir | **hotfix**: feature de nível 1 que começa na fase red, com teste de regressão do incidente; a spec é escrita depois, mas é obrigatória antes da entrega | `sdd-incidente hotfix`, `/sdd:implementar`, `/sdd:aprovar` |
-| Entregar | release de correção (versão patch), homologação expressa | `/sdd:release` |
-| Aprender | post-mortem sem culpados: causa raiz e **qual etapa do processo deixou passar**; ações viram itens de backlog | `sdd-incidente encerrar` |
+| Entregar | a correção é feita na branch `hotfix/X.Y.Z`, que parte de `main` com a próxima patch, reservada pelo hotfix (o registro do incidente vai antes num commit em `develop`); a release de correção tem a **mesma versão**, com homologação expressa, e o `finalizar` leva o hotfix para `main` (com a tag) e para `develop` | `/sdd:release` |
+| Aprender | post-mortem sem culpados: causa raiz e **qual etapa do processo deixou passar**; ações viram itens de backlog | `/sdd:incidente post-mortem` (que roda `sdd-incidente encerrar`) |
 
 ### Mudanças em features que já estão em produção
 
@@ -262,7 +263,9 @@ Isso mantém o histórico de cada feature imutável depois de entregue.
 
 `sdd-estado reabrir --motivo "..."` devolve a feature à especificação (mudança
 de comportamento) ou ao green (correção de código), e invalida as aprovações da
-fase de reabertura em diante.
+fase de reabertura em diante. Uma feature em homologação não se reabre: o
+caminho é a reprovação na release (`sdd-release reprovar`). Uma feature
+cancelada, quando reaberta, volta sempre à especificação.
 
 ---
 
@@ -272,6 +275,10 @@ fase de reabertura em diante.
 stateDiagram-v2
     [*] --> especificacao: sdd-estado nova
     [*] --> red: sdd-incidente hotfix
+    [*] --> especificacao: sdd-adotar (em transição)
+    especificacao --> plano: transição aprovada
+    especificacao --> tarefas: transição aprovada
+    especificacao --> red: transição aprovada
     especificacao --> clarificacao
     clarificacao --> plano: aprovar spec (nível 2)
     clarificacao --> tarefas: aprovar spec (nível 1)
@@ -291,13 +298,18 @@ stateDiagram-v2
     pronta --> homologacao: release homologar
     homologacao --> producao: release concluir
     homologacao --> green: release reprovar
+    homologacao --> pronta: release cancelar ou reverter
+    producao --> pronta: release reverter
     pronta --> especificacao: reabrir
     pronta --> green: reabrir
     producao --> [*]
 ```
 
 `cancelada` pode ser alcançada de qualquer fase antes da homologação, com
-`sdd-estado cancelar --motivo`. A tabela completa de transições, com as
+`sdd-estado cancelar --motivo`. Uma feature adotada nasce em `especificacao` na
+situação de transição (`adocao=transicao`) e, com o `transicao.md` aprovado,
+vai direto à fase em que parou. Quando uma release é cancelada (ou revertida
+depois da implantação), as features dela voltam a `pronta`. A tabela completa de transições, com as
 condições de cada uma, está em [utilitários](utilitarios.md#sdd-estado).
 
 ## Quem decide o quê

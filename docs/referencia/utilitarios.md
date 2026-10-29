@@ -6,6 +6,9 @@ caminho completo ou ponha `bin/` no PATH. Os comandos `/sdd:*` usam esses
 utilitários por baixo; você raramente precisa chamá-los direto, mas eles servem
 para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 
+A configuração de cada projeto (todas as chaves do `.sdd/config.yml`) está em
+[A configuração](#a-configuração-sddconfigyml).
+
 | Utilitário | Para quê |
 |---|---|
 | [`sdd-iniciar`](#sdd-iniciar) | prepara o projeto |
@@ -28,17 +31,19 @@ para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 |---|---|---|
 | `.sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual); fora do git | `sdd-estado`, `sdd-sprint` |
 | `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `adocao` (só nas adotadas: `transicao` ou `regularizada`), `branch` (a do Git Flow: `feature/NNN-slug`, ou `hotfix/X.Y.Z` num hotfix), `atualizado` | `sdd-estado`, `sdd-release`, `sdd-adotar`, `sdd-incidente` |
-| `specs/NNN-slug/historico.md` | eventos da feature: criação, fases, aprovações, reaberturas, consolidação | `sdd-estado`, `sdd-sistema`, `sdd-release` |
-| `releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix) | `sdd-release` |
-| `releases/<versão>/historico.md` | testes, aceite, go, verificação, reversão | `sdd-release` |
+| `specs/NNN-slug/historico.md` | eventos da feature: criação, fases, aprovações (inclusive a da transição), reaberturas, consolidação, incidentes ligados a ela, adoção (com o hash de cada original) | `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-adotar` |
+| `releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix), `atualizado` | `sdd-release` |
+| `releases/<versão>/historico.md` | testes, aceite, go (evento `autorizacao`), verificação, mudanças de situação (inclusive para `revertida`) | `sdd-release` |
 | `.sdd/historico.md` | eventos do projeto: backlog, sprints, releases, incidentes, capacidades | todos |
 | `.sdd/backlog.md`, `.sdd/sprints/<id>.md` | itens e sprints | `sdd-backlog`, `sdd-sprint`, e você |
 | `sistema/<capacidade>.md` | comportamento vigente | o agente, com a sua confirmação; `sdd-sistema` registra |
 | `incidentes/INC-NNN.md` | um incidente | `sdd-incidente`, e você |
 | `.sdd/adocao.md` | de onde veio cada artefato adotado | `sdd-adotar` |
 
-Os arquivos `estado` e `historico.md` (de features e de releases) e os do
-`.sdd/` (inclusive o `adocao.md`) são protegidos pelo hook: o agente não consegue editá-los à mão. Linha
+Os arquivos `estado` e `historico.md` (de features e de releases), o
+`.sdd/estado`, o `.sdd/historico.md` e o `.sdd/adocao.md` são protegidos pelo
+hook: o agente não consegue editá-los à mão. O resto do `.sdd/` (config,
+constituição, backlog, sprints, templates) é editável. Linha
 do histórico:
 
 ```
@@ -48,6 +53,37 @@ do histórico:
 O autor é o `git config user.name` (ou a variável `SDD_AUTOR`).
 
 ---
+
+## A configuração: .sdd/config.yml
+
+Uma chave por linha (`chave: valor`); `#` começa um comentário. Todas as
+chaves, com o valor que o `/sdd:iniciar` grava:
+
+| Chave | Valor inicial | Para quê | Detalhes |
+|---|---|---|---|
+| `nivel_padrao` | `1` | nível de rigor sugerido para feature nova (1 ou 2) | [níveis de rigor](niveis-de-rigor.md) |
+| `protecao` | `leve` | o quanto os hooks impõem o fluxo: `desligada`, `leve` ou `estrita` | [proteção por hooks](protecao-por-hooks.md) |
+| `gitflow` | `ativo` | Git Flow com nomes fixos: `ativo` ou `desligado` | [Git Flow](git-flow.md) |
+| `integracao` | `local` | como uma branch entra em outra: `local` (merge pelo `sdd-gitflow`) ou `pr` (pull request) | [Git Flow](git-flow.md#5-integração-local-ou-por-pull-request) |
+| `commits` | `convencional` | mensagens de commit em Conventional Commits (`convencional`) ou sem conferência (`livre`) | [versionamento](versionamento.md) |
+| `pasta_specs` | `specs` | pasta das features | |
+| `pasta_sistema` | `sistema` | pasta da spec viva do sistema | |
+| `pasta_releases` | `releases` | pasta das releases | |
+| `pasta_incidentes` | `incidentes` | pasta dos incidentes | |
+| `globs_de_teste` | `tests/**,test/**,__tests__/**,spec/**,**/*.test.*,**/*.spec.*,**/*_test.*,**/test_*.py,**/*Test.java,**/*Tests.cs` | o que conta como arquivo de teste (hooks e `sdd-rastrear`) | [proteção por hooks](protecao-por-hooks.md#o-que-conta-como-teste) |
+| `globs_de_contrato` | vazio | contratos em código que o `arquiteto-de-contratos` pode materializar na proteção estrita | [proteção por hooks](protecao-por-hooks.md#o-que-conta-como-contrato-em-código) |
+| `areas_sensiveis` | vazio | código cuja mudança torna a revisão de segurança obrigatória, mesmo no nível 1 | [/sdd:seguranca](../seguranca.md) |
+| `excecoes_de_layout` | vazio | arquivos com nome de artefato que não são do SDD (o hook e o inventário os ignoram) | [proteção por hooks](protecao-por-hooks.md#arquivos-novos-só-no-lugar-do-padrão) |
+| `comando_teste` | vazio | a suíte de testes | |
+| `comando_lint` | vazio | lint e checagem de tipos | |
+| `comando_seguranca` | vazio | varreduras de dependências, segredos e código | |
+| `comando_teste_sistema` | vazio | testes ponta a ponta e de carga (`testador-de-sistema`) | |
+| `comando_deploy_homologacao` | vazio | implanta em homologação | [/sdd:release](../release.md) |
+| `comando_deploy_producao` | vazio | implanta em produção (só depois do go) | [/sdd:release](../release.md) |
+| `comando_verificacao_producao` | vazio | verificação pós-implantação | [/sdd:release](../release.md) |
+
+Mudar `pasta_*` depois de ter features move a responsabilidade para você:
+mova as pastas junto, ou os utilitários não as encontram.
 
 ## sdd-iniciar
 
@@ -78,12 +114,21 @@ sdd-estado listar
 sdd-estado historico [NNN-slug|--projeto] [--desde AAAA-MM-DD]
 sdd-estado caminho [arquivo]
 sdd-estado template nome.md
+sdd-estado transicionar NNN-slug <pronta|homologacao|producao> "nota"   (uso interno do sdd-release)
 ```
 
 **Fases:** `especificacao clarificacao plano tarefas red green seguranca
 auditoria pronta homologacao producao`, e `cancelada`. O `definir fase=` só
-aceita as fases de construção e revisão; `pronta` vem da aprovação,
-`homologacao` e `producao` vêm da release, `cancelada` do `cancelar`.
+aceita as fases de construção e revisão, e recusa uma feature que já está em
+`pronta`, `homologacao`, `producao` ou `cancelada` (para ela, `reabrir`, ou `sdd-release reprovar` em homologação);
+`pronta` vem da aprovação, `homologacao` e `producao` vêm da release,
+`cancelada` do `cancelar`.
+
+**Definir** também muda: `nivel=1|2` (o nível 2 torna a revisão de segurança
+obrigatória), `seguranca=obrigatoria|dispensada` (no nível 2, `dispensada` é
+recusada), `capacidade=` (uma ou mais, separadas por vírgula, como
+`cadastro,autenticacao`; vazio limpa), `feature=` (a feature ativa) e
+`sprint=` (a sprint ativa). As três primeiras valem para a feature ativa.
 
 **Aprovar** registra a aprovação do artefato da fase atual e avança:
 
@@ -135,9 +180,11 @@ registrada, a fase não avança, e a saída lista o que reaprovar.
 outra feature acrescenta no mesmo arquivo não mudam o hash desta.
 
 **Cancelar** vale para qualquer fase antes da homologação. **Reabrir** vale
-para features `pronta`, `homologacao` ou `cancelada` (nunca `producao`), volta
-para `especificacao` (padrão) ou `green`, e invalida as aprovações dos
-artefatos da fase de reabertura em diante.
+para features `pronta` ou `cancelada` (nunca `producao`), volta para
+`especificacao` (padrão) ou `green`, e invalida as aprovações dos artefatos da
+fase de reabertura em diante. Uma feature cancelada sempre volta para
+`especificacao`. Uma feature em `homologacao` não se reabre por aqui: quem a
+devolve é o `sdd-release reprovar`, que mantém a release coerente.
 
 **Sensível** lista os arquivos alterados (desde `ref`, mais os não commitados)
 que casam com `areas_sensiveis` e, se houver, marca `seguranca=obrigatoria`.
@@ -197,10 +244,11 @@ sdd-release ver [versão] | listar | atual
 | Comando | De | Para | Exige |
 |---|---|---|---|
 | `nova` | | `preparacao` | versão SemVer nova |
-| `incluir`, `remover` | `preparacao` | | features `pronta` |
+| `incluir` | `preparacao` | | features `pronta` |
+| `remover` | `preparacao` | | a feature estar na release |
 | `homologar` | `preparacao` | `homologacao` | features prontas e com aprovações em dia; `testes.md` completo com `Resultado: aprovado`; roteiro (`| H-NNN |`) em `homologacao.md` |
-| `aceitar` | `homologacao` | `aceita` | nenhum passo `pendente` ou `reprovado`; `--por` |
-| `reprovar` | `homologacao`, `aceita` | `preparacao` | a feature volta ao green |
+| `aceitar` | `homologacao` | `aceita` | roteiro com passos `H-NNN`, nenhum `pendente` ou `reprovado`, nenhum campo `{{...}}`; `--por` |
+| `reprovar` | `homologacao`, `aceita` | `preparacao` | a feature reprovada volta ao green; as demais voltam a `pronta` |
 | `autorizar` (go) | `aceita` | `implantacao` | `implantacao.md` (com Rollback) e `notas.md` completos |
 | `concluir` | `implantacao` | `producao` | `--verificacao`; as features vão para `producao` |
 | `reverter` | `implantacao`, `producao` | `revertida` | as features voltam a `pronta` |
@@ -268,9 +316,12 @@ sdd-status --ativa       o detalhe da feature ativa
 sdd-pendencias [--contar]
 ```
 
-Incidentes, releases paradas, aprovações pendentes ou invalidadas, revisões de
-segurança devidas, dúvidas, delta specs e ADRs propostos, consolidações
-pendentes, prontas fora de release, backlog a triar e itens da sprint sem spec.
+Incidentes, releases paradas, aprovações pendentes ou invalidadas (inclusive
+a transição de uma feature adotada), revisões de segurança devidas, dúvidas,
+delta specs e ADRs propostos, consolidações pendentes, prontas fora de release,
+backlog a triar, itens da sprint sem spec, artefatos **fora do padrão** (com
+`/sdd:iniciar --adotar`) e problemas de **Git Flow** (branch fora do padrão,
+falta de `main` ou `develop`, commit fora da branch da feature ativa).
 
 ## sdd-rastrear
 
@@ -285,6 +336,8 @@ sdd-rastrear [NNN-slug] [--silencioso]
 | todo CA tem teste com a marca `sdd:NNN:CA-XXX` | "CA-003 não tem teste com a marca 004:CA-003" |
 | toda tarefa referencia algo | "T-005 não referencia nenhum requisito ou critério" |
 | as tarefas só citam IDs que existem | "tarefas.md cita RF-009, que não existe na spec" |
+| o `tarefas.md` existe | "tarefas.md ainda não existe" |
+| há arquivos de teste (pelos `globs_de_teste`) | "Nenhum arquivo de teste encontrado" |
 
 Num hotfix sem `tarefas.md`, só a ligação critério e teste é conferida. Saída:
 `0` sem lacunas, `3` com lacunas, `1` erro de uso.
@@ -296,11 +349,12 @@ sdd-verificar [--estrito] [--silencioso]
 ```
 
 Feito para o CI. Falha (saída 3) com: lacuna de rastreabilidade numa feature da
-fase green em diante; feature pronta ou em homologação com spec, testes, plano
+fase green até a homologação (as em produção não são conferidas); feature pronta ou em homologação com spec, testes, plano
 ou revisão de segurança sem aprovação ou alterados depois dela; release em
-andamento com feature fora da fase esperada. Avisos (falham só com
-`--estrito`): artefato de processo fora do lugar do padrão, consolidação
-pendente, incidente S1 ou S2 não encerrado, hotfix sem spec aprovada, branch
+homologação, aceita ou em implantação com alguma feature fora de
+`homologacao`. Avisos (falham só com
+`--estrito`): artefato de processo fora do lugar do padrão, feature adotada
+ainda em transição, consolidação pendente, incidente S1 ou S2 não encerrado, hotfix sem spec aprovada, branch
 atual fora do padrão do Git Flow. Também falha com um pull request num fluxo
 que o Git Flow não permite, lido das variáveis do CI (`GITHUB_HEAD_REF` e
 `GITHUB_BASE_REF`, ou `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` e
@@ -353,8 +407,9 @@ O mapa inteiro é conferido antes de mover qualquer arquivo: origem
 inexistente ou repetida, destino existente, repetido ou fora do padrão, e
 feature nova sem o atalho recusam tudo (saída 1). Com `--simular`, mostra os
 destinos resolvidos e para. Na aplicação, usa `git mv` para arquivos
-versionados (o histórico do arquivo segue), registra cada movimento (com o
-hash do original) no histórico do projeto e da feature e em `.sdd/adocao.md`,
+versionados (o histórico do arquivo segue), registra cada movimento no histórico do projeto e em `.sdd/adocao.md` e, quando
+o destino é uma feature, no histórico dela com o hash do original (que também
+vai para o `transicao.md`),
 remove só as pastas que ficaram vazias e lista os arquivos que ainda citam os
 caminhos antigos. Nunca sobrescreve nem apaga.
 
@@ -389,13 +444,20 @@ completo, com cada momento do ciclo, está em [Git Flow](git-flow.md).
 | Comando | Faz | Recusa quando |
 |---|---|---|
 | `conferir` | lista branches fora do padrão (com o nome sugerido), a falta de `main` ou `develop`, e se a branch atual é a da feature ativa | saída 3 com problemas |
-| `iniciar` | garante `main`, cria `develop` a partir dela e muda para `develop` | não há commit; a produção tem outro nome (`master`) |
+| `iniciar` | garante `main`, cria `develop` a partir dela e, se você está em `main`, muda para `develop` | não há commit; a produção tem outro nome (`master`); alteração pendente em código ao trocar |
 | `renomear` | `git branch -m` local para um nome do padrão; imprime os passos do remoto | o nome novo está fora do padrão, já existe, ou é `feature/` de uma feature que não existe |
-| `feature` | cria a branch da feature (de `develop`; de `main` num hotfix) ou muda para ela | a feature não existe; há alterações não commitadas fora da pasta dela e do `.sdd/` |
-| `release`, `hotfix` | cria `release/X.Y.Z` (de `develop`) ou `hotfix/X.Y.Z` (de `main`) | versão inválida; alterações não commitadas |
-| `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; conflito (o merge fica em andamento) |
-| `finalizar` | merge da `release/` (ou `hotfix/`) em `main`, tag `vX.Y.Z`, merge de `main` em `develop`; com `--apos-pr`, só a tag e o `develop`, depois do merge feito na plataforma | a release não tem o go (`implantacao` ou `producao`); conflito |
+| `feature` | cria a branch da feature (de `develop`; de `main` num hotfix) ou muda para ela | a feature não existe; alteração pendente em código |
+| `release`, `hotfix` | cria `release/X.Y.Z` (de `develop`) ou `hotfix/X.Y.Z` (de `main`) | versão inválida; alteração pendente em código |
+| `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; a branch não existe localmente; alteração não commitada (fora do `.sdd/`); conflito (o merge fica em andamento) |
+| `finalizar` | merge da `release/` (ou `hotfix/`) em `main`, tag `vX.Y.Z`, merge de `main` em `develop`; com `--apos-pr`, só a tag e o `develop`, depois do merge feito na plataforma | a release não tem o go (`implantacao` ou `producao`); a branch não existe localmente; com `--apos-pr`, a branch ainda não está em `main`; alteração não commitada; conflito |
 | `pode-integrar` | saída 0 se o fluxo é permitido (`feature/*` para `develop`; `release/*` e `hotfix/*` para `main` ou `develop`; `main` para `develop`) | saída 3 nos demais |
+
+**Ao trocar de branch** (`iniciar`, `feature`, `release`, `hotfix`), as
+alterações pendentes nos arquivos do SDD (`.sdd/`, `specs/`, `sistema/`,
+`releases/`, `incidentes/`, `docs/`, `CLAUDE.md`, `AGENTS.md`,
+`.gitattributes`, `CHANGELOG.md`) vão junto para a branch nova; alteração
+pendente em código é recusada (faça o commit, ou o stash). Se o git recusar a
+troca, a mensagem dele aparece com o que fazer.
 
 Nunca faz push, nunca apaga branch remota, nunca reescreve histórico e não
 escreve nos históricos do SDD. Com `gitflow: desligado` no config, os hooks e o

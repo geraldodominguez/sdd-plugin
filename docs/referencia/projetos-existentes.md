@@ -20,7 +20,7 @@ partida, `/sdd:sistema mapear <capacidade>` descreve o comportamento atual a
 partir do código e dos testes, marcando cada item com a origem no código (`origem: código, caminho:linha`), para
 você revisar. Mapeie só a capacidade que vai mudar, não o sistema inteiro.
 
-## Adoção em seis passos
+## Adoção em oito passos
 
 | Passo | O quê | Por quê |
 |---|---|---|
@@ -30,6 +30,8 @@ você revisar. Mapeie só a capacidade que vai mudar, não o sistema inteiro.
 | 4 | ajuste os `globs_de_teste` à convenção do projeto | sem isso, os hooks e o `sdd-rastrear` não reconhecem os seus testes |
 | 5 | preencha `areas_sensiveis` e os comandos de entrega no `config.yml` | a revisão de segurança e a release dependem deles |
 | 6 | `/sdd:pipeline` para acrescentar o `sdd-verificar` e o go/no-go ao CI que já existe | o pipeline passa a respeitar os gates sem ser reescrito |
+| 7 | aceite o **Git Flow** que o `/sdd:iniciar` propõe: `master` vira `main` e `development` vira `develop` (com o seu "sim"; o remoto você ajusta, como ele explica), `develop` nasce de `main`, e cada feature ganha a sua branch `feature/NNN-slug`. `sdd-gitflow conferir` lista o que está fora do padrão | os mesmos nomes em todo projeto; ver [Git Flow](git-flow.md) |
+| 8 | garanta a tag `vX.Y.Z` da última versão publicada, no commit que está em produção (`git tag -a v1.4.2 <commit> -m "versão 1.4.2"`); tags em outro formato (`1.4.2`, `release-1.4.2`) ganham a equivalente com `v` | é dela que o `sdd-release` calcula a próxima versão; sem tag nenhuma, a primeira é 0.1.0 (ver [versionamento](versionamento.md#8-projeto-que-já-existe)) |
 
 Se o projeto já tem um processo de deploy, a release do SDD não o substitui: ela
 registra as decisões (aceite, go) e o pipeline consulta `sdd-release
@@ -134,8 +136,12 @@ e a infraestrutura mínima vira uma tarefa explícita da primeira feature.
 
 ## Features antigas que quebram
 
-Abra uma feature nova, de nível 1 ou 2, para a correção. A spec dela documenta o
-comportamento esperado daquela parte. Não é preciso reconstruir a história.
+Se o defeito está em **produção**, ele é um incidente: `/sdd:incidente abrir`,
+mitigação e, se for urgente, `/sdd:incidente hotfix`, que corrige a partir de
+`main` numa branch `hotfix/X.Y.Z`. Se não é urgente, ou se a parte antiga ainda
+não foi publicada, abra uma feature nova, de nível 1 ou 2, para a correção. Em
+ambos os casos, a spec documenta o comportamento esperado daquela parte. Não é
+preciso reconstruir a história.
 
 ## Quando não usar
 

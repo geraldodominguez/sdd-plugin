@@ -27,7 +27,7 @@ Fluxos permitidos (o `sdd-verificar` recusa o resto nos pull requests):
 | preparar a release | `/sdd:release preparar` | `sdd-gitflow release X.Y.Z`: cria `release/X.Y.Z` a partir de `develop`; a homologação usa esta branch |
 | correção durante a homologação | `/sdd:release` (feature reprovada) | commits em `release/X.Y.Z` |
 | go/no-go | `/sdd:release implantar` | depois do go: `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag `vX.Y.Z`, merge em `develop`); o push da tag dispara o deploy |
-| incidente | `/sdd:incidente hotfix` | `sdd-gitflow hotfix X.Y.Z`: cria `hotfix/X.Y.Z` a partir de `main`; a release de correção tem a mesma versão |
+| incidente | `/sdd:incidente hotfix` | o registro do incidente é commitado em `develop`, sem a pasta do hotfix em `specs/`; `sdd-gitflow feature NNN-slug` cria `hotfix/X.Y.Z` (a versão reservada) a partir de `main` e leva a pasta; a release de correção tem a mesma versão |
 
 ## Regras
 
@@ -36,7 +36,7 @@ Fluxos permitidos (o `sdd-verificar` recusa o resto nos pull requests):
 3. Nunca crie branch à mão com outro nome. Use `sdd-gitflow feature`, `release` ou `hotfix`.
 4. Uma branch `feature/` só existe para uma feature que existe em `specs/`.
 5. Nunca faça push, force-push, rebase de branch publicada ou exclusão de branch remota sem pedir ao usuário. O `sdd-gitflow` nunca faz push: ele diz o comando.
-6. Antes de trocar de branch, as alterações precisam estar commitadas. O `sdd-gitflow` recusa se não estiverem.
+6. Ao trocar de branch, o `sdd-gitflow` leva junto as alterações pendentes nos arquivos do SDD (`specs/`, `sistema/`, `releases/`, `incidentes/`, `docs/`, `.sdd/`, `CLAUDE.md`, `AGENTS.md`) e recusa se houver alteração pendente em código. Para os merges (`integrar`, `finalizar`), tudo precisa estar commitado: faça o commit antes.
 7. Conflito num merge: pare, mostre os arquivos ao usuário e resolva com ele. Não escolha um lado sozinho.
 
 ## Integração local ou por pull request

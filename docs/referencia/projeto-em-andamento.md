@@ -68,7 +68,7 @@ aprova nenhum dos dois.
 
 | Faça | Por quê |
 |---|---|
-| marque o ponto de partida: `git tag antes-do-sdd` | a adoção vira alguns commits comuns; a tag é o ponto para comparar ou voltar |
+| anote o ponto de partida: `git log -1 --format=%H` | a adoção vira alguns commits comuns; esse hash é o ponto para comparar ou voltar. Não crie uma tag para isso: tag fora do formato `vX.Y.Z` vira aviso no `sdd-gitflow conferir` |
 | deixe a árvore limpa: `git status` sem nada pendente | o "como era" de cada arquivo fica no último commit |
 | versione os documentos que vão ser adotados (`git add`, `git commit`) | arquivo fora do git perde o original na conversão; o agente copia para `docs/legado/` nesse caso, mas é melhor ter no git |
 | confira o `git config user.name` | é o nome registrado em cada aprovação |
@@ -163,8 +163,13 @@ Se o projeto já publicou versões, a última precisa da tag `vX.Y.Z` em `main`:
 Conventional Commits, ficam antes da tag e não contam (ver
 [versionamento](versionamento.md#8-projeto-que-já-existe)).
 
-Depois, `sdd-gitflow iniciar` cria `develop` (se ainda não existir) e muda para
-ela. Detalhes em [Git Flow](git-flow.md#8-projeto-que-já-existe-trazer-as-branches-para-o-padrão).
+Depois, `sdd-gitflow iniciar` cria `develop` (se ainda não existir) e, se você
+está em `main`, muda para ela. As alterações que o `/sdd:iniciar` já fez
+(`.sdd/`, `CLAUDE.md`, `AGENTS.md`) vão junto na troca. Se `develop` já existia
+e está à frente de `main` com outra versão do `CLAUDE.md`, o git recusa a troca
+para não perder nada, e o `sdd-gitflow` mostra a mensagem dele. Nesse caso:
+`git stash`, `git switch develop`, `git stash pop`, resolva o `CLAUDE.md` se
+houver conflito, e siga. Detalhes em [Git Flow](git-flow.md#8-projeto-que-já-existe-trazer-as-branches-para-o-padrão).
 
 ### 6.2 O que espera a adoção
 
@@ -172,14 +177,20 @@ Logo depois do `sdd-iniciar`, o `/sdd:pendencias` já mostra o que espera a
 adoção:
 
 ```
-Esperando você: 4 item(ns)
+Esperando você: 5 item(ns)
 
 Fora do padrão (4) · /sdd:iniciar --adotar
   - TODO.md (tarefas)
   - docs/decisions/banco.md (adr)
   - docs/specs/exportar-pedidos.md (spec)
   - tasks/exportar-pedidos.md (tarefas)
+
+Git Flow (1) · sdd-gitflow
+  - a branch feat-exportar está fora do padrão (sdd-gitflow conferir)
 ```
+
+A branch `feat-exportar` é a da feature que ainda vai nascer na adoção: ela é
+renomeada no passo 9.1.
 
 ## 7. O mapa: para onde vai cada arquivo
 
@@ -303,16 +314,18 @@ conteúdo do outro processo. Para cada feature, o agente:
 
 ### 9.1 Ativa a feature e acerta o nível
 
-`sdd-estado usar 001-exportar-pedidos`. Se a feature mexe em domínio, schema,
-contrato público ou segurança, ele propõe o nível 2. Ele também define a
-capacidade da spec do sistema (`sdd-estado definir capacidade=pedidos`).
-
-E vai para a **branch da feature**, onde a conversão é commitada:
+`sdd-estado usar 001-exportar-pedidos` e, primeiro, a **branch da feature**,
+onde a conversão é commitada:
 
 | O código feito fora do plugin | O que o agente faz (perguntando antes) |
 |---|---|
 | já está em `develop` (ou não há código) | `sdd-gitflow feature 001-exportar-pedidos`: cria `feature/001-exportar-pedidos` a partir de `develop` |
 | está numa branch antiga que não entrou em `develop` (`feat-exportar`) | `sdd-gitflow renomear feat-exportar feature/001-exportar-pedidos`, `sdd-gitflow feature 001-exportar-pedidos` e `git merge develop`, para a branch receber os arquivos adotados |
+
+Já na branch, ele acerta o nível e a capacidade, para que a mudança no `estado`
+fique na branch da feature: se a feature mexe em domínio, schema, contrato
+público ou segurança, propõe o nível 2 (`sdd-estado definir nivel=2`); e define
+a capacidade da spec do sistema (`sdd-estado definir capacidade=pedidos`).
 
 ### 9.2 Descobre onde a feature parou
 
@@ -531,9 +544,9 @@ A adoção é feita de commits comuns, sem nada apagado:
 
 | Quer desfazer | Como |
 |---|---|
-| tudo, antes de publicar | `git switch main` e `git branch -D develop` (e as `feature/` criadas); o `main` continua no ponto da tag `antes-do-sdd` |
+| tudo, antes de publicar | `git switch main` e `git branch -D develop` (e as `feature/` criadas); o `main` continua no commit que você anotou no passo 3 |
 | tudo, depois de publicar | `git revert` dos commits da adoção em `develop` (preparação, arquivos no padrão) e o descarte das branches `feature/` das features adotadas |
-| a renomeação de uma branch | `sdd-gitflow` não tem desfazer: `git branch -m <nova> <antiga>` |
+| a renomeação de uma branch | `sdd-gitflow` não tem desfazer: `git branch -m <nova> <antiga>`, por exemplo `git branch -m develop development` e `git branch -m main master` (antes de publicar a renomeação no remoto) |
 | só a conversão de uma feature | `git revert` do commit da conversão; a feature volta ao conteúdo original, ainda em transição |
 
 O `.sdd/adocao.md` diz, arquivo por arquivo, de onde cada um veio.
@@ -606,4 +619,6 @@ situação "proposta" aparece nas pendências.
 | `Ainda citam o caminho antigo` | links para os arquivos que mudaram de lugar | atualize os arquivos listados |
 | `a branch de produção se chama 'master'` | o `sdd-gitflow iniciar` exige `main` | `sdd-gitflow renomear master main`, com o time de acordo |
 | `SDD (Git Flow) bloqueou um commit na branch '...', fora do padrão` | commit numa branch antiga | renomeie a branch (`sdd-gitflow renomear`) ou mude para a certa |
-| `sdd-gitflow: há alterações não commitadas` | trocar de branch levaria o trabalho junto | faça o commit (em `develop`, se é da adoção) e rode de novo |
+| `sdd-gitflow: há alterações não commitadas em código` | trocar de branch levaria código pela metade junto (os arquivos do SDD vão sem problema) | faça o commit, ou o `git stash`, e rode de novo |
+| `sdd-gitflow: há alterações não commitadas. Faça o commit antes (o merge precisa da árvore limpa)` | `integrar` ou `finalizar` com algo pendente | faça o commit (na feature: `docs(NNN): feature pronta`) e rode de novo |
+| `sdd-gitflow: o git não trocou de branch` | o git recusou a troca (por exemplo, `CLAUDE.md` diferente na outra branch) | faça o commit na branch atual, ou `git stash`, troque, e `git stash pop` |

@@ -3,7 +3,7 @@ name: aprovar
 description: O gate formal de cada fase da feature. Mostra o que está sendo aprovado, pede a sua confirmação e registra a aprovação no histórico (quem, quando e o hash do artefato), avançando a feature; ao chegar a pronta, conduz a consolidação na spec do sistema.
 argument-hint: "[artefato] [nota]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-sistema *), Read, Glob, Grep, Edit
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-sistema *), Read, Glob, Grep, Edit, Bash(sdd-backlog *), Bash(gh pr create *)
 ---
 
 # /sdd:aprovar
@@ -85,9 +85,11 @@ do `/sdd:release`.
    - conduza a **consolidação na spec do sistema** como no `/sdd:sistema`
      (edite `sistema/<capacidade>.md`, mostre, e rode `sdd-sistema consolidar`);
    - **Git Flow** (com `gitflow: ativo`; não vale para hotfix, que vai para
-     `main` pela release de correção): com tudo commitado na branch da feature,
-     leve-a para `develop` conforme a chave `integracao` do config, **depois de
-     perguntar**:
+     `main` pela release de correção): primeiro, proponha o commit do que a
+     aprovação e a consolidação mudaram, na branch da feature
+     (`docs(NNN): feature pronta`), porque o merge exige tudo commitado. Depois
+     leve a feature para `develop` conforme a chave `integracao` do config,
+     **perguntando antes**:
 
      | `integracao` | O que fazer |
      |---|---|

@@ -139,8 +139,18 @@ assunto_commit() {
     }'
 }
 
+# A mensagem vinda de arquivo (-F arquivo, --file arquivo): o hook lê o
+# arquivo, relativo à raiz do projeto. Com "-" (entrada padrão), não há o que ler.
+MSG_ARQ="$(printf '%s' "$CMD" | sed -nE 's/.*(^|[[:space:]])(-F|--file)([[:space:]]+|=)("([^"]+)"|'"'"'([^'"'"']+)'"'"'|([^[:space:];&|]+)).*/\5\6\7/p' | head -1)"
+MSG_TEXTO=""
+if [ -n "$MSG_ARQ" ] && [ "$MSG_ARQ" != "-" ]; then
+  case "$MSG_ARQ" in /*) ;; *) MSG_ARQ="$RAIZ/$MSG_ARQ" ;; esac
+  [ -f "$MSG_ARQ" ] && MSG_TEXTO="$(grep -v '^#' "$MSG_ARQ" 2>/dev/null || true)"
+fi
+
 if [ "$E_COMMIT" -eq 1 ] && [ "$(sdd_config "$RAIZ" commits convencional)" = "convencional" ] && ! sdd_merge_em_andamento "$RAIZ"; then
   ASSUNTO="$(assunto_commit "$CMD")"
+  [ -n "$ASSUNTO" ] || ASSUNTO="$(printf '%s\n' "$MSG_TEXTO" | grep -m1 -v '^[[:space:]]*$' || true)"
   if [ -n "$ASSUNTO" ] && ! sdd_cc_valida "$ASSUNTO"; then
     case "$ASSUNTO" in
       Merge\ *|Revert\ *) ;;
@@ -163,7 +173,7 @@ case "$FASE" in red|green|seguranca|auditoria) ;; *) exit 0 ;; esac
 printf '%s' "$CMD" | grep -qE '(^|[[:space:]])(-m|-[a-zA-Z]*m|--message|-F|--file)([[:space:]=]|$)' || exit 0
 
 NUM="${FEATURE%%-*}"
-if printf '%s' "$CMD" | grep -qE "T-[0-9]{3}|\(${NUM}\)"; then
+if printf '%s\n%s' "$CMD" "$MSG_TEXTO" | grep -qE "T-[0-9]{3}|\(${NUM}\)"; then
   exit 0
 fi
 

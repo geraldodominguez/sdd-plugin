@@ -294,7 +294,8 @@ flowchart LR
     H --> AC{"aceite do<br/>negócio"}
     AC -->|reprovado| V["feature volta<br/>ao green"]
     AC --> GO{"go/no-go"}
-    GO --> PI["pipeline<br/>pode-implantar"]
+    GO --> FI["sdd-gitflow finalizar<br/>main e tag vX.Y.Z"]
+    FI --> PI["pipeline<br/>pode-implantar"]
     PI --> PR((produção))
     PR --> I["/sdd:incidente"]
     I --> HF["hotfix<br/>red, green, spec retroativa"]
@@ -333,9 +334,9 @@ artefatos que ela produz estão em [exemplos/](exemplos/).
 | Começo da sprint | `/sdd:sprint planejar`, depois `/sdd:especificar B-NNN` para cada item |
 | Trabalhando numa feature | o comando que o `/sdd:status` recomenda; no fim de cada fase, `/sdd:aprovar` |
 | Voltando a uma feature | `/sdd:retomar` |
-| A feature ficou pronta | `/sdd:sistema consolidar` |
+| A feature ficou pronta | o `/sdd:aprovar` consolida na spec do sistema e integra em `develop` (`/sdd:sistema consolidar` só para uma pendente) |
 | Hora de entregar | `/sdd:release preparar`, `homologar`, `aceitar`, `implantar`, `concluir` |
-| Quebrou em produção | `/sdd:incidente abrir`, `hotfix`, `encerrar` |
+| Quebrou em produção | `/sdd:incidente abrir`, `mitigar`, `hotfix`, `resolver`, `post-mortem` |
 | Fim da sprint | `/sdd:sprint encerrar` |
 | Não sei o que fazer | `/sdd:ajuda` |
 
@@ -354,7 +355,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 - **[ajuda](skills/ajuda/SKILL.md)**: Qual comando ou fluxo serve para a sua situação. Um roteador sobre os comandos do plugin.
 - **[status](skills/status/SKILL.md)**: O quadro do projeto: sprint, features por coluna, backlog e o que espera você, com o próximo comando.
-- **[pendencias](skills/pendencias/SKILL.md)**: A caixa de entrada: aprovações, dúvidas, ADRs, delta specs, backlog a triar e itens da sprint sem spec.
+- **[pendencias](skills/pendencias/SKILL.md)**: A caixa de entrada: incidentes, releases, aprovações (inclusive transições), dúvidas, ADRs, delta specs, backlog a triar, itens da sprint sem spec, artefatos fora do padrão e problemas de Git Flow.
 - **[retomar](skills/retomar/SKILL.md)**: O que aconteceu numa feature desde a última vez e qual é o próximo passo.
 - **[backlog](skills/backlog/SKILL.md)**: Ideias e pedidos ainda sem spec: listar, adicionar, priorizar, descartar.
 - **[sprint](skills/sprint/SKILL.md)**: Planejar, acompanhar e encerrar sprints.
@@ -393,7 +394,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Hooks e utilitários
 
-- **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`, e os artefatos novos fora do lugar do padrão.
+- **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`, os artefatos novos fora do lugar do padrão, e o que o `guarda-commits` confere nos commits (Git Flow e Conventional Commits).
 - **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-adotar` e `sdd-gitflow`, as transições de fase e onde o estado e o histórico moram.
 
 ### Guias

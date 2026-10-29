@@ -37,6 +37,7 @@ set -euo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 [ -d "$RAIZ/.sdd" ] || { echo "sdd-release: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
@@ -482,7 +483,7 @@ case "$cmd" in
     [ -n "$motivo" ] || { echo "sdd-release reprovar: informe --motivo." >&2; exit 1; }
     existe "$v"; exige "$v" homologacao aceita
     features "$v" | grep -qx "$f" || { echo "sdd-release: $f não está na release $v." >&2; exit 1; }
-    "$AQUI/sdd-estado" reabrir "$f" --fase green --motivo "reprovada na homologação da $v: $motivo" >/dev/null
+    "$AQUI/sdd-estado" reabrir "$f" --pela-release --fase green --motivo "reprovada na homologação da $v: $motivo" >/dev/null
     reescrever_features "$v" "$(features "$v" | grep -vx "$f" || true)"
     for g in $(features "$v"); do "$AQUI/sdd-estado" transicionar "$g" pronta "release $v voltou à preparação" >/dev/null; done
     historico "$v" reprovacao "$f: $motivo"
@@ -536,7 +537,11 @@ case "$cmd" in
     historico "$v" verificacao "$verif"
     mudar_situacao "$v" producao "em produção em $HOJE"
     transicionar_features "$v" producao "release $v em produção"
-    echo "Release $v em produção. Sugestão: git tag v$v && git push origin v$v"
+    if git -C "$RAIZ" rev-parse -q --verify "refs/tags/v$v" >/dev/null 2>&1; then
+      echo "Release $v em produção. A tag v$v já existe (sdd-gitflow finalizar); se ainda não a publicou: git push origin v$v"
+    else
+      echo "Release $v em produção. Falta a tag: sdd-gitflow finalizar $v (com o Git Flow), ou git tag -a v$v -m \"versão $v\" && git push origin v$v"
+    fi
     pend="$("$AQUI/sdd-sistema" pendentes 2>/dev/null || true)"
     if [ -n "$pend" ]; then
       echo "Atenção: features ainda não consolidadas na spec do sistema:"
@@ -605,7 +610,7 @@ case "$cmd" in
     ;;
 
   -h|--ajuda|--help|ajuda)
-    sed -n '2,31p' "$0"
+    sdd_ajuda "$0"
     ;;
 
   *)

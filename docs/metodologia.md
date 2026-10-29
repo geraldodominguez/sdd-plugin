@@ -1,4 +1,4 @@
-# metodologia
+# /sdd:metodologia
 
 ## O que faz
 
@@ -24,17 +24,21 @@ carregam no início.
 | `NIVEIS-DE-RIGOR.md` | como classificar uma mudança e o que cada nível exige |
 | `QUALIDADE-DA-SPEC.md` | o checklist antes de entregar uma spec |
 | `CICLO-DE-VIDA.md` | as transições da feature, da release e do incidente, e quem decide cada uma |
-| `templates/` | constituição, specs (completa, leve e hotfix), contexto, plano, tarefas, segurança, ADR, auditoria, delta spec, capacidade, backlog, sprint, incidente, release (`release/`) e pipeline (`pipeline/`) |
+| `GIT-FLOW.md` | as branches com nomes fixos e o que acontece no git em cada momento do ciclo |
+| `VERSIONAMENTO.md` | SemVer, Conventional Commits e o `CHANGELOG.md`: como o tipo do commit decide a versão |
+| `templates/` | constituição, specs (completa, leve e hotfix), contexto, plano, tarefas, transição (adoção), segurança, ADR, auditoria, delta spec, capacidade, backlog, sprint, incidente, release (`release/`) e pipeline (`pipeline/`) |
 
 Os templates são copiados para `.sdd/templates/` pelo `/sdd:iniciar`, para
 cada projeto poder adaptar os seus.
 
 ## Invariantes
 
-Seis regras que ela impõe em qualquer fase: não implementar fora das tarefas,
+Oito regras que ela impõe em qualquer fase: não implementar fora das tarefas,
 não editar teste na green, não mexer em contrato na implementação, não avançar
 fase nem registrar aprovação sem o `/sdd:aprovar` do usuário, mandar para o
-backlog o que está fora do escopo, e resolver divergência primeiro na spec.
+backlog o que está fora do escopo, resolver divergência primeiro na spec, não
+implantar sem o go nem mitigar um incidente sem confirmação, e não reabrir
+feature em produção (mudança nova é feature nova; defeito é incidente).
 
 Ela também ensina o modelo de acompanhamento: o que é um item de backlog, uma
 sprint, a fase de cada feature e o histórico.

@@ -21,6 +21,17 @@ SDD_FASES_PROTEGIDAS="pronta homologacao producao cancelada"
 SDD_GLOBS_TESTE_PADRAO='tests/**,test/**,__tests__/**,spec/**,**/*.test.*,**/*.spec.*,**/*_test.*,**/test_*.py,**/*Test.java,**/*Tests.cs'
 
 # ---------------------------------------------------------------------------
+# Ajuda
+# ---------------------------------------------------------------------------
+
+# sdd_ajuda <script>: imprime o cabeçalho de uso do script (os comentários do
+# topo, sem o "#"). Todo utilitário responde a -h, --ajuda e --help, dentro ou
+# fora de um projeto com SDD.
+sdd_ajuda() {
+  awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$1"
+}
+
+# ---------------------------------------------------------------------------
 # Localização
 # ---------------------------------------------------------------------------
 
@@ -64,7 +75,7 @@ sdd_config() {
   if [ -f "$arquivo" ]; then
     valor="$(grep -E "^[[:space:]]*${chave}[[:space:]]*:" "$arquivo" | head -1 \
       | sed -E "s/^[[:space:]]*${chave}[[:space:]]*:[[:space:]]*//" \
-      | sed -E 's/[[:space:]]+#.*$//' \
+      | sed -E 's/[[:space:]]+#.*$//' | sed -E 's/^#.*$//' \
       | sed -E 's/^"(.*)"$/\1/' | sed -E "s/^'(.*)'$/\1/" \
       | tr -d '\r')"
   fi

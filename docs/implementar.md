@@ -43,14 +43,26 @@ obrigatória para esta feature.
 | nível 1 sem segurança obrigatória | `/sdd:aprovar` (entrega), ou `/sdd:auditar` antes |
 | hotfix | spec retroativa, `/sdd:aprovar` da spec, depois da entrega |
 
-## Hotfix
+## A branch e os commits
+
+O trabalho acontece na branch da feature, `feature/NNN-slug` (ou `hotfix/X.Y.Z`
+num hotfix): se você estiver em outra, ela muda para a certa antes de começar
+(`sdd-gitflow feature`). Os commits seguem o Conventional Commits e citam a
+tarefa, `tipo(NNN): T-XXX descrição`, e o tipo decide a próxima versão: `feat`
+para comportamento novo, `fix` para correção, `test` para os testes da fase
+red, `!` para o que quebra um contrato público. Ver [Git Flow](referencia/git-flow.md)
+e [versionamento](referencia/versionamento.md).
+
+## Casos especiais
+
+### Hotfix
 
 Um hotfix (aberto pelo [`/sdd:incidente`](incidente.md)) já nasce na fase red,
 sem tarefas nem spec. O `escritor-de-testes` recebe o incidente e escreve o
 **teste de regressão** que reproduz o problema. Depois da correção, a spec é
 escrita e aprovada: sem ela, a feature não fica pronta.
 
-## Feature adotada
+### Feature adotada
 
 Numa feature que veio de outro processo, as tarefas `[O]` foram feitas fora do
 plugin. Elas não se implementam de novo, mas os critérios delas ganham testes

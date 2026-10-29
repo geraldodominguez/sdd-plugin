@@ -88,14 +88,18 @@ Mudança incompatível: tipo(escopo)!: descrição, ou o rodapé BREAKING CHANGE
 O escopo é o número da feature. Exemplo: feat(004): T-002 valida token expirado.
 ```
 
-Mensagens de merge (`Merge ...`) e commits feitos pelo editor, sem mensagem
-inline, não são conferidos. Num projeto que não quer o padrão, `commits: livre`
-no `.sdd/config.yml` desliga a conferência (e a versão automática perde a base).
+Mensagens `Merge ...` e `Revert ...` (as que o git gera) e commits feitos pelo
+editor, sem mensagem no comando, não são conferidos; a mensagem de arquivo
+(`-F`) é lida e conferida. Num projeto que não quer o padrão, `commits: livre`
+no `.sdd/config.yml` desliga a conferência; a versão automática continua, mas
+só enxerga os commits que, por acaso, seguirem o padrão.
 
 ## 4. Como o plugin calcula a próxima versão
 
 1. **A versão de referência** é a última release em produção (`releases/X.Y.Z/` na situação `producao`). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
-2. **Os commits** são os desde a tag dessa versão, sem os merges.
+2. **Os commits** são os desde a tag dessa versão, sem os merges. Se essa
+   versão não tem tag, contam os desde a última tag `vX.Y.Z` final; sem tag
+   nenhuma, o histórico inteiro.
 3. **O maior impacto** entre eles decide: major, minor ou patch.
 
 | Os commits têm | Versão | Exemplo a partir da 1.4.2 |

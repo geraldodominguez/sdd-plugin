@@ -17,6 +17,7 @@ set -euo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 [ -d "$RAIZ/.sdd" ] || { echo "sdd-rastrear: projeto sem .sdd/. Rode /sdd:iniciar." >&2; exit 1; }

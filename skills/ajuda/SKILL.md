@@ -2,6 +2,7 @@
 name: ajuda
 description: Pergunte qual comando ou fluxo do SDD serve para a sua situação, do pedido à manutenção em produção. Um roteador sobre os comandos deste plugin.
 disable-model-invocation: true
+allowed-tools: Bash(sdd-status), Bash(sdd-status *), Bash(sdd-pendencias), Read, Glob, Grep
 ---
 
 # Ajuda do SDD
@@ -33,8 +34,10 @@ aprovação, traz para o padrão. Com o projeto já preparado, rode
 o `transicao.md` com **`/sdd:aprovar`**; depois, continua de onde parou.
 
 Todo projeto usa o mesmo **Git Flow**: `main`, `develop`, `feature/NNN-slug`,
-`release/X.Y.Z` e `hotfix/X.Y.Z`. Os comandos criam as branches sozinhos
-(`/sdd:especificar`, `/sdd:release`, `/sdd:incidente`); a situação aparece no
+`release/X.Y.Z` e `hotfix/X.Y.Z`. Os comandos criam e juntam as branches
+sozinhos (`/sdd:iniciar` cria `develop`, `/sdd:especificar` a da feature,
+`/sdd:aprovar` integra a feature pronta, `/sdd:release` cria a da release e a
+leva a `main` com a tag, `/sdd:incidente` cria a do hotfix); a situação aparece no
 `/sdd:status`, e o `sdd-gitflow conferir` mostra o que está fora do padrão.
 Detalhes em `docs/referencia/git-flow.md`.
 

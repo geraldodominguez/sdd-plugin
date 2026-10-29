@@ -86,6 +86,15 @@ git init -b main
 git commit --allow-empty -m "chore: início"
 ```
 
+Se o projeto vai para o GitHub, o GitLab ou outra plataforma, crie o
+repositório remoto vazio e ligue-o agora:
+
+```bash
+git remote add origin <url-do-repositório>
+```
+
+O plugin nunca faz push: em cada etapa, ele diz o comando para você publicar.
+
 A branch de produção se chama **`main`** em todo projeto do SDD (ver
 [Git Flow](git-flow.md)). Com um git antigo, sem a opção `-b`, rode `git init`
 e depois `git symbolic-ref HEAD refs/heads/main`.
@@ -336,7 +345,7 @@ passarem, sem poder editá-los.
 Os commits seguem o **Conventional Commits** e citam a tarefa:
 `feat(001): T-001 gera o CSV`, `test(001): T-002 critérios da exportação`,
 `fix(001): T-003 corrige o fuso`. O tipo não é enfeite: é dele que sai a
-próxima versão (`feat` sobe o minor, `fix` o patch, `!` o major). O hook
+próxima versão (`feat` sobe o minor, `fix` o patch, `!` o major; antes da 1.0.0, o `!` sobe o minor). O hook
 bloqueia mensagem fora do formato. Ver [versionamento](versionamento.md).
 
 ### 10.5 Entregar a feature
@@ -351,7 +360,9 @@ O `/sdd:aprovar` confere que spec e testes estão aprovados e inalterados e
 conduz a **consolidação**: o agente atualiza `sistema/pedidos.md` com o
 comportamento novo e mostra o diff para você confirmar.
 
-Depois, ele pergunta se pode levar a feature para `develop`. Com
+Depois, ele faz o commit do que a aprovação gerou na branch da feature
+(`docs(001): feature pronta`, com a spec do sistema atualizada) e pergunta se
+pode levar a feature para `develop`. O merge exige tudo commitado. Com
 `integracao: local`, roda `sdd-gitflow integrar 001-exportar-pedidos`:
 
 ```
@@ -393,6 +404,7 @@ O Git Flow da release:
 | antes do go | `sdd-release changelog 0.1.0 --escrever`: a seção da versão no `CHANGELOG.md`, revisada por você |
 | "go" no `implantar` | `sdd-gitflow finalizar 0.1.0`: merge em `main`, tag `v0.1.0`, merge de volta em `develop` |
 | você publica | `git push origin main develop v0.1.0`: a tag dispara o deploy de produção, que confere o go |
+| `concluir` | a release fica em produção; o agente faz o commit `chore(release): 0.1.0 em produção` em `develop`, e você publica com `git push origin develop` |
 
 Detalhes no [release](../release.md) e no [Git Flow](git-flow.md).
 

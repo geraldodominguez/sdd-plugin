@@ -3,7 +3,7 @@ name: iniciar
 description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
 argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write, Bash(git tag *), Bash(git merge develop), Bash(git branch *)
 ---
 
 # /sdd:iniciar
@@ -165,7 +165,7 @@ com um mapa aprovado pelo usuário.
    para o padrão (com `git mv`), cria as features na situação de
    **transição** (`adocao=transicao`) e, em cada uma, o `transicao.md` a partir
    do modelo, com o "como era" dos arquivos já preenchido. Sugira um commit
-   agora ("adoção: arquivos no padrão"), para que a conversão fique num commit
+   agora, em `develop` (`chore: adoção do SDD, arquivos no padrão`), para que a conversão fique num commit
    separado e o diff mostre exatamente o que mudou. Depois:
    - itens em aberto de backlog, roadmap e TODO: `sdd-backlog adicionar "título" --origem "adoção: <arquivo>"`, um por item, sem os já feitos;
    - regras de outro processo: incorpore à constituição (passo 4 do processo) o que for regra do projeto e ainda valer;
@@ -186,18 +186,22 @@ modelo do SDD e registre no `transicao.md` como era e como ficou, para o
 usuário aprovar a transição e o plugin continuar de onde o outro processo
 parou.
 
-1. **Ative a feature e acerte o nível.** `sdd-estado usar NNN-slug`. A feature
-   nasce com o `nivel_padrao`; se ela mexe em domínio, schema, contrato público
-   ou segurança, proponha o nível 2 e, com a confirmação do usuário, rode
+1. **Vá para a branch da feature, antes de mudar qualquer arquivo dela.**
+   `sdd-estado usar NNN-slug`. Com o Git Flow, a conversão é commitada na
+   branch da feature:
+   - sem branch antiga: `sdd-gitflow feature NNN-slug`, que cria
+     `feature/NNN-slug` a partir de `develop`;
+   - se o código feito fora do plugin está numa branch antiga que ainda não
+     entrou em `develop` (`feat/login`, por exemplo): com aprovação,
+     `sdd-gitflow renomear feat/login feature/NNN-slug`,
+     `sdd-gitflow feature NNN-slug` e, perguntando antes, `git merge develop`,
+     para a branch receber os arquivos adotados.
+
+   Só então **acerte o nível e a capacidade.** A feature nasce com o
+   `nivel_padrao`; se ela mexe em domínio, schema, contrato público ou
+   segurança, proponha o nível 2 e, com a confirmação do usuário, rode
    `sdd-estado definir nivel=2`. Defina a capacidade da spec do sistema com
    `sdd-estado definir capacidade=<nome>`.
-   **Git Flow:** a conversão é commitada na branch da feature. Se o código
-   feito fora do plugin está numa branch antiga que ainda não entrou em
-   `develop` (`feat/login`, por exemplo), renomeie-a antes, com aprovação
-   (`sdd-gitflow renomear feat/login feature/NNN-slug`), mude para ela
-   (`sdd-gitflow feature NNN-slug`) e traga a adoção que está em `develop`
-   com `git merge develop`, perguntando antes. Sem branch antiga, só
-   `sdd-gitflow feature NNN-slug`.
 
 2. **Descubra onde a feature parou.** Para cada tarefa do original, procure no
    código a evidência de que foi feita (`Grep` pelos nomes, caminho:linha). A

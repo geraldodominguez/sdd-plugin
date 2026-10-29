@@ -6,4 +6,5 @@ release=
 capacidade=pedidos
 adocao=regularizada
 fase=red
+branch=feature/001-exportar-pedidos
 atualizado=2026-10-29T15:21:33Z

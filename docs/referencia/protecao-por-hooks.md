@@ -33,9 +33,10 @@ Intercepta `Edit`, `Write`, `MultiEdit` e `NotebookEdit`.
 `.sdd/estado`, o `.sdd/historico.md` e o `.sdd/adocao.md`. Eles são escritos só pelos utilitários. É isso que impede
 o agente de forjar uma aprovação ou de pular uma fase editando um arquivo.
 
-**Sempre editáveis**, em qualquer modo e fase: o resto de `.sdd/`, `specs/`,
-`sistema/`, `releases/` e `incidentes/`, e também `docs/`, `CLAUDE.md`,
-`AGENTS.md`, `.claude/` e qualquer arquivo fora do projeto.
+**Sempre editáveis pela regra de fase**, em qualquer modo e fase: o resto de
+`.sdd/`, `specs/`, `sistema/`, `releases/` e `incidentes/`, e também `docs/`,
+`CLAUDE.md`, `AGENTS.md`, `.claude/` e qualquer arquivo fora do projeto. (Criar
+um arquivo novo nessas pastas ainda passa pela regra de layout, abaixo.)
 
 | Fase | `leve` | `estrita` |
 |---|---|---|
@@ -123,7 +124,7 @@ mensagem inline e a resolução de um merge não são conferidos.
 
 Só age quando:
 
-- o comando tem `git commit` com mensagem inline (`-m`, `-am`, `--message`, `-F`);
+- o comando tem `git commit` com mensagem inline (`-m`, `-am`, `--message`) ou de arquivo (`-F`, `--file`, que o hook lê, relativo à raiz do projeto);
 - a proteção não é `desligada`;
 - há feature ativa nas fases `red`, `green`, `seguranca` ou `auditoria`.
 
@@ -149,7 +150,7 @@ Com `gitflow: ativo` no config (o padrão), nas proteções `leve` e `estrita`:
 | `git commit` numa branch fora do padrão | bloqueado |
 | `git commit` com uma feature ativa em andamento, fora da branch dela (em `develop`, ou na branch de outra feature) | bloqueado |
 | `git commit` na branch da feature ativa, ou em `release/` e `hotfix/` | permitido |
-| `git commit` em `develop` do registro de um incidente, antes de a branch do hotfix existir | permitido |
+| `git commit` em `develop` do registro de um incidente, quando a feature ativa é o hotfix e a branch dele ainda não existe | permitido |
 | `git commit` com um merge em andamento (resolução de conflito) | permitido |
 
 Os nomes do padrão: `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`,
@@ -175,6 +176,8 @@ as releases. Ver [utilitários](utilitarios.md#sdd-verificar), o
 
 ## Desligar por um momento
 
-`protecao: desligada` no config, ou `sdd-estado definir feature=` para ficar sem
-feature ativa (os hooks só restringem quando há uma). Para voltar,
-`sdd-estado usar NNN-slug`.
+| Você quer | Faça | O que continua valendo |
+|---|---|---|
+| desligar tudo | `protecao: desligada` no config | nada |
+| ficar sem as regras de fase | `sdd-estado definir feature=` (nenhuma feature ativa); para voltar, `sdd-estado usar NNN-slug` | históricos e estado só pelos utilitários, layout, Conventional Commits e Git Flow (nada em `main`, nomes de branch) |
+| desligar só o Git Flow ou só o formato dos commits | `gitflow: desligado` ou `commits: livre` | o resto |

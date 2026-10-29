@@ -18,7 +18,7 @@ próximo passo fora do comum.
 | `.sdd/config.yml` | Nível padrão, proteção, globs de teste, contrato e áreas sensíveis, comandos (teste, lint, segurança, deploy). |
 | `.sdd/estado` | Ponteiros pessoais: feature ativa e sprint atual. |
 | `.sdd/backlog.md`, `.sdd/sprints/` | O que vem depois, e o que entra neste período. |
-| `specs/NNN-slug/` | Uma pasta por feature: `estado`, `historico.md`, `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `seguranca.md`, `auditoria.md`, `delta-spec.md`. |
+| `specs/NNN-slug/` | Uma pasta por feature: `estado`, `historico.md`, `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `seguranca.md`, `auditoria.md`, `delta-spec.md`, e `transicao.md` nas features adotadas. |
 | `sistema/<capacidade>.md` | A spec viva: o que o sistema faz **hoje**, por capacidade. Leia antes de mudar uma área. |
 | `releases/<versão>/` | `release.md`, `testes.md`, `homologacao.md`, `implantacao.md`, `notas.md`, `historico.md`. |
 | `incidentes/INC-NNN.md` | Um incidente, da abertura ao post-mortem. |
@@ -37,7 +37,7 @@ que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 - `sdd-release proxima | analisar | changelog | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
 - `sdd-adotar inventario | contar | aplicar` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
-- `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | pode-integrar`
+- `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | valido | pode-integrar | nome`
 - `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
 
 ## Fases da feature

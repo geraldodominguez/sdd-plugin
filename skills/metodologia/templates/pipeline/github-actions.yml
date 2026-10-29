@@ -17,7 +17,7 @@ on:
   pull_request:
 
 env:
-  SDD_VERSAO: v0.1.0   # versão fixa do plugin SDD usada no CI
+  SDD_VERSAO: {{versão do plugin SDD instalado, ex.: v0.1.0}}   # fixa, para o CI não mudar sozinho
 
 jobs:
   verificar:

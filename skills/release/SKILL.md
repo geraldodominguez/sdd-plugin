@@ -3,7 +3,7 @@ name: release
 description: Leva as features prontas até a produção. Prepara a release (versão, testes de sistema, roteiro de homologação), registra o aceite do negócio, conduz o go/no-go com plano de implantação e rollback, acompanha a implantação e encerra com as notas de versão.
 argument-hint: "[ver | preparar | homologar | aceitar | implantar | concluir | reverter]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-release *), Bash(sdd-release), Bash(sdd-estado *), Bash(sdd-sistema *), Bash(sdd-status *), Bash(sdd-verificar *), Bash(sdd-rastrear *), Bash(git log *), Bash(git tag *), Bash(git status *), Read, Write, Edit, Glob, Grep
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-release *), Bash(sdd-release), Bash(sdd-estado *), Bash(sdd-sistema *), Bash(sdd-status *), Bash(sdd-verificar *), Bash(sdd-rastrear *), Bash(git log *), Bash(git tag *), Bash(git status *), Read, Write, Edit, Glob, Grep, Bash(gh pr create *), Bash(git branch -d *)
 ---
 
 # /sdd:release
@@ -47,14 +47,16 @@ mostre num bloco de código. Acrescente o próximo passo em uma linha.
    `sdd-release proxima --pre rc` dá `X.Y.Z-rc.N`. Commits fora do padrão
    (`analisar` lista) não contam: avise.
 
-3. Com a confirmação: `sdd-release nova <versão> --objetivo "..."` e
+3. **Git Flow, primeiro a branch.** Confira que cada feature incluída já está
+   em `develop` (o `/sdd:status` da feature diz "integrada em develop"; se não,
+   integre como no `/sdd:aprovar`). Com a confirmação da versão,
+   `sdd-gitflow release <versão>` cria `release/<versão>` a partir de `develop`
+   e muda para ela: é esta branch que vai para homologação, e as correções da
+   homologação são commitadas nela. Numa release de hotfix, a branch já existe
+   (`hotfix/<versão>`): `sdd-gitflow feature <NNN-slug do hotfix>` muda para
+   ela; não crie outra.
+   Depois, já na branch: `sdd-release nova <versão> --objetivo "..."` e
    `sdd-release incluir <versão> <features...>`.
-   **Git Flow:** antes, confira que cada feature incluída já está em `develop`
-   (o `/sdd:status` da feature diz "integrada em develop"; se não, integre como
-   no `/sdd:aprovar`). Depois, `sdd-gitflow release <versão>` cria
-   `release/<versão>` a partir de `develop`: é esta branch que vai para
-   homologação, e as correções da homologação são commitadas nela. Numa
-   release de hotfix, a branch já existe (`hotfix/<versão>`); não crie outra.
    Se a release leva a correção de um incidente (um hotfix), acrescente
    `--hotfix` ao `nova`: a versão é patch e a homologação pode ser expressa
    (um passo por critério do hotfix), mas continua com aceite e go.
@@ -129,7 +131,7 @@ Nunca registre o aceite em nome de quem não homologou.
 
 | Verificação | O que fazer |
 |---|---|
-| passou | `sdd-release concluir <versão> --verificacao "o que foi verificado"`; ofereça apagar a branch local (`git branch -d release/<versão>`) |
+| passou | `sdd-release concluir <versão> --verificacao "o que foi verificado"`. Ele roda em `develop` (o `finalizar` terminou lá) e muda os registros da release e das features: proponha o commit `chore(release): <versão> em produção` e ofereça apagar a branch local (`git branch -d release/<versão>`) |
 | falhou, critério de rollback atingido | execute o rollback do plano com confirmação, `sdd-release reverter <versão> --motivo "..."` e sugira `/sdd:incidente abrir`. O rollback é do ambiente; no git, `main` não se reescreve: a correção vem por um hotfix (`hotfix/X.Y.Z`) |
 
 ## Não faça

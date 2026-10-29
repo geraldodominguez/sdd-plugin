@@ -8,10 +8,20 @@
 # Estágios: verificar e seguranca (todo push e MR; o sdd-verificar recusa MR
 # fora do fluxo, como feature/* direto para main), homologacao (push em
 # release/* e hotfix/*), producao (tag vX.Y.Z, só se a release tiver o go).
+# Pipelines de branch, de tag e de merge request (sem este bloco, o GitLab não
+# roda os jobs nos merge requests, e o sdd-verificar não confere o fluxo deles).
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+
 stages: [verificar, implantar]
 
 variables:
-  SDD_VERSAO: v0.1.0   # versão fixa do plugin SDD usada no CI
+  SDD_VERSAO: {{versão do plugin SDD instalado, ex.: v0.1.0}}   # fixa, para o CI não mudar sozinho
 
 default:
   image: {{imagem da stack, ex.: node:22}}

@@ -5,11 +5,16 @@
 # O nível 0 (direto) não abre feature. Ver docs/referencia/niveis-de-rigor.md.
 nivel_padrao: 1
 
-# Quanto os hooks impõem o fluxo:
+# Quanto os hooks impõem o fluxo (ver docs/referencia/protecao-por-hooks.md):
 #   desligada  hooks inativos, só orientação
-#   leve       protege os testes na fase green e exige T-XXX nos commits
-#   estrita    leve, mais: bloqueia código antes do plano, código fora dos
-#              testes na fase red e qualquer edição de código na auditoria
+#   leve       testes congelados nas fases green, seguranca e auditoria; históricos
+#              e estado só pelos utilitários; artefato novo só no lugar do padrão;
+#              commits em Conventional Commits, com a tarefa nas fases red a
+#              auditoria; Git Flow (nomes de branch, nada em main, a branch da
+#              feature ativa)
+#   estrita    leve, mais: só artefatos até as tarefas (contratos no plano), só
+#              testes e contratos na fase red, contratos congelados na green, e
+#              nada de código nas fases seguranca e auditoria
 protecao: leve
 
 # Git Flow (ver docs/referencia/git-flow.md no plugin). Os nomes das branches

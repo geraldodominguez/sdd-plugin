@@ -46,9 +46,14 @@ pronta. Depois vêm a consolidação, a release e o incidente.
 | [`sistema/autenticacao.md`](sistema/autenticacao.md) | `sistema/autenticacao.md` | a spec viva da capacidade, já com o requisito do hotfix, cada item com a origem |
 | [`releases/0.1.0/`](releases/0.1.0/) | `releases/0.1.0/` | uma release do começo ao fim: `release.md`, `testes.md` (testador de sistema), `homologacao.md` (roteiro com o aceite da cliente), `implantacao.md` (passos e rollback), `notas.md`, `estado` e `historico.md` |
 | [`incidentes/INC-001.md`](incidentes/INC-001.md) | `incidentes/INC-001.md` | um incidente S2: mitigação, hotfix, linha do tempo e post-mortem com as ações no backlog |
+| [`CHANGELOG.md`](CHANGELOG.md) | `CHANGELOG.md`, na raiz | o changelog técnico no formato Keep a Changelog, gerado pelo `sdd-release changelog` a partir dos commits: a 0.1.0 (as features 001 e 002) e a 0.1.1 (o hotfix 003). As notas da versão, em linguagem de negócio, ficam em `releases/X.Y.Z/notas.md` |
 
 Leia o `historico.md` da release para ver os gates em ordem: testes, aceite (de
-quem homologou), go (de quem responde pela produção) e verificação.
+quem homologou), go (de quem responde pela produção) e verificação. O
+`implantacao.md` mostra o Git Flow da entrega: depois do go, `sdd-gitflow
+finalizar 0.1.0` (merge em `main`, tag `v0.1.0`, merge em `develop`) e o push
+das branches e da tag, que dispara o pipeline. O `estado` de cada feature guarda
+a branch em que ela foi feita (`branch=feature/001-redefinicao-de-senha`).
 
 ## A adoção de um projeto em andamento
 

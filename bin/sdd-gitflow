@@ -25,21 +25,24 @@
 #                                        saída 0 se o fluxo é permitido (para o CI, nos PRs)
 #   sdd-gitflow esperada                 a branch em que a feature ativa deve estar
 #
-# Nunca faz push, nunca apaga branch remota, nunca reescreve histórico. Recusa
-# mudar de branch com alterações não commitadas. Não escreve nos históricos do
-# SDD: o registro de branches, merges e tags é o próprio git, e assim a árvore
-# fica limpa depois de cada operação. Saída: 0 ok, 1 erro ou recusa,
-# 3 conferência com problemas.
+# Nunca faz push, nunca apaga branch remota, nunca reescreve histórico. Ao
+# trocar de branch, as alterações pendentes nos arquivos do SDD (specs/,
+# sistema/, releases/, incidentes/, docs/, .sdd/, CLAUDE.md, AGENTS.md) vão
+# junto; em código, recusa. Os merges (integrar, finalizar) exigem tudo
+# commitado. Não escreve nos históricos do SDD: o registro de branches, merges
+# e tags é o próprio git. Saída: 0 ok, 1 erro ou recusa, 3 conferência com
+# problemas.
 set -uo pipefail
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 P="$SDD_BRANCH_PRODUCAO"; I="$SDD_BRANCH_INTEGRACAO"
 
-uso() { sed -n '2,31p' "$0"; }
+uso() { sdd_ajuda "$0"; }
 erro() { echo "sdd-gitflow: $1" >&2; exit 1; }
 g() { git -C "$RAIZ" "$@"; }
 
@@ -51,15 +54,47 @@ existe_remota() { g show-ref --verify --quiet "refs/remotes/origin/$1"; }
 
 # Alterações em arquivos versionados, fora dos caminhos que o próprio SDD acabou
 # de escrever (a pasta da feature nova e o .sdd/), impedem trocar de branch.
-exige_limpo() { # exige_limpo [caminho a ignorar]
-  local ignorar="${1:-}" sujos
-  sujos="$(g status --porcelain --untracked-files=no | sed -E 's/^...//' | while IFS= read -r f; do
-    case "$f" in .sdd/*) continue ;; esac
-    [ -n "$ignorar" ] && case "$f" in "$ignorar"/*) continue ;; esac
+# Arquivos versionados com alterações pendentes, um por linha.
+pendentes() { g status --porcelain --untracked-files=no | sed -E 's/^...//; s/^.* -> //'; }
+
+# exige_limpo: para merges (integrar, finalizar), nada pode estar pendente,
+# fora do .sdd/ (o estado pessoal e o histórico do projeto).
+exige_limpo() {
+  local sujos
+  sujos="$(pendentes | grep -v '^\.sdd/' || true)"
+  [ -z "$sujos" ] || erro "há alterações não commitadas. Faça o commit antes (o merge precisa da árvore limpa):
+$(printf '%s\n' "$sujos" | sed 's/^/  /')"
+}
+
+# exige_codigo_limpo: para trocar ou criar branch. Alterações nos arquivos do
+# próprio SDD (a feature que acabou de nascer, o estado, os históricos, a spec
+# do sistema, releases, incidentes, docs, CLAUDE.md, AGENTS.md, .gitattributes)
+# vão junto para a branch nova, e são commitadas lá. Alteração em código não:
+# ela é de outro trabalho e não pode vazar.
+exige_codigo_limpo() {
+  local sujos specs sist rel inc
+  specs="$(sdd_pasta_specs "$RAIZ")"; sist="$(sdd_pasta_sistema "$RAIZ")"
+  rel="$(sdd_pasta_releases "$RAIZ")"; inc="$(sdd_pasta_incidentes "$RAIZ")"
+  sujos="$(pendentes | while IFS= read -r f; do
+    case "$f" in
+      .sdd/*|"$specs"/*|"$sist"/*|"$rel"/*|"$inc"/*|docs/*|CLAUDE.md|AGENTS.md|.gitattributes|CHANGELOG.md) continue ;;
+    esac
     printf '%s\n' "$f"
   done)"
-  [ -z "$sujos" ] || erro "há alterações não commitadas. Faça o commit (ou o stash) antes de trocar de branch:
+  [ -z "$sujos" ] || erro "há alterações não commitadas em código. Faça o commit (ou o stash) antes de trocar de branch:
 $(printf '%s\n' "$sujos" | sed 's/^/  /')"
+}
+
+# trocar <git switch args...>: troca de branch; se o git recusar (um arquivo
+# pendente é diferente na outra branch), explica.
+trocar() {
+  local saida
+  if ! saida="$(g switch -q "$@" 2>&1)"; then
+    echo "sdd-gitflow: o git não trocou de branch:" >&2
+    printf '%s\n' "$saida" | sed 's/^/  /' >&2
+    echo "Faça o commit das alterações pendentes na branch atual (ou 'git stash', troque, e 'git stash pop') e rode de novo." >&2
+    exit 1
+  fi
 }
 
 exige_padrao() { # exige_padrao <nome>
@@ -154,8 +189,9 @@ iniciar() {
   if [ "$atual" = "$P" ]; then
     # develop recém-criada aponta para o mesmo commit de main: trocar leva as
     # alterações em andamento (o .sdd/, o CLAUDE.md) sem risco. Senão, exige limpo.
-    [ "$(g rev-parse "$P")" = "$(g rev-parse "$I")" ] || exige_limpo
-    g switch -q "$I" && echo "Agora em $I: o trabalho do dia a dia parte daqui."
+    exige_codigo_limpo
+    trocar "$I"
+    echo "Agora em $I: o trabalho do dia a dia parte daqui."
   fi
   echo "Lembre de publicar: git push -u origin $P $I"
 }
@@ -183,14 +219,14 @@ criar_ou_ativar() { # criar_ou_ativar <branch> <base> [caminho a ignorar]
   local b="$1" base="$2"
   exige_git
   if [ "$(sdd_branch_atual "$RAIZ")" = "$b" ]; then echo "Já em $b."; return 0; fi
-  exige_limpo "${3:-}"
+  exige_codigo_limpo
   if existe_branch "$b"; then
-    g switch -q "$b" || erro "não consegui mudar para $b."
+    trocar "$b"
     echo "Agora em $b."
     return 0
   fi
   existe_branch "$base" || erro "não existe a branch $base. Rode sdd-gitflow iniciar."
-  g switch -q -c "$b" "$base" || erro "não consegui criar $b a partir de $base."
+  trocar -c "$b" "$base"
   echo "Criada $b a partir de $base."
 }
 

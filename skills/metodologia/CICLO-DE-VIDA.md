@@ -35,7 +35,8 @@ MANUTENÇÃO     incidente -> mitigar -> hotfix (red, green, spec retroativa)
 | `pronta` | `homologacao` | `sdd-release homologar` | testes de sistema aprovados |
 | `homologacao` | `producao` | `sdd-release concluir` | aceite e go registrados |
 | `homologacao` | `green` | `sdd-release reprovar` | reprovada no aceite |
-| `pronta`, `homologacao`, `cancelada` | `especificacao` ou `green` | `sdd-estado reabrir --motivo` | invalida aprovações da fase em diante |
+| `pronta`, `cancelada` | `especificacao` ou `green` (a cancelada, sempre `especificacao`) | `sdd-estado reabrir --motivo` | invalida aprovações da fase em diante |
+| `homologacao` | `green` | `sdd-release reprovar` | as demais features da release voltam a `pronta` |
 | qualquer, menos `homologacao` e `producao` | `cancelada` | `sdd-estado cancelar --motivo` | |
 | `producao` | | | não se reabre: feature nova ou incidente |
 

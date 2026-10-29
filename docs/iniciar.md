@@ -23,14 +23,16 @@ apaga o que você escreveu no `CLAUDE.md`. Com o projeto já preparado, use
 `/sdd:iniciar --adotar` quando o `/sdd:pendencias` mostrar artefatos "Fora do
 padrão".
 
-## O Git Flow
+## O Git Flow e a versão
 
 Antes de qualquer commit, ela prepara a base do Git Flow: pergunta se as
 branches se juntam pelo plugin (`integracao: local`) ou por pull request
 (`integracao: pr`), propõe renomear `master` para `main` e `development` para
 `develop` quando for o caso, e cria `develop`, onde o trabalho passa a
-acontecer. Os nomes das branches são fixos em todo projeto. Ver
-[Git Flow](referencia/git-flow.md).
+acontecer. Os nomes das branches são fixos em todo projeto. Num projeto que já
+está em produção sem tag `vX.Y.Z`, ela propõe criar a tag da versão em produção
+no commit certo, porque a próxima versão é calculada a partir dela. Ver
+[Git Flow](referencia/git-flow.md) e [versionamento](referencia/versionamento.md).
 
 ## A adoção
 
@@ -47,7 +49,7 @@ acontecer. Os nomes das branches são fixos em todo projeto. Ver
 
 O detalhe está em [projetos existentes](referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
 
-## A constituição
+## A constituição e o config
 
 O artefato mais importante que ela produz. São as regras inegociáveis que todo
 plano precisa respeitar. Revise com calma: ela vale para todas as features.
@@ -59,8 +61,6 @@ plano precisa respeitar. Revise com calma: ela vale para todas as features.
 
 Ver [proteção por hooks](referencia/protecao-por-hooks.md) e
 [níveis de rigor](referencia/niveis-de-rigor.md).
-
-## A constituição e o config
 
 | Seção da constituição | Usada por |
 |---|---|
@@ -112,14 +112,9 @@ Coloque a regra e registre a situação atual em "Exceções aprovadas", com o p
 de saída. Uma constituição que finge que o projeto cumpre tudo ensina o agente a
 ignorá-la.
 
-## Está funcionando se
+**O que vai para o git?**
 
-- A constituição cita versões e comandos que existem de verdade no projeto.
-- Nada nela soa como boa prática genérica ("código limpo", "boas práticas").
-- `/sdd:status` mostra o quadro (vazio, ou com as features adotadas), sem dizer que o projeto não usa SDD.
-- `sdd-adotar contar` dá 0.
-
-## O que versionar
+Quase tudo. Só o ponteiro pessoal fica de fora.
 
 | Caminho | Versionar? | Por quê |
 |---|---|---|
@@ -128,6 +123,13 @@ ignorá-la.
 | `specs/` (inclusive `estado` e `historico.md` de cada feature) | sim | o quadro e as aprovações são do time |
 | `.sdd/adocao.md`, `docs/legado/`, `docs/arquitetura/` | sim | de onde veio cada artefato adotado, e o que veio de outro processo |
 | `.sdd/estado` | não (já vem no `.sdd/.gitignore`) | é o ponteiro pessoal: a feature ativa e a sprint atual de cada pessoa |
+
+## Está funcionando se
+
+- A constituição cita versões e comandos que existem de verdade no projeto.
+- Nada nela soa como boa prática genérica ("código limpo", "boas práticas").
+- `/sdd:status` mostra o quadro (vazio, ou com as features adotadas), sem dizer que o projeto não usa SDD.
+- `sdd-adotar contar` dá 0.
 
 ## Onde se encaixa
 

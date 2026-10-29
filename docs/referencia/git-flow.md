@@ -145,27 +145,27 @@ obrigatório, sem force-push). O `/sdd:pipeline` lembra disso.
 |---|---|---|
 | `/sdd:especificar <mudança>` | `sdd-estado nova` e `sdd-gitflow feature NNN-slug` | cria `feature/NNN-slug` a partir de `develop` e muda para ela |
 | todas as fases, até pronta | commits `tipo(NNN): T-XXX descrição` | em `feature/NNN-slug` |
-| `/sdd:aprovar` (entrega) | pergunta se integra; `sdd-gitflow integrar NNN-slug` (ou o pull request) | merge `--no-ff` em `develop` |
+| `/sdd:aprovar` (entrega) | commit do que a aprovação e a consolidação mudaram (`docs(NNN): feature pronta`); pergunta se integra; `sdd-gitflow integrar NNN-slug` (ou o pull request) | merge `--no-ff` em `develop` |
 | publica | | `git push origin develop` |
 
 ### 4.3 Uma release
 
 | Você | O agente | No git |
 |---|---|---|
-| `/sdd:release preparar` | `sdd-release analisar` sugere a versão pelos commits ([versionamento](versionamento.md)); confere que as features estão em `develop`; `sdd-gitflow release X.Y.Z` | cria `release/X.Y.Z` a partir de `develop` |
+| `/sdd:release preparar` | `sdd-release analisar` sugere a versão pelos commits ([versionamento](versionamento.md)); confere que as features estão em `develop`; **primeiro** `sdd-gitflow release X.Y.Z`, depois `sdd-release nova` e `incluir`, já na branch | cria `release/X.Y.Z` a partir de `develop` |
 | `/sdd:release homologar` | implanta em homologação | o push de `release/X.Y.Z` dispara o deploy de homologação no pipeline |
 | (correção pedida na homologação) | commits da correção | em `release/X.Y.Z` |
 | `/sdd:release implantar`, antes do go | `sdd-release changelog X.Y.Z --escrever` | commit `docs(release): changelog X.Y.Z` em `release/X.Y.Z` |
 | `/sdd:release implantar`, e "go" | `sdd-release autorizar`; pergunta e roda `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge de `main` em `develop` |
 | publica | | `git push origin main develop vX.Y.Z`; a tag dispara o deploy de produção, que confere o go |
-| `/sdd:release concluir` | depois da verificação | `git branch -d release/X.Y.Z` (local) |
+| `/sdd:release concluir` | depois da verificação, em `develop`; commit `chore(release): X.Y.Z em produção` | `git branch -d release/X.Y.Z` (local) |
 
 ### 4.4 Um hotfix
 
 | Você | O agente | No git |
 |---|---|---|
 | `/sdd:incidente abrir` | registra o incidente | commit do registro em `develop` |
-| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit `docs(NNN): INC-NNN hotfix aberto`; `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`** |
+| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit do registro em `develop` **sem** a pasta nova em `specs/` (`git add -A ':!specs/'`, mensagem `docs(NNN): INC-NNN hotfix aberto`); `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`**, levando a pasta do hotfix, que é commitada lá |
 | red, green, spec retroativa | commits `fix(NNN): T-XXX ...` | em `hotfix/X.Y.Z` |
 | release de correção (`--hotfix`, mesma versão) e "go" | `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge em `develop` |
 
@@ -197,12 +197,16 @@ ativo:
 | `git commit` em `develop` com uma feature ativa em andamento | bloqueado: o commit é na branch dela |
 | `git commit` na branch da feature ativa | permitido (com a tarefa na mensagem, nas fases de implementação) |
 | `git commit` em `release/X.Y.Z` com a feature ativa reprovada na homologação | permitido: a correção vai na release |
-| `git commit` em `develop` do registro de um incidente, antes de a branch do hotfix existir | permitido |
+| `git commit` em `develop` do registro de um incidente, quando a feature ativa é o hotfix e a branch dele ainda não existe | permitido |
 | `git commit` durante um merge com conflito | permitido: é a resolução |
 
-O `sdd-gitflow` também recusa trocar de branch com alterações não commitadas
-(exceto os arquivos que o próprio SDD acabou de criar), para que o trabalho de
-uma branch não vaze para outra.
+Ao trocar de branch, o `sdd-gitflow` leva junto as alterações pendentes nos
+arquivos do SDD (`specs/`, `sistema/`, `releases/`, `incidentes/`, `docs/`,
+`.sdd/`, `CLAUDE.md`, `AGENTS.md`), que são commitadas na branch nova, e
+**recusa** se houver alteração pendente em código, para que o trabalho de uma
+branch não vaze para outra. Se o git não conseguir levar um arquivo (ele é
+diferente na outra branch), o `sdd-gitflow` explica e pede o commit (ou o
+`git stash`). Os merges (`integrar`, `finalizar`) exigem tudo commitado.
 
 Os hooks são trilhos contra deslizes, não um sandbox: um comando de shell
 menos comum escapa. A garantia determinística é o CI.
@@ -217,6 +221,12 @@ Os modelos de pipeline do `/sdd:pipeline` seguem o Git Flow:
 | pull request | o `sdd-verificar` lê a origem e o destino (`GITHUB_HEAD_REF` e `GITHUB_BASE_REF`, ou as variáveis do GitLab) e **falha** se o fluxo não é permitido |
 | push em `release/**` ou `hotfix/**` | deploy em homologação |
 | tag `vX.Y.Z` | `sdd-release pode-implantar X.Y.Z` (o go) e o deploy de produção |
+
+O pipeline baixa o plugin numa versão fixa (`SDD_VERSAO`). As conferências de
+Git Flow do `sdd-verificar` só existem a partir da versão do plugin que as
+trouxe: use a tag da versão instalada. No GitLab, o modelo tem o bloco
+`workflow:` que liga os pipelines de merge request; sem ele, o fluxo do merge
+request não é conferido.
 
 Na plataforma, configure a proteção de `main` e `develop`: só por pull request,
 com o estágio `verificar` obrigatório, sem push direto e sem force-push.
@@ -350,7 +360,9 @@ Em `release/X.Y.Z`: a release é o que está sendo homologado. Depois do go, o
 | `SDD (Git Flow) bloqueou a branch 'x': o nome está fora do padrão` | um agente tentou criar uma branch com outro nome | use `sdd-gitflow feature`, `release` ou `hotfix` |
 | `SDD (Git Flow) bloqueou um commit direto em main` | commit em `main` | faça o trabalho em `develop` ou na branch da feature; `main` recebe pelo `sdd-gitflow finalizar` |
 | `SDD (Git Flow) bloqueou o commit em 'develop': a feature ativa ... é feita em feature/...` | a feature ativa tem branch própria | `sdd-gitflow feature NNN-slug`; se o commit não é da feature, `sdd-estado definir feature=` |
-| `sdd-gitflow: há alterações não commitadas` | trocar de branch levaria o trabalho junto | faça o commit (ou o stash) e rode de novo |
+| `sdd-gitflow: há alterações não commitadas em código` | trocar de branch levaria o código de outro trabalho junto | faça o commit (ou o stash) e rode de novo |
+| `sdd-gitflow: há alterações não commitadas. Faça o commit antes` | `integrar` ou `finalizar` com algo pendente | faça o commit na branch atual |
+| `sdd-gitflow: o git não trocou de branch` | um arquivo pendente é diferente na outra branch | faça o commit, ou `git stash`, rode de novo e `git stash pop` |
 | `a release X.Y.Z está em '...'. Ela só vai para main depois do go/no-go` | `finalizar` antes do `sdd-release autorizar` | conclua a homologação e o go no `/sdd:release` |
 | `conflito ao integrar ...` | as duas branches mudaram o mesmo trecho | resolva os arquivos, `git add`, `git commit`; ou `git merge --abort` |
 | CI: `o pull request feature/... -> main não é permitido` | pull request para o destino errado | feche e abra para `develop` |

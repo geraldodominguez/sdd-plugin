@@ -1,5 +1,5 @@
 {
-  "description": "SDD: protege testes e contratos conforme a fase da feature e exige a tarefa nas mensagens de commit. Fica inativo em projetos sem .sdd/.",
+  "description": "SDD: protege testes e contratos conforme a fase da feature, mantém os artefatos nos lugares do padrão, confere o Git Flow (nomes de branch, commits fora de main e na branch da feature) e o Conventional Commits com a tarefa nas mensagens. Fica inativo em projetos sem .sdd/.",
   "hooks": {
     "PreToolUse": [
       {

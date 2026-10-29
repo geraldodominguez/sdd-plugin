@@ -6,11 +6,22 @@ configuração) sempre sobem a versão maior.
 
 ## Não lançado
 
+A próxima versão é **maior** (2.0.0): ela muda formatos rastreáveis e o
+comportamento padrão. Ver "Incompatível", abaixo.
+
+### Incompatível
+
+- Git Flow e Conventional Commits ficam ligados por padrão (`gitflow: ativo`, `commits: convencional`). O hook passa a bloquear commit em `main`, branch com nome fora do padrão e mensagem fora do formato. Para manter o comportamento anterior, use `gitflow: desligado` e `commits: livre` no `.sdd/config.yml`.
+- A linha de tarefa aceita a marca `[O]` (feita fora do plugin), além de `[ ]` e `[x]`.
+- Chaves novas em `specs/NNN/estado`: `adocao` (`transicao` ou `regularizada`) e `branch`.
+- Regras 6, 10 e 11 do bloco do `CLAUDE.md` e do `AGENTS.md`: a 6 passa a exigir o Conventional Commits (`tipo(NNN): T-XXX descrição`); a 10 (artefatos só nos lugares do padrão) e a 11 (Git Flow com nomes fixos) são novas. Rode `/sdd:iniciar` de novo para atualizar o bloco.
+- `sdd-estado reabrir` não reabre mais uma feature em `homologacao`: quem a devolve é o `sdd-release reprovar`, que mantém a release coerente.
+
 ### Novidades
 
 - Layout como contrato: cada artefato de processo (spec, plano, tarefas, ADR, backlog, sprint, arquitetura, regras) tem um único lugar, e o hook `guarda-edicoes` bloqueia criar um fora dele, nas proteções leve e estrita. Uma pasta de feature sem `estado` (criada à mão) também conta como fora do padrão. Ver [ADR 0014](.agents/adr/0014-layout-como-contrato-e-adocao.md).
 - Adoção de projetos que não nasceram com o plugin: o `/sdd:iniciar` detecta artefatos de outros processos e agentes, lê tudo, propõe um mapa e, com a aprovação do usuário, os traz para o padrão. `/sdd:iniciar --adotar` repete a adoção num projeto já preparado.
-- Utilitário `sdd-adotar` (`inventario`, `contar`, `aplicar` com `--simular`): numera features e ADRs, renomeia com `git mv`, registra em `.sdd/adocao.md` (com o hash de cada original) e aponta os links para os caminhos antigos.
+- Utilitário `sdd-adotar` (`inventario`, `contar`, `aplicar` com `--simular`): numera features e ADRs, renomeia com `git mv`, registra cada movimento em `.sdd/adocao.md` e no histórico do projeto, guarda o hash de cada original no histórico da feature e no `transicao.md`, e aponta os links para os caminhos antigos.
 - Situação de transição das features adotadas: chave `adocao` (`transicao` ou `regularizada`) em `specs/NNN/estado` e modelo `transicao.md`, que mostra como a feature era e como fica. O agente converte spec, plano e tarefas para os modelos; o `/sdd:aprovar` aprova a transição de uma vez (`sdd-estado aprovar`, com `decisao: transicao` para cada artefato) e leva a feature à fase de destino (`especificacao`, `plano`, `tarefas` ou `red`), para continuar de onde parou. Durante a transição, aprovar outro artefato e `definir fase=` são recusados.
 - Marca `[O]` na linha de tarefa: feita fora do plugin, antes da adoção, sem gate. Conta como feita no `sdd-status`, que a mostra à parte, e é lida pelo `sdd-rastrear`. Os testes dos critérios dela vêm na fase red e devem passar de início.
 - Novos lugares do padrão: `docs/arquitetura/` (referência) e `docs/legado/` (o que veio de outro processo e não entra no fluxo).
@@ -39,6 +50,15 @@ configuração) sempre sobem a versão maior.
 - O aviso de links para o caminho antigo ignora o bloco de regras do SDD, os registros da adoção e as citações parciais (`TODO.md` não casa com `docs/legado/TODO.md`).
 - O `.sdd/adocao.md` entra na lista de arquivos que só os utilitários escrevem.
 - `sdd_slug`, `sdd_proximo_numero_feature` e `sdd_proximo_numero_adr` passam para a `lib/sdd-comum.sh`.
+- O `sdd-release concluir` diz se a tag `vX.Y.Z` já existe ou se falta o `sdd-gitflow finalizar`.
+- Os modelos de pipeline fixam a versão do plugin em `SDD_VERSAO`; o do GitLab ganha `workflow: rules`, para não rodar duas vezes num merge request.
+
+### Correções
+
+- Todo utilitário responde a `--ajuda` (e `-h`), mesmo fora de um projeto, com o cabeçalho completo; antes, algumas ajudas saíam cortadas ou com linhas de código.
+- O hook `guarda-commits` lê a mensagem de `git commit -F arquivo` para conferir o formato e a tarefa citada.
+- `sdd_config` devolvia o comentário da linha quando a chave estava vazia.
+- Ao trocar de branch, o `sdd-gitflow` leva as alterações pendentes nos arquivos do SDD e recusa, com a explicação, quando há alteração pendente em código; antes, a troca podia falhar com a mensagem crua do git.
 
 ## 0.1.0
 

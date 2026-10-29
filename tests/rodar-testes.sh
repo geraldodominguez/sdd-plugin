@@ -439,6 +439,7 @@ printf 'it("x") // sdd:002:CA-001\n' > "$Q4/tests/x.test.js"
 R2="$Q4/releases/1.1.0"
 subst 's/{{[^}]*}}/x/g; s/| Resultado | x |/| Resultado | aprovado |/' "$R2/testes.md" "$R2/homologacao.md"
 (cd "$Q4" && sdd-release homologar 1.1.0 >/dev/null)
+(cd "$Q4" && assert_exit 1 "reabrir recusa feature em homologação (o caminho é o reprovar)" sdd-estado reabrir 002-em-construcao --motivo "x")
 (cd "$Q4" && sdd-release reprovar 1.1.0 002-em-construcao --motivo "texto errado" >/dev/null)
 [ "$(sdd_feature_ler_t "$Q4" 002-em-construcao fase)" = "green" ] && ok "reprovada na homologação volta ao green" || fail "reprovar"
 [ "$(sdd_kv_ler_t "$R2/estado" fase)" = "preparacao" ] && ok "a release volta à preparação" || fail "release preparacao"
@@ -723,7 +724,9 @@ assert_exit 0 "feature/ de feature que existe permitida" guard_commit "$G" "git 
 printf 'y\n' >> "$G/src/a.js"
 (cd "$G" && assert_exit 1 "feature: recusa trocar de branch com alteração pendente" sdd-gitflow feature $GF)
 (cd "$G" && git checkout -q -- src/a.js)
-(cd "$G" && assert_exit 0 "feature: cria a branch a partir de develop" sdd-gitflow feature $GF)
+(cd "$G" && sdd-estado definir capacidade=acesso >/dev/null)
+(cd "$G" && assert_exit 0 "feature: cria a branch a partir de develop, levando o que o SDD mudou" sdd-gitflow feature $GF)
+grep -q '^capacidade=acesso$' "$G/specs/$GF/estado" && ok "o estado alterado foi junto para a branch" || fail "estado levado"
 [ "$(cd "$G" && git branch --show-current)" = "feature/$GF" ] && ok "agora na branch da feature" || fail "branch da feature"
 [ -f "$G/specs/$GF/spec.md" ] && ok "a spec nova vai junto para a branch" || fail "spec na branch"
 assert_exit 0 "commit da feature na branch dela" guard_commit "$G" 'git commit -m "docs(001): spec"'
@@ -746,6 +749,10 @@ printf 'it("entra") // sdd:001:CA-001\n' > "$G/tests/login.test.js"
 (cd "$G" && git add -A && git commit -qm "feat(001): T-001 login")
 out="$(cd "$G" && sdd-pendencias)"
 echo "$out" | grep -q "$GF está pronta e feature/$GF ainda não foi integrada em develop" && ok "pendências cobram a integração" || fail "pendência integração" "$out"
+printf '\n' >> "$G/specs/$GF/spec.md"
+out="$(cd "$G" && sdd-gitflow integrar $GF 2>&1)"; code=$?
+[ "$code" -eq 1 ] && echo "$out" | grep -q 'Faça o commit antes' && ok "integrar exige tudo commitado" || fail "integrar sujo" "$out"
+(cd "$G" && git checkout -q -- "specs/$GF/spec.md")
 (cd "$G" && assert_exit 0 "integrar a feature pronta" sdd-gitflow integrar $GF --apagar)
 (cd "$G" && git merge-base --is-ancestor HEAD develop && [ "$(git branch --show-current)" = "develop" ]) && ok "feature em develop, e de volta em develop" || fail "integrada"
 (cd "$G" && git show-ref --verify --quiet "refs/heads/feature/$GF") && fail "branch local apagada" || ok "--apagar remove a branch local"
@@ -848,9 +855,20 @@ assert_exit 0 "commit convencional permitido" guard_commit "$VR" 'git commit -m 
 assert_exit 0 "heredoc convencional permitido" guard_commit "$VR" "$(printf 'git commit -m "$(cat <<%sEOF%s\nfix: corrige o login\n\nCorpo.\nEOF\n)"' "'" "'")"
 assert_exit 2 "heredoc fora do padrão bloqueado" guard_commit "$VR" "$(printf 'git commit -m "$(cat <<%sEOF%s\nCorrige o login\nEOF\n)"' "'" "'")"
 assert_exit 0 "mensagem do editor não é conferida" guard_commit "$VR" 'git commit'
+printf 'ajustes\n' > "$VR/msg-ruim.txt"; printf '# comentário\nfix: corrige o login\n\ncorpo\n' > "$VR/msg-boa.txt"
+assert_exit 2 "mensagem de arquivo (-F) fora do padrão bloqueada" guard_commit "$VR" 'git commit -F msg-ruim.txt'
+assert_exit 0 "mensagem de arquivo (-F) convencional permitida" guard_commit "$VR" 'git commit -F msg-boa.txt'
 subst 's/^commits: .*/commits: livre/' "$VR/.sdd/config.yml"
 assert_exit 0 "commits: livre não confere o formato" guard_commit "$VR" 'git commit -m "ajustes"'
 subst 's/^commits: .*/commits: convencional/' "$VR/.sdd/config.yml"
+
+echo "ajuda dos utilitários"
+for b in "$PLUGIN"/bin/*; do
+  out="$(cd "$TMP" && "$b" --ajuda 2>&1)"; code=$?
+  n="$(basename "$b")"
+  [ "$code" -eq 0 ] && printf '%s' "$out" | head -1 | grep -q "^$n" && ! printf '%s' "$out" | grep -qE '^(set -|AQUI=)' \
+    && ok "$n --ajuda funciona fora de um projeto" || fail "$n --ajuda" "$out"
+done
 
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
