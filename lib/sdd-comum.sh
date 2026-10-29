@@ -21,6 +21,17 @@ SDD_FASES_PROTEGIDAS="pronta homologacao producao cancelada"
 SDD_GLOBS_TESTE_PADRAO='tests/**,test/**,__tests__/**,spec/**,**/*.test.*,**/*.spec.*,**/*_test.*,**/test_*.py,**/*Test.java,**/*Tests.cs'
 
 # ---------------------------------------------------------------------------
+# Ajuda
+# ---------------------------------------------------------------------------
+
+# sdd_ajuda <script>: imprime o cabeçalho de uso do script (os comentários do
+# topo, sem o "#"). Todo utilitário responde a -h, --ajuda e --help, dentro ou
+# fora de um projeto com SDD.
+sdd_ajuda() {
+  awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$1"
+}
+
+# ---------------------------------------------------------------------------
 # Localização
 # ---------------------------------------------------------------------------
 
@@ -64,7 +75,7 @@ sdd_config() {
   if [ -f "$arquivo" ]; then
     valor="$(grep -E "^[[:space:]]*${chave}[[:space:]]*:" "$arquivo" | head -1 \
       | sed -E "s/^[[:space:]]*${chave}[[:space:]]*:[[:space:]]*//" \
-      | sed -E 's/[[:space:]]+#.*$//' \
+      | sed -E 's/[[:space:]]+#.*$//' | sed -E 's/^#.*$//' \
       | sed -E 's/^"(.*)"$/\1/' | sed -E "s/^'(.*)'$/\1/" \
       | tr -d '\r')"
   fi
@@ -88,8 +99,10 @@ sdd_config() {
 # Chaves que pertencem à feature, não aos ponteiros.
 #   fase, nivel, origem (B-NNN ou INC-NNN), tipo (normal ou hotfix),
 #   seguranca (obrigatoria ou dispensada), capacidade (da spec do sistema),
-#   release (versão em que entrou), atualizado
-SDD_CHAVES_DA_FEATURE="fase nivel origem tipo seguranca capacidade release atualizado"
+#   release (versão em que entrou), adocao (transicao ou regularizada, só nas
+#   features adotadas de outro processo), branch (a do Git Flow: feature/NNN-slug
+#   ou, num hotfix, hotfix/X.Y.Z), atualizado
+SDD_CHAVES_DA_FEATURE="fase nivel origem tipo seguranca capacidade release adocao branch atualizado"
 
 sdd_e_chave_da_feature() {
   local c="$1" x
@@ -552,14 +565,28 @@ sdd_semana_iso() {
 # Progresso de uma feature
 # ---------------------------------------------------------------------------
 
+# Linha de tarefa: "- [ ] T-NNN" aberta, "- [x] T-NNN" feita no plugin e
+# "- [O] T-NNN" feita fora do plugin, antes da adoção, sem gate.
+# shellcheck disable=SC2034  # usado por quem carrega este arquivo
+SDD_RE_TAREFA='^[[:space:]]*- \[[ xXoO]\][[:space:]]*\*{0,2}T-[0-9]{3}'
+
 # sdd_tarefas_progresso <raiz> <feature>: "feitas total" (0 0 sem tarefas.md).
+# As feitas incluem as [O]; sdd_tarefas_fora conta só essas.
 sdd_tarefas_progresso() {
   local arq feitas abertas
   arq="$1/$(sdd_pasta_specs "$1")/$2/tarefas.md"
   if [ ! -f "$arq" ]; then echo "0 0"; return; fi
-  feitas="$(grep -cE '^[[:space:]]*- \[[xX]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true)"
+  feitas="$(grep -cE '^[[:space:]]*- \[[xXoO]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true)"
   abertas="$(grep -cE '^[[:space:]]*- \[ \][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true)"
   echo "$feitas $((feitas + abertas))"
+}
+
+# sdd_tarefas_fora <raiz> <feature>: quantas tarefas [O], feitas fora do plugin.
+sdd_tarefas_fora() {
+  local arq
+  arq="$1/$(sdd_pasta_specs "$1")/$2/tarefas.md"
+  [ -f "$arq" ] || { echo 0; return; }
+  grep -cE '^[[:space:]]*- \[[oO]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true
 }
 
 # sdd_duvidas_abertas <raiz> <feature>: marcadores PRECISA ESCLARECER reais na spec.
@@ -574,6 +601,11 @@ sdd_duvidas_abertas() {
 sdd_aguarda_aprovacao() {
   local raiz="$1" f="$2" fase art atual aprovado
   fase="$(sdd_feature_ler "$raiz" "$f" fase)"
+  # Feature adotada de outro processo: antes de tudo, a transição.
+  if [ "$(sdd_feature_ler "$raiz" "$f" adocao)" = "transicao" ]; then
+    printf 'transicao.md\n'
+    return 0
+  fi
   art="$(sdd_artefato_da_fase "$fase")"
   # Hotfix: a spec é retroativa e precisa ser aprovada antes da entrega.
   if [ "$(sdd_feature_ler "$raiz" "$f" tipo)" = "hotfix" ] && [ "$fase" = "green" ]; then
@@ -638,3 +670,344 @@ sdd_template() {
 
 # sdd_semver_valida <versão>
 sdd_semver_valida() { printf '%s' "$1" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; }
+
+# ---------------------------------------------------------------------------
+# Nomes e numeração
+# ---------------------------------------------------------------------------
+
+# sdd_slug <texto>: minúsculas, sem acento, palavras unidas por "-", até 50
+# caracteres. Transliteração explícita: não depende de locale nem de iconv.
+sdd_slug() {
+  printf '%s' "$1" \
+    | sed -e 's/á/a/g; s/à/a/g; s/â/a/g; s/ã/a/g; s/ä/a/g' \
+          -e 's/Á/a/g; s/À/a/g; s/Â/a/g; s/Ã/a/g; s/Ä/a/g' \
+          -e 's/é/e/g; s/è/e/g; s/ê/e/g; s/ë/e/g; s/É/e/g; s/È/e/g; s/Ê/e/g' \
+          -e 's/í/i/g; s/ì/i/g; s/î/i/g; s/ï/i/g; s/Í/i/g; s/Î/i/g' \
+          -e 's/ó/o/g; s/ò/o/g; s/ô/o/g; s/õ/o/g; s/ö/o/g; s/Ó/o/g; s/Ô/o/g; s/Õ/o/g' \
+          -e 's/ú/u/g; s/ù/u/g; s/û/u/g; s/ü/u/g; s/Ú/u/g; s/Ü/u/g' \
+          -e 's/ç/c/g; s/Ç/c/g; s/ñ/n/g; s/Ñ/n/g' \
+    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
+    | LC_ALL=C sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' \
+    | cut -c1-50 \
+    | sed -E 's/-+$//'
+}
+
+# sdd_proximo_numero_feature <raiz>: próximo NNN livre em specs/.
+sdd_proximo_numero_feature() {
+  local maior=0 id n
+  for id in $(sdd_features "$1"); do
+    n="$(printf '%s' "$id" | cut -c1-3)"
+    n=$((10#$n))
+    [ "$n" -gt "$maior" ] && maior="$n"
+  done
+  printf '%03d\n' $((maior + 1))
+}
+
+# sdd_proximo_numero_adr <raiz>: próximo NNNN livre em docs/adr/.
+sdd_proximo_numero_adr() {
+  local maior=0 a n
+  for a in "$1"/docs/adr/[0-9][0-9][0-9][0-9]-*.md; do
+    [ -f "$a" ] || continue
+    n="$(basename "$a" | cut -c1-4)"
+    n=$((10#$n))
+    [ "$n" -gt "$maior" ] && maior="$n"
+  done
+  printf '%04d\n' $((maior + 1))
+}
+
+# ---------------------------------------------------------------------------
+# Layout: onde cada artefato mora
+#
+# O layout é o da tabela do README ("Onde fica cada coisa"), com as pastas
+# configuráveis do .sdd/config.yml. Um artefato de processo (spec, plano,
+# tarefas, ADR, backlog, sprint, arquitetura, regras do projeto) fora dele é
+# o rastro de outro processo ou de um agente que inventou a própria estrutura.
+# As mesmas funções servem ao hook (arquivo novo), ao sdd-adotar (inventário e
+# destino) e ao sdd-verificar (aviso no CI), para que os três concordem.
+# ---------------------------------------------------------------------------
+
+# Pastas que nunca são examinadas: dependências, saídas de build, ferramentas.
+sdd_caminho_ignorado() {
+  case "/$1" in
+    */node_modules/*|*/vendor/*|*/.git/*|*/dist/*|*/build/*|*/target/*|*/.venv/*|*/venv/*|*/.next/*|*/coverage/*|*/.claude/*|*/.github/*|*/.gitlab/*|*/.idea/*|*/.vscode/*) return 0 ;;
+  esac
+  return 1
+}
+
+# sdd_tipo_de_artefato <caminho relativo>: imprime o tipo do artefato de
+# processo (spec, plano, tarefas, adr, backlog, sprint, arquitetura,
+# constituicao) ou nada, se o arquivo não parece um. Só olha o nome e as
+# pastas: é barato o bastante para rodar num hook.
+sdd_tipo_de_artefato() {
+  local rel base nome dirs ext
+  rel="$(printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+  sdd_caminho_ignorado "$rel" && return 1
+  base="${rel##*/}"
+  case "$base" in
+    *.md|*.mdx|*.markdown) ext=md ;;
+    *.dsl|*.puml|*.plantuml) ext=diagrama ;;
+    *) return 1 ;;
+  esac
+  nome="${base%.*}"
+  case "$rel" in */*) dirs="/${rel%/*}/" ;; *) dirs="/" ;; esac
+
+  case "$nome" in
+    readme|changelog|license|licenca|contributing|contribuindo|code_of_conduct|claude|agents|gemini|copilot-instructions|index) return 1 ;;
+  esac
+
+  case "$nome:$dirs" in
+    adr:*|adr-*:*|adr_*:*|*:*/adr/*|*:*/adrs/*|*:*/decisions/*|*:*/decisoes/*)
+      echo adr; return 0 ;;
+  esac
+  if [ "$ext" = diagrama ]; then echo arquitetura; return 0; fi
+  case "$nome:$dirs" in
+    architecture*:*|arquitetura*:*|c4*:*|*-c4:*|*:*/architecture/*|*:*/arquitetura/*|*:*/c4/*)
+      echo arquitetura; return 0 ;;
+  esac
+  case "$nome" in
+    constitution*|constituicao*|conventions*|convencoes*|guidelines*|diretrizes*|principles*|principios*|standards*|padroes*)
+      echo constituicao; return 0 ;;
+    backlog*|roadmap*|ideias*|ideas*|wishlist*)
+      echo backlog; return 0 ;;
+    sprint*|iteration*|iteracao*)
+      echo sprint; return 0 ;;
+    tasks|tasks[-_.]*|task[-_]*|tarefas*|todo|todo[-_.]*|to-do*|checklist*)
+      echo tarefas; return 0 ;;
+    plan|plan[-_.]*|*[-_]plan|plano|plano[-_.]*|implementation*|implementacao*)
+      echo plano; return 0 ;;
+    spec|spec[-_.]*|*[-_.]spec|specification*|especificacao*|requirements*|requisitos*|prd|prd[-_.]*|*[-_]prd)
+      echo spec; return 0 ;;
+  esac
+  case "$nome:$dirs" in
+    design:*/specs/*|design:*/spec/*|design:*/.kiro/*|design:*/.specify/*|design:*/openspec/*|design:*/features/*)
+      echo plano; return 0 ;;
+  esac
+  case "$dirs" in
+    */tasks/*|*/tarefas/*|*/todo/*|*/.taskmaster/*) echo tarefas; return 0 ;;
+    */plans/*|*/planos/*) echo plano; return 0 ;;
+    */backlog/*) echo backlog; return 0 ;;
+    */sprints/*) echo sprint; return 0 ;;
+    */specs/*|*/spec/*|*/specifications/*|*/features/*|*/requirements/*|*/requisitos/*|*/prd/*|*/prds/*|*/.specify/*|*/.kiro/*|*/openspec/*)
+      echo spec; return 0 ;;
+  esac
+  return 1
+}
+
+# sdd_no_layout <raiz> <caminho relativo>: 0 se o arquivo está num lugar do
+# padrão (ou casa com excecoes_de_layout do config).
+# As pastas e as exceções são lidas do config uma vez por raiz: o inventário
+# chama esta função para cada arquivo do projeto.
+SDD__LAYOUT_RAIZ=""
+sdd__carregar_layout() {
+  [ "$SDD__LAYOUT_RAIZ" = "$1" ] && return 0
+  SDD__LAYOUT_SPECS="$(sdd_pasta_specs "$1")"
+  SDD__LAYOUT_SISTEMA="$(sdd_pasta_sistema "$1")"
+  SDD__LAYOUT_RELEASES="$(sdd_pasta_releases "$1")"
+  SDD__LAYOUT_INCIDENTES="$(sdd_pasta_incidentes "$1")"
+  SDD__LAYOUT_EXCECOES="$(sdd_config "$1" excecoes_de_layout "")"
+  SDD__LAYOUT_RAIZ="$1"
+}
+
+sdd_no_layout() {
+  local raiz="$1" rel="$2" specs sistema releases incidentes excecoes resto pasta
+  sdd__carregar_layout "$raiz"
+  specs="$SDD__LAYOUT_SPECS"; sistema="$SDD__LAYOUT_SISTEMA"
+  releases="$SDD__LAYOUT_RELEASES"; incidentes="$SDD__LAYOUT_INCIDENTES"
+  case "$rel" in
+    .sdd/*|"$sistema"/*|"$releases"/*|"$incidentes"/*|docs/legado/*|docs/arquitetura/*) return 0 ;;
+    docs/adr/*)
+      printf '%s' "${rel#docs/adr/}" | grep -qE '^[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*\.md$' && return 0 ;;
+    "$specs"/*/*)
+      resto="${rel#"$specs"/}"
+      pasta="${resto%%/*}"
+      # Pasta com nome de feature, mas sem estado, foi criada à mão: não conta.
+      printf '%s' "$pasta" | grep -qE '^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' \
+        && [ -f "$raiz/$specs/$pasta/estado" ] && return 0 ;;
+  esac
+  excecoes="$SDD__LAYOUT_EXCECOES"
+  [ -n "$excecoes" ] && sdd_casa_glob "$rel" "$excecoes" && return 0
+  return 1
+}
+
+# sdd_fora_do_layout <raiz> <caminho relativo>: imprime o tipo e devolve 0 se
+# o arquivo é um artefato de processo fora do lugar do padrão.
+sdd_fora_do_layout() {
+  local tipo
+  tipo="$(sdd_tipo_de_artefato "$2")" || return 1
+  sdd_no_layout "$1" "$2" && return 1
+  printf '%s\n' "$tipo"
+}
+
+# sdd_artefatos_fora_do_layout <raiz>: "tipo<TAB>caminho", um por linha, em ordem.
+sdd_artefatos_fora_do_layout() {
+  local raiz="$1" f tipo
+  sdd__carregar_layout "$raiz"
+  # Filtra pela extensão antes: só os candidatos passam pelo classificador.
+  sdd_listar_arquivos "$raiz" | grep -iE '\.(md|mdx|markdown|dsl|puml|plantuml)$' | sort | while IFS= read -r f; do
+    [ -n "$f" ] && [ -f "$raiz/$f" ] || continue
+    case "$f" in .sdd/*) continue ;; esac
+    tipo="$(sdd_fora_do_layout "$raiz" "$f")" || continue
+    printf '%s\t%s\n' "$tipo" "$f"
+  done
+  return 0
+}
+
+# Onde cada tipo de artefato mora no padrão (texto curto, para mensagens).
+sdd_destino_do_tipo() {
+  case "$1" in
+    spec|plano|tarefas) echo "$(sdd_pasta_specs "${2:-.}")/NNN-slug/ (crie a feature com sdd-estado nova; nunca crie a pasta à mão)" ;;
+    adr) echo "docs/adr/NNNN-slug.md (numeração sequencial de 4 dígitos, a partir do template de ADR)" ;;
+    backlog) echo ".sdd/backlog.md (sdd-backlog adicionar)" ;;
+    sprint) echo ".sdd/sprints/ (sdd-sprint)" ;;
+    arquitetura) echo "docs/arquitetura/" ;;
+    constituicao) echo ".sdd/constituicao.md (regras do projeto inteiro)" ;;
+    *) echo "o lugar do padrão (ver /sdd:ajuda)" ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# Git Flow
+#
+# Os nomes são fixos e iguais em todo projeto: nada de "develop" num e
+# "development" noutro. Ver docs/referencia/git-flow.md.
+#
+#   main              produção; só recebe merge de release/ e hotfix/, com tag
+#   develop           integração; recebe as features prontas
+#   feature/NNN-slug  uma por feature do SDD, de develop para develop
+#   release/X.Y.Z     uma por release, de develop para main (e de volta)
+#   hotfix/X.Y.Z      uma por hotfix, de main para main (e para develop)
+#   vX.Y.Z            a tag de cada versão em main
+# ---------------------------------------------------------------------------
+
+# shellcheck disable=SC2034  # usados por quem carrega este arquivo
+SDD_BRANCH_PRODUCAO=main
+# shellcheck disable=SC2034
+SDD_BRANCH_INTEGRACAO=develop
+
+# sdd_gitflow_ativo <raiz>: 0 se o Git Flow vale neste projeto (config
+# gitflow, ativo por padrão, e um repositório git).
+sdd_gitflow_ativo() {
+  [ "$(sdd_config "$1" gitflow ativo)" = "ativo" ] || return 1
+  git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
+# sdd_branch_tipo <nome>: imprime producao, integracao, feature, release ou
+# hotfix. Devolve 1 se o nome está fora do padrão.
+sdd_branch_tipo() {
+  local b="$1"
+  case "$b" in
+    main) echo producao; return 0 ;;
+    develop) echo integracao; return 0 ;;
+    feature/*)
+      printf '%s' "${b#feature/}" | grep -qE '^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' && { echo feature; return 0; } ;;
+    release/*) sdd_semver_valida "${b#release/}" && { echo release; return 0; } ;;
+    hotfix/*) sdd_semver_valida "${b#hotfix/}" && { echo hotfix; return 0; } ;;
+  esac
+  return 1
+}
+
+# sdd_branch_atual <raiz>: o nome da branch atual; vazio em HEAD destacado.
+sdd_branch_atual() {
+  local b
+  b="$(git -C "$1" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  [ "$b" = "HEAD" ] && b=""
+  printf '%s\n' "$b"
+}
+
+# sdd_branch_da_feature <raiz> <feature>: a branch em que a feature é feita.
+sdd_branch_da_feature() {
+  local b
+  b="$(sdd_feature_ler "$1" "$2" branch)"
+  [ -n "$b" ] || b="feature/$2"
+  printf '%s\n' "$b"
+}
+
+# sdd_merge_em_andamento <raiz>: 0 se há um merge à espera do commit.
+sdd_merge_em_andamento() { git -C "$1" rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; }
+
+# sdd_branch_sugerida <nome>: o nome do padrão para uma branch antiga, quando
+# é óbvio; vazio quando a decisão é do usuário (ex.: a feature ainda não existe).
+sdd_branch_sugerida() {
+  case "$1" in
+    master|production|producao|prod) echo main ;;
+    development|dev|devel|desenvolvimento|integracao|integration) echo develop ;;
+    *) echo "" ;;
+  esac
+}
+
+# sdd_pode_integrar <origem> <destino>: 0 se o Git Flow permite levar a
+# origem ao destino (merge ou pull request).
+sdd_pode_integrar() {
+  local to td
+  to="$(sdd_branch_tipo "$1")" || return 1
+  td="$(sdd_branch_tipo "$2")" || return 1
+  case "$to:$td" in
+    feature:integracao|release:producao|release:integracao|hotfix:producao|hotfix:integracao|producao:integracao) return 0 ;;
+  esac
+  return 1
+}
+
+# ---------------------------------------------------------------------------
+# Conventional Commits e versão
+#
+# A mensagem de commit segue https://www.conventionalcommits.org:
+#   tipo(escopo)!: descrição
+# O escopo, no SDD, é o número da feature (NNN). O tipo decide o impacto na
+# versão SemVer: "!" ou um rodapé BREAKING CHANGE é major, feat é minor, fix e
+# perf são patch, o resto (docs, chore, refactor, test, build, ci, style,
+# revert) não muda a versão. Ver docs/referencia/versionamento.md.
+# ---------------------------------------------------------------------------
+
+# shellcheck disable=SC2034  # usado por quem carrega este arquivo
+SDD_CC_TIPOS="feat fix docs chore refactor test perf build ci style revert"
+
+# sdd_cc_valida <assunto>: 0 se o assunto segue o Conventional Commits do SDD.
+sdd_cc_valida() {
+  printf '%s' "$1" | grep -qE '^(feat|fix|docs|chore|refactor|test|perf|build|ci|style|revert)(\([A-Za-z0-9._/-]+\))?!?: [^[:space:]]'
+}
+
+# sdd_cc_commits <raiz> <base ou vazio>: um commit por linha, sem os merges,
+# no formato "impacto<TAB>tipo<TAB>escopo<TAB>descrição", com impacto major,
+# minor, patch ou nenhum, e escopo "-" quando não há (um campo vazio sumiria
+# na leitura com IFS de tabulação). Sem base, lê o histórico inteiro de HEAD.
+sdd_cc_commits() {
+  local raiz="$1" base="${2:-}" faixa=HEAD
+  [ -n "$base" ] && faixa="$base..HEAD"
+  git -C "$raiz" log --no-merges --format='%s%x1f%b%x1e' "$faixa" 2>/dev/null | awk '
+    BEGIN { RS = "\036"; FS = "\037" }
+    {
+      s = $1; b = $2
+      sub(/^[\n\r]+/, "", s)
+      if (s == "") next
+      tipo = "outro"; escopo = ""; bang = 0; desc = s
+      if (match(s, /^[a-z]+(\([^)]*\))?!?: /)) {
+        cab = substr(s, 1, RLENGTH - 2); desc = substr(s, RLENGTH + 1)
+        if (substr(cab, length(cab), 1) == "!") { bang = 1; cab = substr(cab, 1, length(cab) - 1) }
+        p = index(cab, "(")
+        if (p) { tipo = substr(cab, 1, p - 1); escopo = substr(cab, p + 1, length(cab) - p - 1) } else { tipo = cab }
+      }
+      imp = "nenhum"
+      if (match(b, /BREAKING[ -]CHANGE: [^\n]*/)) {
+        nota = substr(b, RSTART, RLENGTH); sub(/^BREAKING[ -]CHANGE: /, "", nota)
+        desc = desc " (incompatível: " nota ")"
+        bang = 1
+      }
+      if (bang) imp = "major"
+      else if (tipo == "feat") imp = "minor"
+      else if (tipo == "fix" || tipo == "perf") imp = "patch"
+      if (escopo == "") escopo = "-"
+      printf "%s\t%s\t%s\t%s\n", imp, tipo, escopo, desc
+    }'
+}
+
+# sdd_semver_somar <versão> <major|minor|patch>: a versão seguinte, sem o
+# sufixo de pré-lançamento.
+sdd_semver_somar() {
+  local base="${1%%[-+]*}" tipo="$2" ma mi pa
+  IFS=. read -r ma mi pa <<< "$base"
+  case "$tipo" in
+    major) echo "$((ma + 1)).0.0" ;;
+    minor) echo "$ma.$((mi + 1)).0" ;;
+    *) echo "$ma.$mi.$((pa + 1))" ;;
+  esac
+}

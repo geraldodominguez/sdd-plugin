@@ -3,7 +3,8 @@
 > Cada tarefa é pequena (cabe num ciclo do agente), verificável e ligada a
 > pelo menos um RF, RNF ou CA. `[P]` marca tarefas que podem rodar em paralelo
 > com as demais `[P]` do mesmo grupo. Marque `[x]` quando a tarefa estiver
-> concluída **e** com os testes verdes.
+> concluída **e** com os testes verdes. `[O]` marca a tarefa feita fora do
+> plugin, antes da adoção, sem gate (só a adoção escreve essa marca).
 >
 > Formato obrigatório da linha, lido pelo `sdd-rastrear`:
 > `- [ ] T-NNN [P] descrição (atende: RF-NNN, CA-NNN; depende de: T-NNN)`

@@ -5,7 +5,8 @@
 Gera, ou confere, o pipeline de CI/CD do projeto a partir da constituição e do
 `.sdd/config.yml`, para GitHub Actions ou GitLab CI. O pipeline roda lint,
 testes, a verificação do processo SDD (`sdd-verificar`) e as varreduras de
-segurança em todo push, implanta em homologação na branch de integração, e só
+segurança em todo push, implanta em homologação no push de `release/**` e
+`hotfix/**` (Git Flow), recusa pull request fora do Git Flow, e só
 implanta em produção pela tag `vX.Y.Z` **se a release tiver o go registrado**.
 Ele não grava segredos no arquivo.
 
@@ -27,7 +28,7 @@ comandos que faltarem no config.
 |---|---|---|
 | verificar | todo push e pull request | lint, testes ou `sdd-verificar` falham |
 | seguranca | todo push e pull request | vulnerabilidade alta ou crítica, segredo exposto |
-| homologacao | push na branch de integração | o deploy falha |
+| homologacao | push em `release/**` ou `hotfix/**` (Git Flow) | o deploy falha |
 | producao | tag `vX.Y.Z` | a release não tem o go (`sdd-release pode-implantar`), ou o deploy ou a verificação falham |
 
 ## O que o `sdd-verificar` confere
@@ -37,6 +38,8 @@ comandos que faltarem no config.
 | feature do green em diante com lacuna de rastreabilidade | feature pronta não consolidada na spec do sistema |
 | feature pronta ou em homologação com spec, testes, plano ou revisão de segurança alterados depois da aprovação | incidente S1 ou S2 não encerrado |
 | release em andamento com feature fora da fase esperada | hotfix sem spec aprovada |
+| pull request fora do Git Flow (ex.: `feature/*` direto para `main`) | branch fora do padrão do Git Flow |
+| | artefato de processo fora do lugar do padrão; feature adotada ainda em transição |
 
 ## Perguntas frequentes
 

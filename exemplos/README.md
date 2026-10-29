@@ -46,9 +46,36 @@ pronta. Depois vêm a consolidação, a release e o incidente.
 | [`sistema/autenticacao.md`](sistema/autenticacao.md) | `sistema/autenticacao.md` | a spec viva da capacidade, já com o requisito do hotfix, cada item com a origem |
 | [`releases/0.1.0/`](releases/0.1.0/) | `releases/0.1.0/` | uma release do começo ao fim: `release.md`, `testes.md` (testador de sistema), `homologacao.md` (roteiro com o aceite da cliente), `implantacao.md` (passos e rollback), `notas.md`, `estado` e `historico.md` |
 | [`incidentes/INC-001.md`](incidentes/INC-001.md) | `incidentes/INC-001.md` | um incidente S2: mitigação, hotfix, linha do tempo e post-mortem com as ações no backlog |
+| [`CHANGELOG.md`](CHANGELOG.md) | `CHANGELOG.md`, na raiz | o changelog técnico no formato Keep a Changelog, gerado pelo `sdd-release changelog` a partir dos commits: a 0.1.0 (as features 001 e 002) e a 0.1.1 (o hotfix 003). As notas da versão, em linguagem de negócio, ficam em `releases/X.Y.Z/notas.md` |
 
 Leia o `historico.md` da release para ver os gates em ordem: testes, aceite (de
-quem homologou), go (de quem responde pela produção) e verificação.
+quem homologou), go (de quem responde pela produção) e verificação. O
+`implantacao.md` mostra o Git Flow da entrega: depois do go, `sdd-gitflow
+finalizar 0.1.0` (merge em `main`, tag `v0.1.0`, merge em `develop`) e o push
+das branches e da tag, que dispara o pipeline. O `estado` de cada feature guarda
+a branch em que ela foi feita (`branch=feature/001-redefinicao-de-senha`).
+
+## A adoção de um projeto em andamento
+
+[`adocao/`](adocao/) mostra uma loja que outro agente começou fora do plugin:
+a exportação de pedidos com o CSV feito e o PDF não, uma decisão de banco e um
+`TODO.md`. É o exemplo do guia
+[adotar o SDD num projeto em andamento](../docs/referencia/projeto-em-andamento.md).
+
+| Arquivo | O que mostra |
+|---|---|
+| [`antes/`](adocao/antes/) | os arquivos como o outro processo os deixou: `docs/specs/`, `tasks/`, `docs/decisions/`, `TODO.md` |
+| [`adocao-mapa.txt`](adocao/adocao-mapa.txt) | o mapa que o agente propôs e o usuário aprovou, com o motivo de cada grupo |
+| [`depois/specs/001-exportar-pedidos/transicao.md`](adocao/depois/specs/001-exportar-pedidos/transicao.md) | **como era** e **como vai ficar**: arquivos, requisitos e tarefas, linha a linha, e a fase de destino |
+| [`depois/specs/001-exportar-pedidos/spec.md`](adocao/depois/specs/001-exportar-pedidos/spec.md) | a spec convertida para o modelo, com RF e CA |
+| [`depois/specs/001-exportar-pedidos/tarefas.md`](adocao/depois/specs/001-exportar-pedidos/tarefas.md) | duas tarefas `[O]` (feitas fora do plugin) e duas `[ ]` (o plugin continua daqui) |
+| [`depois/specs/001-exportar-pedidos/historico.md`](adocao/depois/specs/001-exportar-pedidos/historico.md) | a adoção com o hash de cada original e a aprovação da transição, que leva a feature à fase red |
+| [`depois/docs/adr/0001-usar-postgres.md`](adocao/depois/docs/adr/0001-usar-postgres.md), [`depois/docs/legado/TODO.md`](adocao/depois/docs/legado/TODO.md) | o ADR numerado e o TODO preservado no legado (o item em aberto foi para o backlog) |
+| [`depois/.sdd/adocao.md`](adocao/depois/.sdd/adocao.md) | o registro de onde veio cada arquivo |
+
+Compare `antes/docs/specs/exportar-pedidos.md` com `depois/specs/001-exportar-pedidos/spec.md`,
+e `antes/tasks/exportar-pedidos.md` com `depois/specs/001-exportar-pedidos/tarefas.md`:
+é exatamente o que o `transicao.md` descreve.
 
 ## O acompanhamento
 

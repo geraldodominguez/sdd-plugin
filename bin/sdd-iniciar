@@ -14,12 +14,15 @@
 #   sistema/               a spec viva do sistema, por capacidade (o que ele faz hoje)
 #   releases/, incidentes/ criadas sob demanda por /sdd:release e /sdd:incidente
 #   docs/adr/              decisões arquiteturais duráveis
-# E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente).
+# E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente), e
+# acrescenta ao .gitattributes o merge por união dos históricos: com o Git Flow,
+# duas branches acrescentam linhas ao mesmo histórico, e o merge junta as duas.
 set -euo pipefail
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 FORCAR=0
 NIVEL=1
@@ -29,7 +32,7 @@ while [ $# -gt 0 ]; do
     --forcar) FORCAR=1 ;;
     --nivel) NIVEL="${2:?--nivel exige um valor}"; shift ;;
     --protecao) PROTECAO="${2:?--protecao exige um valor}"; shift ;;
-    -h|--ajuda|--help) sed -n '2,18p' "$0"; exit 0 ;;
+    -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;;
     *) echo "sdd-iniciar: opção desconhecida: $1" >&2; exit 1 ;;
   esac
   shift
@@ -130,6 +133,20 @@ injetar_bloco() {
 }
 injetar_bloco "$RAIZ/CLAUDE.md"
 injetar_bloco "$RAIZ/AGENTS.md"
+
+# Históricos só recebem linhas novas: no merge entre branches do Git Flow, o
+# driver "union" do git junta as linhas dos dois lados em vez de dar conflito.
+ATRIB="$RAIZ/.gitattributes"
+if ! grep -qF '# sdd:inicio' "$ATRIB" 2>/dev/null; then
+  PS_="$(sdd_pasta_specs "$RAIZ")"; PR_="$(sdd_pasta_releases "$RAIZ")"
+  {
+    [ -s "$ATRIB" ] && printf '\n'
+    printf '# sdd:inicio (históricos do SDD só recebem linhas: o merge junta os dois lados)\n'
+    printf '.sdd/historico.md merge=union\n%s/*/historico.md merge=union\n%s/*/historico.md merge=union\n' "$PS_" "$PR_"
+    printf '# sdd:fim\n'
+  } >> "$ATRIB"
+  criados+=(".gitattributes (merge por união dos históricos)")
+fi
 
 echo "SDD iniciado em: $RAIZ"
 echo "  nível padrão: $NIVEL | proteção: $PROTECAO"

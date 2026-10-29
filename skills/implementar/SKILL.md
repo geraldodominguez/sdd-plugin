@@ -3,7 +3,7 @@ name: implementar
 description: Executa as tarefas da feature ativa em TDD. Na fase red, um subagent escreve os testes só a partir dos critérios; na green, a sessão principal implementa com os testes congelados.
 argument-hint: "[T-NNN para executar só uma tarefa ou grupo]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-backlog *), Read, Write, Edit, Glob, Grep, Bash(git merge-base *), Bash(git status *), Bash(git diff *)
 ---
 
 # /sdd:implementar
@@ -25,12 +25,31 @@ Rode `sdd-estado ver` e decida por onde começar:
 | fase `red`, testes marcados existem e não estão aprovados | os testes já foram escritos: mostre-os e diga para rodar `/sdd:aprovar` |
 | fase `green` | vá direto para a fase green, continuando da primeira tarefa aberta |
 | fase `tarefas` | comece pela fase red |
+| `adocao=transicao` | a feature veio de outro processo e a transição não foi aprovada: diga para rodar `/sdd:aprovar` e pare |
+| Git Flow ativo e a branch atual não é a de `sdd-gitflow esperada` | rode `sdd-gitflow feature NNN-slug` (ele cria ou ativa a branch da feature); se recusar, mostre o motivo ao usuário e pare |
+
+**Tarefas `[O]`** foram feitas fora do plugin, antes da adoção, sem gate. Elas
+não se implementam de novo. Na fase red, os critérios delas também ganham
+testes (os que já existiam recebem a marca, como lista o `transicao.md`), e
+esses testes devem **passar** de início: é assim que o trabalho de fora é
+verificado. Na fase green, implemente só as tarefas `[ ]`.
 
 Leia `comando_teste` e `protecao` no `.sdd/config.yml`. Sem `comando_teste`, descubra o comando de testes do projeto
 e confirme com o usuário.
 
 Pergunte uma vez, no início, se o usuário quer **um commit por tarefa**, no
-formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
+formato `tipo(NNN): T-XXX descrição` (Conventional Commits). Respeite a
+resposta até o fim. O tipo decide a próxima versão, então escolha pelo que a
+tarefa faz para quem usa o sistema:
+
+| A tarefa | Tipo |
+|---|---|
+| entrega comportamento novo | `feat` |
+| corrige comportamento errado | `fix` |
+| melhora desempenho sem mudar o comportamento | `perf` |
+| só testes (fase red) | `test` |
+| reorganiza o código sem mudar o comportamento | `refactor` |
+| quebra um contrato público (API, evento, schema consumido por outros) | o tipo com `!` (`feat(NNN)!:`) e o rodapé `BREAKING CHANGE: <o que quebrou>` |
 
 ## Fase red: os testes primeiro
 
@@ -40,6 +59,9 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
    - o número da feature (NNN), para as marcas `sdd:NNN:CA-XXX`;
    - o `comando_teste` e os `globs_de_teste`;
    - as tarefas no escopo;
+   - **numa feature adotada** (`transicao.md` existe): as tarefas `[O]` e a
+     tabela "Testes que já existiam" do `transicao.md`, com a instrução de
+     marcar os testes listados e de escrever os que faltam para os CAs delas;
    - **num hotfix** (feature com `tipo=hotfix`, sem tarefas nem spec ainda): o
      caminho de `incidentes/INC-NNN.md` (a origem) e a instrução de escrever o
      teste de regressão que reproduz o incidente, com a marca `sdd:NNN:CA-001`.
@@ -49,7 +71,11 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
 3. Ao receber o resumo, confirme que:
    - todo CA do escopo tem teste com marca (o `sdd-rastrear` ajuda);
    - os testes **falham pelo motivo certo**: comportamento ausente, não erro de
-     sintaxe nem configuração quebrada.
+     sintaxe nem configuração quebrada;
+   - numa feature adotada, os testes dos CAs atendidos só por tarefas `[O]`
+     **passam**. Se um deles falhar, o trabalho feito fora do plugin não cumpre
+     a spec: mostre ao usuário e pergunte se a tarefa volta a `[ ]` (o plugin
+     refaz) ou se a spec está errada (corrija a spec antes de aprovar os testes).
 4. **Gate.** Mostre os testes criados (nome e CA) e a execução falhando, e
    **pare**. Diga ao usuário para rodar `/sdd:aprovar`, que registra o hash dos
    testes (qualquer mudança neles depois disso fica visível para o auditor), e
@@ -64,7 +90,8 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
    2. implemente **só** o necessário para esses testes passarem, respeitando a
       constituição, o plano e os contratos;
    3. rode os testes e itere até ficarem verdes, sem quebrar os anteriores;
-   4. marque `[x]` em `tarefas.md`;
+   4. marque `[x]` em `tarefas.md`. Uma tarefa `[O]` só vira `[x]` se o plugin
+      a refez (porque o teste dela falhou e o usuário decidiu refazer);
    5. faça o commit, se o usuário pediu.
 3. **Se um teste parecer errado** (contradiz a spec, depende de detalhe interno,
    é impossível de satisfazer): **pare.** Explique o problema e as opções:
@@ -80,7 +107,7 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
 ## Encerramento
 
 1. Rode a suíte completa, o `comando_lint` (se houver) e o `sdd-rastrear`.
-2. Rode `sdd-estado sensivel <ref base>` (a base é o `git merge-base HEAD main`).
+2. Rode `sdd-estado sensivel <ref base>` (a base é o `git merge-base HEAD develop` com o Git Flow ativo, ou `HEAD main` com `gitflow: desligado`).
    Se a mudança tocou uma área sensível, ele torna a revisão de segurança
    obrigatória para esta feature, e você avisa o usuário.
 3. Apresente as tarefas concluídas, o resultado dos testes, as lacunas
@@ -96,7 +123,7 @@ formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
 
 ## Pronto quando
 
-- Toda tarefa do escopo está `[x]` e a suíte está verde.
+- Toda tarefa do escopo está `[x]` (ou `[O]`, com os testes dela verdes) e a suíte está verde.
 - O `sdd-rastrear` não aponta lacunas.
 - Nenhum teste foi alterado na fase green.
 - A obrigatoriedade da revisão de segurança foi conferida com `sdd-estado sensivel`.

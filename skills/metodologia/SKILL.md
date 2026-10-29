@@ -18,18 +18,26 @@ próximo passo fora do comum.
 | `.sdd/config.yml` | Nível padrão, proteção, globs de teste, contrato e áreas sensíveis, comandos (teste, lint, segurança, deploy). |
 | `.sdd/estado` | Ponteiros pessoais: feature ativa e sprint atual. |
 | `.sdd/backlog.md`, `.sdd/sprints/` | O que vem depois, e o que entra neste período. |
-| `specs/NNN-slug/` | Uma pasta por feature: `estado`, `historico.md`, `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `seguranca.md`, `auditoria.md`, `delta-spec.md`. |
+| `specs/NNN-slug/` | Uma pasta por feature: `estado`, `historico.md`, `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `seguranca.md`, `auditoria.md`, `delta-spec.md`, e `transicao.md` nas features adotadas. |
 | `sistema/<capacidade>.md` | A spec viva: o que o sistema faz **hoje**, por capacidade. Leia antes de mudar uma área. |
 | `releases/<versão>/` | `release.md`, `testes.md`, `homologacao.md`, `implantacao.md`, `notas.md`, `historico.md`. |
 | `incidentes/INC-NNN.md` | Um incidente, da abertura ao post-mortem. |
-| `docs/adr/` | Decisões arquiteturais duráveis. |
+| `docs/adr/NNNN-slug.md` | Decisões arquiteturais duráveis, numeradas com 4 dígitos. |
+| `docs/arquitetura/` | Documentos e diagramas de arquitetura, como referência. |
+| `docs/legado/` | O que veio de outro processo e não entra no fluxo. Não é fonte de verdade. |
+
+Esses são os únicos lugares de artefatos de processo. Não crie pastas ou nomes
+próprios (`docs/specs/`, `tasks/`, `TODO.md`, `PLAN.md`): o hook bloqueia, e o
+que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 
 ## Utilitários no PATH
 
 - `sdd-estado ver | definir | nova | usar | aprovar | aprovado | cancelar | reabrir | sensivel | listar | historico | caminho | template`
 - `sdd-sistema listar | nova | ver | consolidar | consolidada | pendentes`
-- `sdd-release proxima | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
+- `sdd-release proxima | analisar | changelog | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
+- `sdd-adotar inventario | contar | aplicar` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
+- `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | valido | pode-integrar | nome`
 - `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
 
 ## Fases da feature
@@ -90,12 +98,29 @@ constituição, **ameaças e mitigações**, **implantação e rollback**,
 congelados durante a implementação.
 
 **Tarefas:** pequenas, rastreáveis ([DECOMPOSICAO-DE-TAREFAS.md](DECOMPOSICAO-DE-TAREFAS.md)):
-`- [ ] T-NNN [P] descrição (atende: RF-NNN, CA-NNN; depende de: T-NNN)`
+`- [ ] T-NNN [P] descrição (atende: RF-NNN, CA-NNN; depende de: T-NNN)`.
+`[x]` é feita no plugin; `[O]` é feita fora do plugin, antes da adoção, sem
+gate: não se refaz, mas os testes dos critérios dela vêm na fase red e devem
+passar de início.
+
+**Feature adotada:** veio de outro processo e nasce em transição
+(`adocao=transicao`), com um `transicao.md` que mostra como ela era e como
+fica. Nada avança antes de o usuário aprovar a transição (`/sdd:aprovar`).
 
 **Testes:** todo CA tem teste com a marca `sdd:<NNN>:<CA-ID>`. O hash dos testes
 cobre só os blocos marcados com o número da feature.
 
-**Commits:** `tipo(NNN): T-XXX descrição`.
+**Commits:** Conventional Commits, `tipo(NNN): T-XXX descrição`
+([VERSIONAMENTO.md](VERSIONAMENTO.md)). O tipo decide a versão: `feat` sobe o
+minor, `fix` e `perf` o patch, `!` ou `BREAKING CHANGE:` o major; `docs`,
+`chore`, `refactor`, `test`, `build`, `ci`, `style` e `revert` não mudam a
+versão. O hook bloqueia mensagem fora do formato.
+
+**Git Flow** ([GIT-FLOW.md](GIT-FLOW.md)): nomes fixos em todo projeto.
+`main` (produção, só por merge, tag `vX.Y.Z`), `develop` (integração),
+`feature/NNN-slug` (uma por feature, de `develop`), `release/X.Y.Z` (de
+`develop`) e `hotfix/X.Y.Z` (de `main`). Branch se cria pelo `sdd-gitflow`,
+nunca à mão; o commit de uma feature ativa vai na branch dela.
 
 ## Invariantes
 

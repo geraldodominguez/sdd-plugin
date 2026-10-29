@@ -12,7 +12,8 @@ o processo, não o quebra.
 
 Você digita `/sdd:incidente`; o agente não o usa por conta própria. Use quando
 algo está errado **em produção**. Defeito encontrado antes da produção é
-correção na própria feature (`sdd-estado reabrir`); melhoria é item de backlog.
+correção na própria feature (`sdd-estado reabrir`; em homologação, a reprovação
+no `/sdd:release aceitar`); melhoria é item de backlog.
 
 | Severidade | Quando |
 |---|---|
@@ -44,6 +45,12 @@ aberto -> mitigado -> resolvido -> encerrado
 | Testes | um por critério | o teste de regressão do incidente, antes da correção |
 | Segurança | conforme nível e área | conforme a área tocada |
 | Release | normal | patch, homologação expressa |
+
+A branch: o hotfix nasce em `hotfix/X.Y.Z` (a próxima versão patch), a partir de
+**`main`**: a correção parte do que está em produção, não do que está em
+desenvolvimento. Depois do go da release de correção, o `sdd-gitflow
+finalizar` leva o hotfix para `main`, com a tag, e para `develop`. Ver
+[Git Flow](referencia/git-flow.md#44-um-hotfix).
 
 ## O post-mortem
 

@@ -19,7 +19,7 @@ mostrar "ESPERANDO VOCÊ".
 |---|---|---|
 | Incidente em aberto ou sem post-mortem | `incidentes/INC-NNN.md` | `/sdd:incidente` |
 | Release esperando aceite, go/no-go ou conclusão | `releases/<versão>/` | `/sdd:release` |
-| Aprovação pendente | artefato da fase sem aprovação, ou alterado depois de aprovado | `/sdd:aprovar` |
+| Aprovação pendente | artefato da fase sem aprovação, ou alterado depois de aprovado, ou a transição de uma feature adotada | `/sdd:aprovar` |
 | Revisão de segurança devida | feature com segurança obrigatória e tarefas concluídas | `/sdd:seguranca` |
 | Dúvida na spec | `[PRECISA ESCLARECER]` na `spec.md` | `/sdd:clarificar` |
 | Delta spec proposta | `specs/NNN/delta-spec.md` com situação "proposta" | `/sdd:aprovar`, na fase de auditoria |
@@ -28,6 +28,8 @@ mostrar "ESPERANDO VOCÊ".
 | ADR proposto | `docs/adr/*.md` com situação "proposta" | revisar e mudar para "aceita" |
 | Backlog a triar | item sem nível estimado | `/sdd:backlog priorizar` |
 | Sprint sem spec | item da sprint atual que ainda é `B-NNN` | `/sdd:especificar B-NNN` |
+| Git Flow | `develop` ausente, branch fora do padrão, feature pronta não integrada em `develop`, release com o go que não foi para `main` | `sdd-gitflow integrar`, `finalizar`, `renomear` (ver [Git Flow](referencia/git-flow.md)) |
+| Fora do padrão | spec, plano, tarefas, ADR ou backlog fora do lugar do padrão (ver `sdd-adotar inventario`) | `/sdd:iniciar --adotar` |
 
 A ordem sugerida começa por incidentes e releases paradas (produção e entrega),
 passa por artefatos alterados depois de aprovados (um sinal de drift em

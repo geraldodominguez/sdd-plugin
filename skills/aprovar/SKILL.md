@@ -3,7 +3,7 @@ name: aprovar
 description: O gate formal de cada fase da feature. Mostra o que está sendo aprovado, pede a sua confirmação e registra a aprovação no histórico (quem, quando e o hash do artefato), avançando a feature; ao chegar a pronta, conduz a consolidação na spec do sistema.
 argument-hint: "[artefato] [nota]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-sistema *), Read, Glob, Grep, Edit
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-status *), Bash(sdd-sistema *), Read, Glob, Grep, Edit, Bash(sdd-backlog *), Bash(gh pr create *)
 ---
 
 # /sdd:aprovar
@@ -25,8 +25,14 @@ do `/sdd:release`.
 
 2. **Descubra o que está em jogo:**
 
+   Feature com `adocao=transicao` (veio de outro processo) aprova primeiro a
+   **transição**, em qualquer fase: o `transicao.md`, e com ele a spec, o
+   plano e as tarefas convertidos que a fase de destino pressupõe. Ela vai
+   para a fase de destino escrita no `transicao.md`.
+
    | Fase | O que se aprova | Para onde vai |
    |---|---|---|
+   | qualquer, em transição | `transicao.md` (e `spec.md`, `plano.md`, `tarefas.md`, conforme o destino) | a fase de destino: `especificacao`, `plano`, `tarefas` ou `red` |
    | `especificacao`, `clarificacao` | `spec.md` | `plano` (nível 2) ou `tarefas` (nível 1) |
    | `plano` | `plano.md` e `contratos/` | `tarefas` |
    | `tarefas` | `tarefas.md` | `red` |
@@ -38,6 +44,10 @@ do `/sdd:release`.
    | `auditoria` | a decisão sobre `auditoria.md` | `pronta` ou `green` (corrigir) |
 
 3. **Apresente um resumo para a decisão**, curto e honesto:
+   - **transição:** o "como era" e o "como vai ficar" do `transicao.md` lado a
+     lado (arquivos, requisitos, tarefas), quantas tarefas ficam `[O]` (feitas
+     fora do plugin, sem gate) e quantas `[ ]` (o plugin continua daqui), o
+     que ficou de fora e a fase de destino com a evidência;
    - **spec:** objetivo, quantidade de RFs e CAs, fora do escopo, capacidade, e
      alerta se houver `[PRECISA ESCLARECER]` em aberto;
    - **plano:** abordagem, contratos, dependências novas, ADRs, ameaças e plano de implantação;
@@ -74,6 +84,19 @@ do `/sdd:release`.
    inalterados, e recusa com a lista do que falta. Com a feature pronta:
    - conduza a **consolidação na spec do sistema** como no `/sdd:sistema`
      (edite `sistema/<capacidade>.md`, mostre, e rode `sdd-sistema consolidar`);
+   - **Git Flow** (com `gitflow: ativo`; não vale para hotfix, que vai para
+     `main` pela release de correção): primeiro, proponha o commit do que a
+     aprovação e a consolidação mudaram, na branch da feature
+     (`docs(NNN): feature pronta`), porque o merge exige tudo commitado. Depois
+     leve a feature para `develop` conforme a chave `integracao` do config,
+     **perguntando antes**:
+
+     | `integracao` | O que fazer |
+     |---|---|
+     | `local` | `sdd-gitflow integrar NNN-slug` (merge `--no-ff` em `develop`); ofereça `--apagar` para a branch local e diga o `git push origin develop` |
+     | `pr` | proponha `gh pr create --base develop --head feature/NNN-slug` com o título da feature e o resumo da spec |
+
+     Conflito: pare e resolva com o usuário.
    - diga o próximo passo: entrar numa release (`/sdd:release preparar`).
 
 8. **Mostre o resultado**: a linha registrada, a fase nova e o próximo comando.

@@ -4,6 +4,68 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
+## Não lançado
+
+## 1.0.0 - 2026-10-29
+
+Versão maior: muda formatos rastreáveis e o comportamento padrão. Ver
+"Incompatível", abaixo. Para atualizar um projeto que já usa o plugin, rode
+`/sdd:iniciar` de novo (sem `--forcar`): ele atualiza o bloco de regras e o
+`.gitattributes` e não mexe no config nem na constituição.
+
+### Incompatível
+
+- Git Flow e Conventional Commits ficam ligados por padrão (`gitflow: ativo`, `commits: convencional`). O hook passa a bloquear commit em `main`, branch com nome fora do padrão e mensagem fora do formato. Para manter o comportamento anterior, use `gitflow: desligado` e `commits: livre` no `.sdd/config.yml`.
+- A linha de tarefa aceita a marca `[O]` (feita fora do plugin), além de `[ ]` e `[x]`.
+- Chaves novas em `specs/NNN/estado`: `adocao` (`transicao` ou `regularizada`) e `branch`.
+- Regras 6, 10 e 11 do bloco do `CLAUDE.md` e do `AGENTS.md`: a 6 passa a exigir o Conventional Commits (`tipo(NNN): T-XXX descrição`); a 10 (artefatos só nos lugares do padrão) e a 11 (Git Flow com nomes fixos) são novas. Rode `/sdd:iniciar` de novo para atualizar o bloco.
+- `sdd-estado reabrir` não reabre mais uma feature em `homologacao`: quem a devolve é o `sdd-release reprovar`, que mantém a release coerente.
+
+### Novidades
+
+- Layout como contrato: cada artefato de processo (spec, plano, tarefas, ADR, backlog, sprint, arquitetura, regras) tem um único lugar, e o hook `guarda-edicoes` bloqueia criar um fora dele, nas proteções leve e estrita. Uma pasta de feature sem `estado` (criada à mão) também conta como fora do padrão. Ver [ADR 0014](.agents/adr/0014-layout-como-contrato-e-adocao.md).
+- Adoção de projetos que não nasceram com o plugin: o `/sdd:iniciar` detecta artefatos de outros processos e agentes, lê tudo, propõe um mapa e, com a aprovação do usuário, os traz para o padrão. `/sdd:iniciar --adotar` repete a adoção num projeto já preparado.
+- Utilitário `sdd-adotar` (`inventario`, `contar`, `aplicar` com `--simular`): numera features e ADRs, renomeia com `git mv`, registra cada movimento em `.sdd/adocao.md` e no histórico do projeto, guarda o hash de cada original no histórico da feature e no `transicao.md`, e aponta os links para os caminhos antigos.
+- Situação de transição das features adotadas: chave `adocao` (`transicao` ou `regularizada`) em `specs/NNN/estado` e modelo `transicao.md`, que mostra como a feature era e como fica. O agente converte spec, plano e tarefas para os modelos; o `/sdd:aprovar` aprova a transição de uma vez (`sdd-estado aprovar`, com `decisao: transicao` para cada artefato) e leva a feature à fase de destino (`especificacao`, `plano`, `tarefas` ou `red`), para continuar de onde parou. Durante a transição, aprovar outro artefato e `definir fase=` são recusados.
+- Marca `[O]` na linha de tarefa: feita fora do plugin, antes da adoção, sem gate. Conta como feita no `sdd-status`, que a mostra à parte, e é lida pelo `sdd-rastrear`. Os testes dos critérios dela vêm na fase red e devem passar de início.
+- Novos lugares do padrão: `docs/arquitetura/` (referência) e `docs/legado/` (o que veio de outro processo e não entra no fluxo).
+- Chave nova `excecoes_de_layout` no `.sdd/config.yml`, para documentos com nome de artefato que não são do SDD.
+- `sdd-verificar` avisa sobre artefatos fora do padrão, e `sdd-pendencias` os lista na seção "Fora do padrão".
+- Regra 10 no bloco do `CLAUDE.md` e do `AGENTS.md`: artefatos só nos lugares do padrão.
+
+- Guias passo a passo: [começar um projeto novo](docs/referencia/projeto-novo.md) e [adotar o SDD num projeto em andamento](docs/referencia/projeto-em-andamento.md), com as saídas reais dos comandos e o que olhar em cada gate, e o exemplo [`exemplos/adocao/`](exemplos/adocao/), com o antes e o depois de uma adoção.
+
+- **Git Flow com nomes fixos** em todo projeto: `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z` e as tags `vX.Y.Z`, ligado ao ciclo: o `/sdd:iniciar` cria `develop`, o `/sdd:especificar` cria a branch da feature, o `/sdd:aprovar` integra a feature pronta, o `/sdd:release` cria a `release/` e, depois do go, a leva a `main` com a tag, e o `/sdd:incidente` cria o `hotfix/` a partir de `main`. Ver [docs/referencia/git-flow.md](docs/referencia/git-flow.md) e o [ADR 0015](.agents/adr/0015-git-flow-com-nomes-fixos.md).
+- Utilitário `sdd-gitflow` (`conferir`, `iniciar`, `renomear`, `feature`, `release`, `hotfix`, `integrar`, `finalizar`, `esperada`, `valido`, `pode-integrar`, `nome`). Nunca faz push nem reescreve histórico.
+- Chaves novas: `gitflow` (`ativo` ou `desligado`) e `integracao` (`local` ou `pr`) no `.sdd/config.yml`; `branch` em `specs/NNN/estado`.
+- O hook `guarda-commits` bloqueia branch com nome fora do padrão, commit em `main`, commit numa branch fora do padrão e commit da feature ativa fora da branch dela.
+- O `sdd-verificar` falha com pull request fora do Git Flow (variáveis do GitHub Actions e do GitLab CI) e avisa sobre branch fora do padrão; o `sdd-pendencias` ganha a seção "Git Flow" (develop ausente, branches fora do padrão, feature pronta não integrada, release com o go fora de `main`); o `sdd-status` mostra a branch.
+- Os modelos de pipeline seguem o Git Flow: homologação no push de `release/**` e `hotfix/**`, produção na tag.
+- O `/sdd:iniciar` põe os históricos do SDD com `merge=union` no `.gitattributes`, para os merges do Git Flow não darem conflito neles.
+- A simulação do ciclo roda o Git Flow inteiro, com branches, merges e tags reais.
+
+- **Versão pelos commits:** SemVer calculado pelos Conventional Commits. `sdd-release proxima` (agora `auto` por padrão) sugere a próxima versão (`!` ou `BREAKING CHANGE:` major, minor antes da 1.0.0; `feat` minor; o resto patch), `--pre rc` dá o próximo pré-lançamento, `sdd-release analisar` mostra a conta e o motivo, e `sdd-release changelog X.Y.Z [--escrever]` gera a seção no `CHANGELOG.md` (Keep a Changelog). Ver [docs/referencia/versionamento.md](docs/referencia/versionamento.md) e o [ADR 0016](.agents/adr/0016-versao-pelos-commits.md).
+- O hook `guarda-commits` confere o formato Conventional Commits das mensagens inline (também em heredoc), com a chave nova `commits` (`convencional` ou `livre`).
+- O `sdd-gitflow conferir` avisa quando nenhuma tag segue `vX.Y.Z`; o `/sdd:iniciar` propõe a tag da versão em produção num projeto adotado.
+
+### Mudanças
+
+- `sdd-release proxima` sem argumento calcula pelos commits (antes, era sempre minor).
+- O aviso de links para o caminho antigo ignora o bloco de regras do SDD, os registros da adoção e as citações parciais (`TODO.md` não casa com `docs/legado/TODO.md`).
+- O `.sdd/adocao.md` entra na lista de arquivos que só os utilitários escrevem.
+- `sdd_slug`, `sdd_proximo_numero_feature` e `sdd_proximo_numero_adr` passam para a `lib/sdd-comum.sh`.
+- O `sdd-release concluir` diz se a tag `vX.Y.Z` já existe ou se falta o `sdd-gitflow finalizar`.
+- Os modelos de pipeline fixam a versão do plugin em `SDD_VERSAO`; o do GitLab ganha `workflow: rules`, para não rodar duas vezes num merge request.
+
+### Correções
+
+- Todo utilitário responde a `--ajuda` (e `-h`), mesmo fora de um projeto, com o cabeçalho completo; antes, algumas ajudas saíam cortadas ou com linhas de código.
+- O hook `guarda-commits` lê a mensagem de `git commit -F arquivo` para conferir o formato e a tarefa citada.
+- `sdd_config` devolvia o comentário da linha quando a chave estava vazia.
+- O `/sdd:iniciar` num projeto já preparado oferecia só o `--forcar`, que sobrescreve config e constituição; agora atualiza pelo caminho seguro, sem `--forcar`.
+- Documentação conferida contra o código: eventos de histórico completos, seção Git Flow do `sdd-pendencias`, `consolidar --sem-mudanca`, aprovação da spec num hotfix, reprovação a partir de `aceita`, `revert` fora do changelog, commits de hotfix sem `T-NNN`, `/sdd:sistema mapear`, `/sdd:pipeline conferir` e homologação no push de `release/` e `hotfix/`.
+- Ao trocar de branch, o `sdd-gitflow` leva as alterações pendentes nos arquivos do SDD e recusa, com a explicação, quando há alteração pendente em código; antes, a troca podia falhar com a mensagem crua do git.
+
 ## 0.1.0
 
 Primeira versão pública. Cobre o ciclo de vida inteiro: análise,

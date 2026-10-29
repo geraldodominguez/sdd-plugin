@@ -66,7 +66,7 @@ sempre obrigatória.
 | Situação | O que fazer |
 |---|---|
 | Era maior do que parecia | `sdd-estado definir nivel=2` (isso também torna a revisão de segurança obrigatória), troque a spec pelo template completo (`sdd-estado template spec.md`) e siga com `/sdd:clarificar` e `/sdd:planejar` |
-| Era menor do que parecia | `sdd-estado definir nivel=1` e siga para `/sdd:tarefas` |
+| Era menor do que parecia | `sdd-estado definir nivel=1`. A fase não muda sozinha: se a feature estava no `plano`, `sdd-estado definir fase=tarefas` e siga para `/sdd:tarefas`. A revisão de segurança continua obrigatória (ela foi marcada no nível 2); se a mudança não toca área sensível, `sdd-estado definir seguranca=dispensada` |
 
 O nível padrão de novas features fica em `.sdd/config.yml` (`nivel_padrao`). É
 só a sugestão inicial.

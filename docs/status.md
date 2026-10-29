@@ -25,6 +25,9 @@ terminal com `sdd-status`.
 ## O quadro
 
 ```
+SDD: loja · proteção leve
+Git Flow: em feature/005-exportar-csv
+
 Sprint 2026-S44 (ativa) · 2026-10-26 a 2026-11-06 · faltam 4 dias
 Objetivo: clientes recuperam o acesso sozinhos
 Progresso: 1/3 itens entregues · 11/19 tarefas
@@ -36,6 +39,7 @@ Planejamento
   ★ 004-convite-de-membros             n2 · plano · aguarda aprovação
 Implementação
   ▶ 005-exportar-csv                   n1 · green · 3/5 tarefas
+    007-importar-planilha              n1 · red · 2/6 tarefas (2 fora do plugin)
 Revisão
   ★ 006-limite-de-tentativas           n2 · seguranca · aguarda aprovação
 Pronta
@@ -59,7 +63,13 @@ ESPERANDO VOCÊ: 6 item(ns) (/sdd:pendencias)
 ```
 
 Cada feature guarda a própria fase, então o quadro mostra todas ao mesmo tempo,
-não só a ativa.
+não só a ativa. Uma feature adotada de outro processo aparece com "em
+transição" até você aprovar a transição, e as tarefas feitas fora do plugin
+(`[O]`) aparecem à parte. No topo, a branch em que você está; se a feature
+ativa é feita em outra, um aviso diz qual.
+
+No detalhe de uma feature (`/sdd:status 005-exportar-csv`), aparecem também a
+branch dela e, depois de pronta, se já foi integrada em `develop`.
 
 ## Está funcionando se
 

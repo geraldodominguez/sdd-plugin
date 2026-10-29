@@ -3,7 +3,7 @@ name: especificar
 description: Abre uma feature e escreve a spec (o quê e por quê), a partir de um pedido ou de um item do backlog. Classifica o nível de rigor, mapeia o código afetado e lista o que precisa ser esclarecido, sem decidir regra de negócio por você.
 argument-hint: "<descrição da mudança> | B-NNN"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-sistema *), Bash(sdd-status *), Bash(sdd-rastrear *), Read, Glob, Grep, Edit, Write
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-sistema *), Bash(sdd-status *), Bash(sdd-rastrear *), Read, Glob, Grep, Edit, Write
 ---
 
 # /sdd:especificar
@@ -46,6 +46,13 @@ contexto.
    --capacidade <nome> [--seguranca obrigatoria]`, acrescentando
    `--origem B-NNN` quando vier do backlog (isso promove o item). A feature
    nasce na fase `especificacao` e vira a feature ativa.
+
+   **Git Flow** (com `gitflow: ativo` no config, o padrão): rode
+   `sdd-gitflow feature NNN-slug`. Ele cria `feature/NNN-slug` a partir de
+   `develop` e muda para ela, levando os arquivos novos da spec. Se ele recusar
+   por alterações não commitadas de outro trabalho, mostre ao usuário e
+   pergunte o que fazer (commit, stash) antes de seguir. Toda a feature, da
+   spec ao código, é commitada nesta branch.
 
 5. **Contexto, em projeto existente.**
    - Nível 2: chame a ferramenta Agent com o subagent `mapeador-de-contexto`,

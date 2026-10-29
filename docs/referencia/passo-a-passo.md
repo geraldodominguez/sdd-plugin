@@ -22,9 +22,19 @@ O agente pergunta o nível padrão e a proteção, cria a estrutura (com backlog
 sprints, e a pasta `sistema/`), lê o projeto e rascunha a constituição só com
 o que observou. **A sua parte:** revisar a constituição, porque ela vale para
 todas as features, e preencher no `.sdd/config.yml` as `areas_sensiveis`
-(aqui, `src/auth/**`) e os comandos de entrega. Para o CI, rode
-`/sdd:pipeline` uma vez. Depois,
-faça commit de tudo (o `.sdd/estado`, pessoal, já fica fora do git).
+(aqui, `src/auth/**`) e os comandos de entrega.
+
+Antes de qualquer commit, ele prepara o **Git Flow** (ver [Git Flow](git-flow.md)):
+pergunta como as branches se juntam (`integracao: local`, o plugin faz o merge;
+ou `pr`, por pull request), propõe renomear `master` para `main` e
+`development` para `develop` se for o caso, e roda `sdd-gitflow iniciar`, que
+cria `develop` a partir de `main` e muda para ela. Também acrescenta ao
+`.gitattributes` o merge por união dos históricos do SDD. Daqui em diante,
+ninguém faz commit em `main`: o hook bloqueia.
+
+Para o CI, rode `/sdd:pipeline` uma vez. Depois, faça o commit em `develop`
+(`chore: sdd iniciado`; o `.sdd/estado`, pessoal, já fica fora do git) e
+publique: `git push -u origin main develop`.
 
 ## 1. Registrar o pedido no backlog
 
@@ -61,7 +71,10 @@ que a feature muda (aqui, `autenticacao`), cria `specs/001-redefinicao-de-senha/
 (o item vira `[x]` no backlog e a spec registra `Origem: B-001`), lê
 `sistema/autenticacao.md` para saber o que o sistema já faz, pede ao
 `mapeador-de-contexto` o mapa do código de autenticação e escreve a spec,
-marcando o que não sabe:
+marcando o que não sabe. Antes de escrever, roda `sdd-gitflow feature
+001-redefinicao-de-senha`, que cria a branch `feature/001-redefinicao-de-senha`
+a partir de `develop` e muda para ela: toda a feature, da spec ao código, é
+commitada ali.
 
 ```markdown
 - [PRECISA ESCLARECER: quanto tempo o link deve valer?]
@@ -98,7 +111,7 @@ histórico ganha:
 
 ```
 - 2026-10-20T14:02:11Z | aprovacao | spec.md | hash=2533c54be22d | por: Geraldo Dominguez
-- 2026-10-20T14:02:11Z | fase | clarificacao para plano (spec.md aprovado) | por: Geraldo Dominguez
+- 2026-10-20T14:02:11Z | fase | clarificacao para plano (spec.md: aprovado) | por: Geraldo Dominguez
 ```
 
 A partir daqui, se a spec mudar, o `/sdd:status` volta a mostrar "aguarda
@@ -162,7 +175,8 @@ tentar editar um teste, o hook bloqueia:
 
 ```
 SDD (proteção leve) bloqueou a edição de 'tests/password-reset.test.ts' na fase 'green' da feature 001-redefinicao-de-senha.
-Na fase green os testes estão congelados: implemente o código para fazê-los passar.
+Depois da fase red os testes estão congelados: implemente o código para fazê-los passar. Se o teste estiver errado, a correção começa pela spec, com aprovação humana.
+Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir.
 ```
 
 No meio do caminho, ele percebe que o rate limit global está mal configurado.
@@ -172,7 +186,11 @@ Em vez de corrigir, registra no backlog:
 - [ ] B-006 Rate limit global com chave errada (prioridade: media; nivel: ?; origem: pendência da 001; criado: 2026-10-22)
 ```
 
-Cada tarefa vira um commit: `feat(001): T-004 solicitar redefinição sem enumeração`.
+Cada tarefa vira um commit na branch da feature, no formato Conventional
+Commits: `feat(001): T-004 solicitar redefinição sem enumeração`. O tipo decide
+a próxima versão (`feat` sobe o minor, `fix` o patch; ver
+[versionamento](versionamento.md)), e o hook bloqueia mensagem fora do
+formato, como "ajustes".
 
 No fim, o agente roda `sdd-estado sensivel`: a feature tocou `src/auth/`, e a
 revisão de segurança fica obrigatória (no nível 2 ela já seria).
@@ -200,10 +218,12 @@ aprova. A feature vai para a auditoria.
 ## 10. Auditar e decidir
 
 ```
-/sdd:auditar main
+/sdd:auditar develop
 ```
 
-O `auditor-de-drift` recebe só a pasta da feature e a ref base. Ele confere o
+O `auditor-de-drift` recebe só a pasta da feature e a ref base: `develop`, de
+onde a feature nasceu (contra `main`, o diff traria também as features já em
+`develop` e ainda não lançadas). Ele confere o
 código contra a spec, os testes contra os critérios e o **processo** (spec,
 plano, tarefas e testes ainda batem com o hash aprovado). Exemplo de achado:
 
@@ -220,14 +240,8 @@ inalterados, e a feature fica **pronta**.
 
 ## 11. Consolidar na spec do sistema
 
-Pronta não é em produção, mas o comportamento já está decidido. O
-`/sdd:aprovar` emenda:
-
-```
-/sdd:sistema consolidar
-```
-
-O agente reescreve `sistema/autenticacao.md` para descrever como a autenticação
+Pronta não é em produção, mas o comportamento já está decidido. O próprio
+`/sdd:aprovar` conduz a consolidação, sem outro comando: o agente reescreve `sistema/autenticacao.md` para descrever como a autenticação
 funciona **agora**, com cada item ligado à origem:
 
 ```markdown
@@ -238,17 +252,26 @@ funciona **agora**, com cada item ligado à origem:
 Você confere e confirma; o histórico da feature ganha a linha `consolidacao`. A
 próxima feature que mexer em autenticação parte deste arquivo, não do código.
 
+Por fim, o agente faz o commit do que a aprovação e a consolidação mudaram, na
+branch da feature (`docs(001): feature pronta`), e pergunta se pode levá-la
+para `develop`. Com o seu "sim", `sdd-gitflow integrar 001-redefinicao-de-senha`
+faz o merge `--no-ff` em `develop` (com `integracao: pr`, ele abre o pull
+request). Você publica: `git push origin develop`.
+
 ## 12. Release: do pronto à produção
 
 ```
 /sdd:release preparar
 ```
 
-O agente lista as features prontas, propõe a versão (`0.1.0`, porque há
-capacidade nova), cria `releases/0.1.0/` e chama o `testador-de-sistema`, que
-roda a regressão, os fluxos ponta a ponta afetados e a medição dos RNFs, e
-preenche `testes.md`. Depois escreve o roteiro de homologação em linguagem de
-quem usa:
+O agente lista as features prontas e confere que estão em `develop`. A versão
+sai dos commits: `sdd-release analisar` sugere `0.1.0` (sem nenhuma versão
+anterior, a primeira é sempre `0.1.0`), e você confirma. Então
+`sdd-gitflow release 0.1.0` cria `release/0.1.0` a partir de `develop`, e só
+depois `sdd-release nova 0.1.0` e `sdd-release incluir` criam
+`releases/0.1.0/`. Ele chama o `testador-de-sistema`, que roda a regressão, os
+fluxos ponta a ponta afetados e a medição dos RNFs, e preenche `testes.md`.
+Depois escreve o roteiro de homologação em linguagem de quem usa:
 
 ```markdown
 | H-001 | 001 | CA-001 | Em "Esqueci a senha", informe um e-mail cadastrado. | Chega um e-mail com o link em até 1 minuto. | pendente |
@@ -258,8 +281,8 @@ quem usa:
 /sdd:release homologar
 ```
 
-Com a versão no ambiente de homologação, a feature passa à fase
-`homologacao`. Bia, a dona do produto, percorre o roteiro, e cada passo vira
+Com a versão no ambiente de homologação (o push de `release/0.1.0` dispara o
+deploy de homologação no pipeline), a feature passa à fase `homologacao`. Bia, a dona do produto, percorre o roteiro, e cada passo vira
 `aprovado` ou `reprovado`.
 
 ```
@@ -267,21 +290,37 @@ Com a versão no ambiente de homologação, a feature passa à fase
 ```
 
 Todos os passos aprovados: o aceite fica registrado em nome dela. Se um passo
-tivesse reprovado, a feature voltaria ao green e a release, à preparação.
+tivesse reprovado, `sdd-release reprovar` devolveria a feature ao green e a
+release à preparação, e a correção seria commitada em `release/0.1.0`.
 
 ```
 /sdd:release implantar
 ```
 
-O agente mostra o plano de implantação, o **rollback**, a janela e as notas, e
-pergunta: go ou no-go? Com o go, o pipeline, ao receber a tag `v0.1.0`, roda
-`sdd-release pode-implantar` e implanta. Depois da verificação em produção:
+O agente mostra o plano de implantação, o **rollback**, a janela e as notas,
+gera a seção da versão no `CHANGELOG.md` a partir dos commits
+(`sdd-release changelog 0.1.0 --escrever`), revisa o texto com você e faz o
+commit em `release/0.1.0` (`docs(release): changelog 0.1.0`). Então pergunta:
+go ou no-go?
+
+Com o go, `sdd-gitflow finalizar 0.1.0` faz o merge de `release/0.1.0` em
+`main`, cria a tag `v0.1.0` e faz o merge de volta em `develop`. Você publica:
+
+```
+git push origin main develop v0.1.0
+```
+
+O push da tag dispara o pipeline, que roda `sdd-release pode-implantar` (o go
+está registrado) e implanta. Depois da verificação em produção:
 
 ```
 /sdd:release concluir
 ```
 
-A feature vai para `producao`, as notas ficam publicadas e a tag é criada.
+A feature vai para `producao` e as notas ficam publicadas. A tag já existe
+(veio do `finalizar`). O agente faz o commit em `develop`
+(`chore(release): 0.1.0 em produção`) e oferece apagar a branch local
+(`git branch -d release/0.1.0`).
 
 ## 13. Manutenção: um incidente
 
@@ -293,26 +332,38 @@ vezes.
 ```
 
 O agente registra `incidentes/INC-001.md` com severidade S2, ligado à feature
-001 e à release 0.1.0, e pergunta pela **mitigação**: a redefinição é
-desligada por flag, e o incidente fica `mitigado`.
+001 e à release 0.1.0, e pergunta pela **mitigação**: o botão de confirmar da
+página de nova senha passa a ser desabilitado no primeiro clique (contorno no
+front, que zera o duplo clique enquanto a correção não sai), e o incidente
+fica `mitigado`.
 
 ```
 /sdd:incidente hotfix
 ```
 
-Nasce a feature `002-invalidar-link-apos-o-uso`, do tipo hotfix, já na fase
-red: o `escritor-de-testes` escreve o teste que reproduz o problema; você
-aprova; o agente corrige; a **spec retroativa** é escrita e aprovada (sem ela,
-a entrega é recusada); como tocou `src/auth/`, passa pela revisão de segurança;
-é consolidada em `sistema/autenticacao.md`; e sai na release `0.1.1`, com
-homologação expressa, aceite e go.
+Nasce a feature `003-invalidar-link-apos-o-uso` (a 002 é a do último acesso,
+que saiu na 0.1.0), do tipo hotfix, já na fase red, e com a branch
+`hotfix/0.1.1` reservada (a próxima versão patch). O agente faz o commit do
+registro do incidente em `develop`, sem a pasta nova do hotfix
+(`git add -A ':!specs/'`, mensagem `docs(003): INC-001 hotfix aberto`), e roda
+`sdd-gitflow feature 003-invalidar-link-apos-o-uso`, que cria `hotfix/0.1.1` a
+partir de **`main`**: a correção parte do que está em produção.
+
+Na branch do hotfix: o `escritor-de-testes` escreve o teste que reproduz o
+problema; você aprova; o agente corrige (`fix(003): invalida o link após o uso`; um hotfix não tem
+`tarefas.md`, então o escopo `(003)` basta); a **spec
+retroativa** é escrita e aprovada (sem ela, a entrega é recusada); como tocou
+`src/auth/`, passa pela revisão de segurança; é consolidada em
+`sistema/autenticacao.md`; e sai na release `0.1.1`, com a mesma versão da
+branch, homologação expressa, aceite e go. O `sdd-gitflow finalizar 0.1.1` leva
+o hotfix para `main` (tag `v0.1.1`) e para `develop`.
 
 Em produção, o incidente fica `resolvido`. Você escreve o **post-mortem** com o
 agente (linha do tempo, causa raiz, ações, cada ação com dono e item no
-backlog) e encerra:
+backlog), e ele encerra o incidente (`sdd-incidente encerrar INC-001`):
 
 ```
-/sdd:incidente encerrar INC-001
+/sdd:incidente post-mortem
 ```
 
 ## 14. Acompanhar e fechar a sprint

@@ -16,7 +16,8 @@ que parece errado, mudança que cresceu no meio) ou para ver o mapa inteiro.
 
 | Sua dúvida | Onde ir |
 |---|---|
-| "Onde eu parei?" | [status](status.md), que é mais direto |
+| "Onde eu parei?" | [retomar](retomar.md), que conta o que aconteceu numa feature |
+| "Como está tudo?" | [status](status.md), que é mais direto |
 | "Que comando serve para isto?" | `ajuda` |
 | "Como se escreve um bom critério?" | [metodologia](metodologia.md) |
 | "O que depende de mim?" | [pendencias](pendencias.md) |
@@ -27,7 +28,10 @@ Quatro grupos de comandos: o **fluxo da feature** (especificar, clarificar,
 planejar, tarefas, implementar, segurança, auditar, com o aprovar em cada
 gate), a **entrega** (sistema e release), a **manutenção** (incidente) e o
 **acompanhamento** (status, pendências, retomar, backlog, sprint), mais o
-pipeline. E uma tabela de situações comuns com o comando para cada uma.
+pipeline. Também cobre a preparação e a adoção de projetos (`/sdd:iniciar`,
+`--adotar`, a transição das features adotadas), o Git Flow e a versão
+calculada pelos commits. E uma tabela de situações comuns com o comando para
+cada uma.
 
 ## Está funcionando se
 

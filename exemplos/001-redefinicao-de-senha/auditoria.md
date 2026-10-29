@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Auditada em | 2026-10-22 |
-| Base da comparação | `main` (a1c93e0) até HEAD (7f20b4d) |
+| Base da comparação | `develop` (a1c93e0) até HEAD (7f20b4d) |
 | Veredito | **aprovada com ressalvas** |
 
 ## 1. Cobertura de requisitos

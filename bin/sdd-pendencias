@@ -13,7 +13,10 @@
 #   7. features que precisam da revisão de segurança;
 #   8. features prontas (ou além) não consolidadas na spec do sistema;
 #   9. releases esperando aceite, go/no-go ou conclusão, e features prontas fora de release;
-#  10. incidentes abertos e hotfixes sem spec aprovada.
+#  10. incidentes abertos e hotfixes sem spec aprovada;
+#  11. artefatos de processo fora do lugar do padrão, à espera da adoção;
+#  12. Git Flow: develop ausente, branches fora do padrão, features prontas
+#      não integradas em develop, releases com o go que ainda não foram para main.
 #
 # Com --contar, imprime só o total. Código de saída sempre 0.
 set -uo pipefail
@@ -21,6 +24,7 @@ set -uo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 if [ ! -d "$RAIZ/.sdd" ]; then
@@ -31,7 +35,7 @@ fi
 PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 
 aprov=(); duv=(); adrs=(); deltas=(); triar=(); semspec=()
-seg=(); consolidar=(); releases=(); prontas=(); incidentes=()
+seg=(); consolidar=(); releases=(); prontas=(); incidentes=(); fora=(); gitflow=()
 
 for f in $(sdd_features "$RAIZ"); do
   fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
@@ -50,7 +54,9 @@ for f in $(sdd_features "$RAIZ"); do
     fi
   fi
   art="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
-  if [ -n "$art" ]; then
+  if [ "$art" = "transicao.md" ]; then
+    aprov+=("$f veio de outro processo: converta para o padrão e aprove a transição (transicao.md)")
+  elif [ -n "$art" ]; then
     if [ -n "$(sdd_ultima_aprovacao "$RAIZ" "$f" "$art")" ]; then
       aprov+=("$f: $art foi alterado depois de aprovado (fase $fase)")
     else
@@ -114,7 +120,34 @@ if [ -n "$sprint" ] && [ -f "$RAIZ/.sdd/sprints/$sprint.md" ]; then
   done < <("$AQUI/sdd-sprint" itens "$sprint" 2>/dev/null || true)
 fi
 
-total=$(( ${#aprov[@]} + ${#duv[@]} + ${#adrs[@]} + ${#deltas[@]} + ${#triar[@]} + ${#semspec[@]} \
+while IFS="$(printf '\t')" read -r tipo caminho; do
+  [ -n "$caminho" ] && fora+=("$caminho ($tipo)")
+done < <(sdd_artefatos_fora_do_layout "$RAIZ")
+
+if sdd_gitflow_ativo "$RAIZ"; then
+  git -C "$RAIZ" show-ref --verify --quiet refs/heads/develop || git -C "$RAIZ" show-ref --verify --quiet refs/remotes/origin/develop \
+    || gitflow+=("não existe a branch develop (sdd-gitflow iniciar)")
+  while IFS= read -r b; do
+    [ -n "$b" ] || continue
+    sdd_branch_tipo "$b" >/dev/null || gitflow+=("a branch $b está fora do padrão (sdd-gitflow conferir)")
+  done < <(git -C "$RAIZ" for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null)
+  for f in $(sdd_features "$RAIZ"); do
+    sdd_fase_entregue "$(sdd_feature_ler "$RAIZ" "$f" fase)" || continue
+    b="$(sdd_branch_da_feature "$RAIZ" "$f")"
+    case "$b" in feature/*) ;; *) continue ;; esac
+    git -C "$RAIZ" show-ref --verify --quiet "refs/heads/$b" || continue
+    git -C "$RAIZ" merge-base --is-ancestor "$b" develop 2>/dev/null || gitflow+=("$f está pronta e $b ainda não foi integrada em develop (sdd-gitflow integrar $f)")
+  done
+  PASTA_REL_GF="$(sdd_pasta_releases "$RAIZ")"
+  for d in "$RAIZ/$PASTA_REL_GF"/*/; do
+    [ -f "$d/estado" ] || continue
+    v="$(basename "$d")"
+    [ "$(sdd_kv_ler "$d/estado" fase)" = "implantacao" ] || continue
+    git -C "$RAIZ" rev-parse -q --verify "refs/tags/v$v" >/dev/null || gitflow+=("a release $v tem o go e ainda não foi para main com a tag v$v (sdd-gitflow finalizar $v)")
+  done
+fi
+
+total=$(( ${#gitflow[@]} + ${#fora[@]} + ${#aprov[@]} + ${#duv[@]} + ${#adrs[@]} + ${#deltas[@]} + ${#triar[@]} + ${#semspec[@]} \
   + ${#seg[@]} + ${#consolidar[@]} + ${#releases[@]} + ${#prontas[@]} + ${#incidentes[@]} ))
 
 if [ "${1:-}" = "--contar" ]; then
@@ -148,4 +181,6 @@ echo
 [ ${#semspec[@]} -gt 0 ] && secao "Sprint sem spec" "/sdd:especificar B-NNN" "${semspec[@]}"
 [ ${#consolidar[@]} -gt 0 ] && secao "Spec do sistema" "/sdd:sistema consolidar" "${consolidar[@]}"
 [ ${#prontas[@]} -gt 0 ] && secao "Prontas para release" "/sdd:release preparar" "${prontas[@]}"
+[ ${#fora[@]} -gt 0 ] && secao "Fora do padrão" "/sdd:iniciar --adotar" "${fora[@]}"
+[ ${#gitflow[@]} -gt 0 ] && secao "Git Flow" "sdd-gitflow" "${gitflow[@]}"
 exit 0

@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Revisada em | 2026-10-22 (segunda rodada, depois da correção de S-001) |
-| Base da comparação | `main` (a1c93e0) até HEAD (6e41b0a) |
+| Base da comparação | `develop` (a1c93e0) até HEAD (6e41b0a) |
 | Veredito | **aprovada com riscos aceitos** |
 
 > Escrita pelo subagent `revisor-de-seguranca`, com contexto limpo. Ele não
