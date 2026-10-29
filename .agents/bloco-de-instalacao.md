@@ -24,6 +24,9 @@ claude plugin marketplace update sdd-plugin
 claude plugin update sdd
 ```
 
+Depois, `/sdd:iniciar` em cada projeto que já usa o SDD: ele atualiza o bloco
+de regras e pergunta o que trocar, sem mexer na constituição.
+
 </bloco>
 
 ## Outros agentes

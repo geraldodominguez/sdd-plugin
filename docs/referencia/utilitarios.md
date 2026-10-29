@@ -97,6 +97,26 @@ Cria `.sdd/` (config, constituição, estado, backlog, sprints, templates),
 `AGENTS.md`, e acrescenta ao `.gitattributes` o merge por união dos históricos
 (para os merges do Git Flow). Não sobrescreve nada sem `--forcar`.
 
+**Num projeto que já usa o SDD**, rodar de novo sem `--forcar` é a
+atualização: cria só o que falta (como um template novo), atualiza o bloco de
+regras e o `.gitattributes`, e mantém config, constituição e templates. A saída
+lista os templates que diferem dos do plugin (`~`), para você comparar antes de
+trocar, e as chaves do config que o projeto ainda não tem (`?`), com o valor
+padrão que vale enquanto elas faltam:
+
+```
+Templates diferentes dos do plugin (compare antes de trocar: o projeto pode tê-los customizado):
+  ~ .sdd/templates/tarefas.md
+Chaves que o .sdd/config.yml não tem (até serem acrescentadas, vale o padrão do plugin):
+  ? gitflow: ativo
+  ? commits: convencional
+
+Projeto atualizado. Revise os templates e as chaves acima; a constituição e o config não foram alterados.
+```
+
+Com `--forcar`, config, constituição e templates são sobrescritos pelos do
+plugin: só quando você quer recomeçar a configuração.
+
 ## sdd-estado
 
 ```
@@ -114,6 +134,7 @@ sdd-estado listar
 sdd-estado historico [NNN-slug|--projeto] [--desde AAAA-MM-DD]
 sdd-estado caminho [arquivo]
 sdd-estado template nome.md
+sdd-estado template --plugin nome.md      (o do plugin, para comparar com a cópia do projeto)
 sdd-estado transicionar NNN-slug <pronta|homologacao|producao> "nota"   (uso interno do sdd-release)
 ```
 

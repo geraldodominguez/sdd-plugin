@@ -80,6 +80,16 @@ Ver [proteção por hooks](referencia/protecao-por-hooks.md) e
 
 ## Perguntas frequentes
 
+**Atualizei o plugin. O que faço nos projetos que já usam o SDD?**
+
+Rode `/sdd:iniciar` em cada um. Num projeto com `.sdd/`, ela faz a
+**atualização**, não a preparação: atualiza o bloco de regras e o
+`.gitattributes`, mostra os templates que diferem dos do plugin e as chaves
+novas do config, e pergunta, uma a uma, o que trocar e que valor usar. Depois
+prepara o Git Flow, se ele estiver ativo. A constituição, as chaves que você já
+preencheu e as specs ficam como estão. Até você rodar, as chaves novas valem
+pelo padrão do plugin: numa versão que liga o Git Flow, o hook já age.
+
 **Ela altera o meu CLAUDE.md?**
 
 Só acrescenta, ou atualiza no lugar, o bloco entre `<!-- sdd:inicio -->` e

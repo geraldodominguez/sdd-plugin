@@ -17,6 +17,12 @@
 # E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente), e
 # acrescenta ao .gitattributes o merge por união dos históricos: com o Git Flow,
 # duas branches acrescentam linhas ao mesmo histórico, e o merge junta as duas.
+#
+# Num projeto que já usa o SDD, rodar de novo (sem --forcar) é a atualização:
+# cria só o que falta, atualiza o bloco e o .gitattributes, e não toca no que
+# existe. Ele lista os templates que diferem dos do plugin (o projeto pode tê-los
+# customizado) e as chaves do config.yml que o projeto ainda não tem (valem os
+# padrões do plugin). Com --forcar, sobrescreve config, constituição e templates.
 set -euo pipefail
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -52,11 +58,15 @@ fi
 
 criados=()
 mantidos=()
+diferentes=()
+ATUALIZACAO=0
+[ -e "$RAIZ/.sdd/config.yml" ] && ATUALIZACAO=1
 
 copiar() {
   local de="$1" para="$2"
   if [ -e "$para" ] && [ "$FORCAR" -ne 1 ]; then
     mantidos+=("${para#"$RAIZ"/}")
+    cmp -s "$de" "$para" || diferentes+=("${para#"$RAIZ"/}")
     return
   fi
   mkdir -p "$(dirname "$para")"
@@ -79,7 +89,12 @@ for f in "$ORIGEM"/release/*.md; do
   copiar "$f" "$RAIZ/.sdd/templates/release/$(basename "$f")"
 done
 
-copiar "$ORIGEM/constituicao.md" "$RAIZ/.sdd/constituicao.md"
+# A constituição é sempre do projeto: não entra na lista de diferentes.
+if [ -e "$RAIZ/.sdd/constituicao.md" ] && [ "$FORCAR" -ne 1 ]; then
+  mantidos+=(".sdd/constituicao.md")
+else
+  copiar "$ORIGEM/constituicao.md" "$RAIZ/.sdd/constituicao.md"
+fi
 
 CONFIG="$RAIZ/.sdd/config.yml"
 if [ ! -e "$CONFIG" ] || [ "$FORCAR" -eq 1 ]; then
@@ -90,6 +105,15 @@ if [ ! -e "$CONFIG" ] || [ "$FORCAR" -eq 1 ]; then
 else
   mantidos+=(".sdd/config.yml")
 fi
+
+# Chaves do config do plugin que o config do projeto ainda não tem.
+faltam=()
+while IFS= read -r linha; do
+  chave="${linha%%:*}"
+  grep -qE "^${chave}:" "$CONFIG" && continue
+  valor="$(printf '%s' "${linha#*:}" | sed -E 's/#.*$//; s/^[[:space:]]+//; s/[[:space:]]+$//')"
+  faltam+=("$chave: ${valor:-(vazio)}")
+done < <(grep -E '^[a-z_]+:' "$ORIGEM/config.yml")
 
 if [ ! -e "$RAIZ/.sdd/estado" ]; then
   printf 'feature=\nsprint=\n' > "$RAIZ/.sdd/estado"
@@ -155,8 +179,20 @@ if [ ${#criados[@]} -gt 0 ]; then
   printf '  + %s\n' "${criados[@]}"
 fi
 if [ ${#mantidos[@]} -gt 0 ]; then
-  echo "Mantido (já existia; use --forcar para sobrescrever):"
+  echo "Mantido (já existia, não foi alterado):"
   printf '  = %s\n' "${mantidos[@]}"
 fi
+if [ ${#diferentes[@]} -gt 0 ]; then
+  echo "Templates diferentes dos do plugin (compare antes de trocar: o projeto pode tê-los customizado):"
+  printf '  ~ %s\n' "${diferentes[@]}"
+fi
+if [ ${#faltam[@]} -gt 0 ]; then
+  echo "Chaves que o .sdd/config.yml não tem (até serem acrescentadas, vale o padrão do plugin):"
+  printf '  ? %s\n' "${faltam[@]}"
+fi
 echo
-echo "Próximo passo: preencher .sdd/constituicao.md e revisar .sdd/config.yml."
+if [ "$ATUALIZACAO" -eq 1 ] && [ "$FORCAR" -ne 1 ]; then
+  echo "Projeto atualizado. Revise os templates e as chaves acima; a constituição e o config não foram alterados."
+else
+  echo "Próximo passo: preencher .sdd/constituicao.md e revisar .sdd/config.yml."
+fi

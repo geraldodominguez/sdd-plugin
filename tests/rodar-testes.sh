@@ -64,6 +64,26 @@ n="$(grep -c '<!-- sdd:inicio -->' "$P/CLAUDE.md")"
 grep -q 'Texto do usuário.' "$P/CLAUDE.md" && ok "preserva conteúdo do usuário no CLAUDE.md" || fail "preserva conteúdo do usuário"
 (cd "$P" && assert_exit 1 "rejeita proteção inválida" sdd-iniciar --protecao talvez)
 
+# Atualização de um projeto que já usa o SDD (sem --forcar).
+U="$TMP/atualizacao"; mkdir -p "$U"
+(cd "$U" && sdd-iniciar --protecao estrita >/dev/null 2>&1)
+subst '/^gitflow:/d; /^commits:/d' "$U/.sdd/config.yml"
+printf 'customizado\n' >> "$U/.sdd/templates/tarefas.md"
+printf 'Regra do time.\n' >> "$U/.sdd/constituicao.md"
+saida="$(cd "$U" && sdd-iniciar 2>&1)"
+grep -q 'Regra do time.' "$U/.sdd/constituicao.md" && ok "atualização preserva a constituição" || fail "atualização preserva a constituição"
+grep -q '^protecao: estrita' "$U/.sdd/config.yml" && ok "atualização preserva o config" || fail "atualização preserva o config"
+grep -q 'customizado' "$U/.sdd/templates/tarefas.md" && ok "atualização preserva template customizado" || fail "template customizado"
+printf '%s' "$saida" | grep -q '~ .sdd/templates/tarefas.md' && ok "atualização lista o template diferente do plugin" || fail "lista template diferente" "$saida"
+printf '%s' "$saida" | grep -q '~ .sdd/constituicao.md' && fail "constituição não entra nos diferentes" || ok "constituição não entra nos diferentes"
+printf '%s' "$saida" | grep -q '? gitflow: ativo' && printf '%s' "$saida" | grep -q '? commits: convencional' \
+  && ok "atualização lista as chaves novas do config com o padrão" || fail "lista chaves novas" "$saida"
+printf '%s' "$saida" | grep -q 'Projeto atualizado' && ok "atualização diz que a constituição e o config não mudaram" || fail "mensagem de atualização" "$saida"
+printf '%s' "$saida" | grep -q 'use --forcar' && fail "atualização não sugere --forcar" || ok "atualização não sugere --forcar"
+tp="$(cd "$U" && sdd-estado template --plugin tarefas.md)"
+case "$tp" in "$U"/*) fail "template --plugin aponta para o plugin" "$tp" ;; */skills/metodologia/templates/tarefas.md) ok "template --plugin aponta para o plugin" ;; *) fail "template --plugin" "$tp" ;; esac
+(cd "$U" && assert_exit 1 "template --plugin recusa template inexistente" sdd-estado template --plugin nao-existe.md)
+
 Q3="$TMP/outro-plugin"; mkdir -p "$Q3"
 (cd "$Q3" && CLAUDE_PLUGIN_ROOT=/caminho/de/outro/plugin sdd-iniciar >/dev/null 2>&1)
 [ -f "$Q3/.sdd/constituicao.md" ] && ok "ignora CLAUDE_PLUGIN_ROOT de outro plugin" || fail "CLAUDE_PLUGIN_ROOT de outro plugin"

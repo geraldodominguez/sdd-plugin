@@ -3,7 +3,7 @@ name: iniciar
 description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
 argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write, Bash(git tag *), Bash(git merge develop), Bash(git branch *)
+allowed-tools: Bash(git status), Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write, Bash(git tag *), Bash(git merge develop), Bash(git branch *)
 ---
 
 # /sdd:iniciar
@@ -22,14 +22,10 @@ Argumentos: `$ARGUMENTS`
      ao usuário quantos artefatos encontrou e de onde (`docs/specs/`, `.kiro/`,
      `TODO.md`...), avise que eles serão lidos e trazidos ao padrão depois da
      preparação, com a aprovação dele, e siga do passo 2.
-   - **Com `.sdd/`:** rode `sdd-status` e mostre. Se há inventário, ou se veio
-     `--adotar`, pule para a **Adoção** (abaixo): não reaplique nada. Senão,
-     pergunte se o usuário quer atualizar o projeto para esta versão do plugin.
-     `sdd-iniciar` (sem `--forcar`) só cria o que falta, atualiza o bloco de
-     regras no `CLAUDE.md` e no `AGENTS.md` e acrescenta o `.gitattributes`:
-     é o caminho para atualizar. `sdd-iniciar --forcar` sobrescreve também o
-     config, a constituição e os templates (não apaga specs): só com o
-     usuário pedindo isso explicitamente. Sem confirmação, pare aqui.
+   - **Com `.sdd/`:** o projeto já usa o SDD. Não siga os passos 2 a 9 (eles
+     são da preparação e reescreveriam a constituição e o config): vá para a
+     **Atualização** (abaixo), que termina na Adoção se houver inventário ou
+     `--adotar`.
 
 2. **Escolha os parâmetros.** Se os argumentos não trazem nível e proteção,
    proponha um padrão e confirme numa única pergunta:
@@ -111,6 +107,61 @@ Argumentos: `$ARGUMENTS`
    | uma mudança para fazer agora | `/sdd:especificar <mudança>` |
    | uma lista de coisas para fazer | `/sdd:backlog adicionar` para cada uma, depois `/sdd:sprint planejar` |
    | um sistema que já está em produção | `/sdd:sistema mapear` na área que mais muda, e `/sdd:pipeline` |
+
+## Atualização
+
+Para um projeto que já tem `.sdd/`: traz o projeto para a versão instalada do
+plugin sem tocar no que é do time. A constituição, o config já preenchido, as
+specs e os históricos ficam como estão.
+
+1. **Mostre e confirme.** Rode `sdd-status` e mostre. Diga o que a atualização
+   faz (os passos abaixo) e pergunte se pode seguir. Sem confirmação, pare.
+
+2. **Rode `sdd-iniciar`, sem `--forcar` e sem `--nivel` ou `--protecao`.** Ele
+   cria só o que falta (um template novo, por exemplo), atualiza o bloco de
+   regras no `CLAUDE.md` e no `AGENTS.md`, acrescenta o `.gitattributes` e
+   mantém o resto. Mostre a saída. Nunca use `--forcar` aqui: ele sobrescreve
+   config, constituição e templates, e só vale se o usuário pedir, com essas
+   palavras, para recomeçar a configuração.
+
+3. **Templates diferentes (`~` na saída).** O projeto pode tê-los
+   customizado, ou eles podem só estar desatualizados. Para cada um, leia a
+   cópia do projeto e a do plugin (`sdd-estado template --plugin <nome>` dá o
+   caminho; para os da release, `release/<nome>`) e mostre a diferença em
+   poucas linhas. Pergunte, um por um: trocar pelo do plugin, ou manter. Com
+   "trocar", escreva o conteúdo do plugin na cópia do projeto.
+
+4. **Chaves novas do config (`?` na saída).** Enquanto faltam, vale o padrão
+   mostrado; o hook já age por ele. Para cada uma, explique em uma linha e
+   pergunte o valor:
+   - `gitflow`: `ativo` (o plugin cria e confere as branches; o hook bloqueia
+     commit em `main` e em branch fora do padrão) ou `desligado` (como antes);
+   - `integracao`: `local` (o plugin faz os merges) ou `pr` (pull request na
+     plataforma);
+   - `commits`: `convencional` (Conventional Commits; a versão sai deles) ou
+     `livre` (como antes);
+   - as demais: o padrão mostrado, a não ser que o usuário queira outro.
+   Acrescente cada chave ao `.sdd/config.yml` com o comentário que ela tem no
+   config do plugin (`sdd-estado template --plugin config.yml` dá o caminho).
+   Não mude as chaves que já existem.
+
+5. **Git Flow.** Com `gitflow: ativo`, faça a parte do Git Flow do passo 3 do
+   Processo, menos a pergunta da `integracao` (já respondida): `sdd-gitflow
+   conferir`, renomear `main` e `develop` com aprovação, a tag `vX.Y.Z` da
+   versão em produção com aprovação, e `sdd-gitflow iniciar`. As alterações
+   da atualização vão junto para `develop`. Depois, o passo 7 do Processo
+   (as branches de trabalho fora do padrão).
+
+6. **Adoção.** Se o `sdd-adotar inventario` do passo 1 do Processo não
+   estava vazio, ou se veio `--adotar`, faça a **Adoção** (abaixo).
+
+7. **Commit.** Mostre `git status` e sugira o commit em `develop` (ou na
+   branch atual, com o Git Flow desligado):
+   `chore: atualiza o SDD para a versão do plugin`.
+
+8. **Encerre** com o que mudou (bloco, `.gitattributes`, templates trocados,
+   chaves acrescentadas, branches), o que ficou como estava e, se houver,
+   features adotadas esperando o `/sdd:aprovar`.
 
 ## Adoção
 
@@ -259,6 +310,8 @@ parou.
 
 - Não crie features nem specs, a não ser as features que a adoção aprovada cria.
 - Não altere código do projeto.
+- Numa atualização, não reescreva a constituição, não mude chaves do config
+  que já existem e não rode `sdd-iniciar --forcar` sem o usuário pedir.
 - Não reescreva um `CLAUDE.md` existente: o `sdd-iniciar` só acrescenta ou
   atualiza o bloco entre `<!-- sdd:inicio -->` e `<!-- sdd:fim -->`.
 - Na adoção, não mova nem apague arquivos por conta própria (`mv`, `git mv`,

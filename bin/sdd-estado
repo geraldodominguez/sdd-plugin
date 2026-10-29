@@ -25,6 +25,8 @@
 #   sdd-estado historico [NNN-slug|--projeto] [--desde AAAA-MM-DD]
 #   sdd-estado caminho [arquivo]               caminho da pasta da feature ativa
 #   sdd-estado template <nome.md>              caminho do template (local ou do plugin)
+#   sdd-estado template --plugin <nome.md>     caminho do template do plugin (para comparar
+#                                              com a cópia do projeto numa atualização)
 #   sdd-estado transicionar <NNN-slug> <fase> "nota"
 #                                              uso interno do sdd-release (homologacao, producao, pronta)
 #
@@ -519,7 +521,14 @@ case "$cmd" in
     ;;
 
   template)
-    sdd_template "$RAIZ" "${1:?uso: sdd-estado template <nome.md>}"
+    if [ "${1:-}" = "--plugin" ]; then
+      n="${2:?uso: sdd-estado template --plugin <nome.md>}"
+      t="$(sdd_raiz_plugin)/skills/metodologia/templates/$n"
+      [ -f "$t" ] || { echo "sdd-estado: o plugin não tem o template $n" >&2; exit 1; }
+      printf '%s\n' "$t"
+    else
+      sdd_template "$RAIZ" "${1:?uso: sdd-estado template [--plugin] <nome.md>}"
+    fi
     ;;
 
   transicionar)
