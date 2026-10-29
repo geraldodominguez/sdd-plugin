@@ -206,7 +206,7 @@ stateDiagram-v2
 |---|---|---|---|
 | Preparar | escolher as prontas (já em `develop`); calcular a versão SemVer pelos commits (`sdd-release analisar`) e decidir; criar a branch `release/X.Y.Z` (`sdd-gitflow release`) e só então `releases/X.Y.Z/`; rodar os testes de sistema, escrever o roteiro de homologação e as notas | `release.md`, `testes.md`, `homologacao.md`, `notas.md` | a versão (dev) e os testes de sistema aprovados (dev) |
 | Homologar | o push de `release/X.Y.Z` implanta em homologação; quem homologa executa o roteiro, passo a passo, em linguagem de negócio | `homologacao.md` preenchido | aceite do negócio (dono do produto ou cliente) |
-| Implantar | gerar e revisar a seção do `CHANGELOG.md` (`sdd-release changelog X.Y.Z --escrever`, commit `docs(release): changelog X.Y.Z` na branch da release); escrever o plano com verificação e rollback; decidir; depois do go, `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag `vX.Y.Z`, merge em `develop`) e `git push origin main develop vX.Y.Z`, que dispara a implantação | `implantacao.md`, `CHANGELOG.md` | **go/no-go** (tech lead e operação) |
+| Implantar | gerar e revisar a seção do `CHANGELOG.md` (`sdd-release changelog X.Y.Z --escrever`, commit `docs(release): changelog X.Y.Z` na branch da release); escrever o plano com verificação e rollback; decidir; depois do go (`sdd-release autorizar` e o commit `chore(release): X.Y.Z autorizada`), `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag `vX.Y.Z`, merge em `develop`) e `git push origin main develop vX.Y.Z`, que dispara a implantação | `implantacao.md`, `CHANGELOG.md` | **go/no-go** (tech lead e operação) |
 | Concluir | verificar em produção e encerrar; commit em `develop` (`chore(release): X.Y.Z em produção`) e apagar a branch local `release/X.Y.Z`. A tag já existe: veio do `finalizar` | `historico.md` da release | verificação pós-implantação |
 
 **Testes de sistema.** O `testador-de-sistema` cobre o que o TDD por feature
@@ -215,8 +215,9 @@ dos requisitos não funcionais com número.
 
 **Reprovação.** Um passo reprovado na homologação devolve a feature ao green
 (`sdd-release reprovar`) e a release à preparação. A correção é commitada na
-branch `release/X.Y.Z`, que volta para `develop` no `finalizar`. A release
-também pode seguir sem ela.
+branch `release/X.Y.Z`, que volta para `develop` no `finalizar`, e a feature,
+pronta de novo, volta à release com `sdd-release incluir`. A release também
+pode seguir sem ela.
 
 ## Etapa 6: DevOps
 

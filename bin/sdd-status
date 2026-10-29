@@ -63,8 +63,18 @@ detalhe() { # detalhe <feature>
   r="$(sdd_feature_ler "$RAIZ" "$f" release)"; [ -n "$r" ] && echo "  release: $r"
   if sdd_gitflow_ativo "$RAIZ"; then
     b="$(sdd_branch_da_feature "$RAIZ" "$f")"
-    if sdd_fase_entregue "$fase" && git -C "$RAIZ" show-ref --verify --quiet "refs/heads/$b"; then
-      if git -C "$RAIZ" merge-base --is-ancestor "$b" develop 2>/dev/null; then b="$b (integrada em develop)"; else b="$b (NÃO integrada em develop: sdd-gitflow integrar $f)"; fi
+    if sdd_fase_entregue "$fase"; then
+      case "$b" in
+        release/*|hotfix/*) b="$b (volta a develop pelo sdd-gitflow finalizar)" ;;
+        *)
+          if git -C "$RAIZ" show-ref --verify --quiet "refs/heads/$b"; then
+            if git -C "$RAIZ" merge-base --is-ancestor "$b" develop 2>/dev/null; then b="$b (integrada em develop)"; else b="$b (NÃO integrada em develop: sdd-gitflow integrar $f)"; fi
+          elif git -C "$RAIZ" log develop --merges --format=%s 2>/dev/null | grep -qF "merge: $b em develop"; then
+            b="$b (integrada em develop; branch apagada)"
+          else
+            b="$b (a branch não existe localmente)"
+          fi ;;
+      esac
     fi
     echo "  branch: $b"
   fi
@@ -81,8 +91,8 @@ detalhe() { # detalhe <feature>
     [ -f "$dir/$a" ] || { case "$a" in delta-spec.md|transicao.md) continue ;; esac; echo "    · $a"; continue; }
     case "$a" in
       spec.md|plano.md|tarefas.md|seguranca.md|auditoria.md)
-        st="$("$AQUI/sdd-estado" aprovado "$a" "$f" 2>/dev/null)"; st="${st#*: }"
-        echo "    ✓ $a ($st)" ;;
+        rc=0; st="$("$AQUI/sdd-estado" aprovado "$a" "$f" 2>/dev/null)" || rc=$?; st="${st#*: }"
+        if [ "$rc" -eq 4 ]; then echo "    ✗ $a ($st)"; else echo "    ✓ $a ($st)"; fi ;;
       *) echo "    ✓ $a" ;;
     esac
   done
@@ -120,7 +130,7 @@ if sdd_gitflow_ativo "$RAIZ"; then
   gf_esperada="$("$AQUI/sdd-gitflow" esperada 2>/dev/null || true)"
   echo "Git Flow: em ${gf_atual:-(HEAD destacado)}"
   if [ -n "$gf_esperada" ] && [ -n "$gf_atual" ] && [ "$gf_atual" != "$gf_esperada" ]; then
-    echo "! a feature ativa é feita em $gf_esperada (sdd-gitflow feature ${gf_esperada#feature/})"
+    echo "! a feature ativa é feita em $gf_esperada (sdd-gitflow feature $(sdd_kv_ler "$RAIZ/.sdd/estado" feature))"
   fi
 fi
 if [ -s "$RAIZ/.sdd/constituicao.md" ] && grep -q '{{' "$RAIZ/.sdd/constituicao.md"; then

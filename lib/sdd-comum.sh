@@ -301,11 +301,28 @@ sdd_hash_artefato() {
         fi
       } | sdd_hash_stdin
       ;;
+    tarefas.md)
+      # Marcar uma tarefa como feita ([ ] para [x]) é progresso, não mudança do
+      # que foi aprovado: as duas caixas entram iguais no hash. O [O] (feita
+      # fora do plugin) continua contando.
+      [ -f "$dir/tarefas.md" ] || return 1
+      sed -E 's/^([[:space:]]*-[[:space:]]+)\[[xX ]\]/\1[ ]/' "$dir/tarefas.md" | sdd_hash_stdin
+      ;;
     *)
       [ -f "$dir/$art" ] || return 1
       sdd_hash_stdin < "$dir/$art"
       ;;
   esac
+}
+
+# sdd_hash_bruto <raiz> <feature> <artefato>: o hash do arquivo como está, sem a
+# normalização das caixas do tarefas.md. Aprovações feitas antes da 1.0.1
+# gravaram este hash; ele continua aceito.
+sdd_hash_bruto() {
+  local dir
+  dir="$1/$(sdd_pasta_specs "$1")/$2"
+  [ -f "$dir/$3" ] || return 1
+  sdd_hash_stdin < "$dir/$3"
 }
 
 # sdd_indice_fase <fase>: posição na ordem (cancelada fica de fora).
@@ -364,7 +381,8 @@ sdd_aprovado_ok() {
   [ -n "$aprovado" ] || return 1
   [ "$3" = "entrega" ] && return 0
   atual="$(sdd_hash_artefato "$1" "$2" "$3" 2>/dev/null || true)"
-  [ "$aprovado" = "$atual" ]
+  [ "$aprovado" = "$atual" ] && return 0
+  [ "$3" = "tarefas.md" ] && [ "$aprovado" = "$(sdd_hash_bruto "$1" "$2" "$3" 2>/dev/null || true)" ]
 }
 
 # sdd_pendencias_para_pronta <raiz> <feature>: imprime o que impede a feature
@@ -511,10 +529,12 @@ sdd_caminho_relativo() {
 # Retorna 0 se o caminho casa com algum glob. Um "**/" no início também casa
 # arquivos na raiz do projeto.
 sdd_casa_glob() {
-  local caminho="$1" lista="$2" padrao
+  local caminho="$1" lista="$2" padrao padroes
   [ -z "$lista" ] && return 1
-  local IFS=','
-  for padrao in $lista; do
+  # read -a não expande os globs contra os arquivos do diretório atual (um
+  # "for p in $lista" expandiria, e o resultado mudaria conforme o cwd).
+  IFS=',' read -r -a padroes <<< "$lista"
+  for padrao in "${padroes[@]}"; do
     padrao="$(printf '%s' "$padrao" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
     [ -z "$padrao" ] && continue
     # shellcheck disable=SC2053
@@ -614,8 +634,7 @@ sdd_aguarda_aprovacao() {
   [ -n "$art" ] || return 0
   atual="$(sdd_hash_artefato "$raiz" "$f" "$art" 2>/dev/null || true)"
   [ -n "$atual" ] || return 0
-  aprovado="$(sdd_ultima_aprovacao "$raiz" "$f" "$art")"
-  [ "$aprovado" = "$atual" ] || printf '%s\n' "$art"
+  sdd_aprovado_ok "$raiz" "$f" "$art" || printf '%s\n' "$art"
 }
 
 # ---------------------------------------------------------------------------

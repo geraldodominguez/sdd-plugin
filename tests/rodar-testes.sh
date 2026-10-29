@@ -890,6 +890,70 @@ for b in "$PLUGIN"/bin/*; do
     && ok "$n --ajuda funciona fora de um projeto" || fail "$n --ajuda" "$out"
 done
 
+echo "auditoria por cenários (1.0.1)"
+GT() { git -c user.name=T -c user.email=t@t "$@"; }
+# sdd-gitflow iniciar troca para develop vindo de uma branch de trabalho.
+W="$TMP/cenario-iniciar"; mkdir -p "$W"
+(cd "$W" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && git switch -q -c feat-x && sdd-iniciar >/dev/null && sdd-gitflow iniciar >/dev/null 2>&1)
+[ "$(git -C "$W" rev-parse --abbrev-ref HEAD)" = "develop" ] && ok "gitflow iniciar troca para develop vindo de outra branch" || fail "gitflow iniciar troca de feat-x" "$(git -C "$W" rev-parse --abbrev-ref HEAD)"
+[ -d "$W/.sdd" ] && ok "a preparação vai junto para develop" || fail "preparação em develop"
+# conferir num repositório sem commit mostra a branch inicial.
+W2="$TMP/cenario-vazio"; mkdir -p "$W2"
+(cd "$W2" && git init -q -b master && sdd-iniciar >/dev/null)
+out="$(cd "$W2" && sdd-gitflow conferir 2>&1 || true)"
+printf '%s' "$out" | grep -q 'branch atual: master (sem nenhum commit ainda)' && ok "conferir sem commit mostra a branch inicial" || fail "conferir sem commit" "$out"
+# sdd-iniciar na atualização mostra o nível e a proteção do config.
+W3="$TMP/cenario-valores"; mkdir -p "$W3"
+(cd "$W3" && sdd-iniciar --nivel 2 --protecao estrita >/dev/null)
+out="$(cd "$W3" && sdd-iniciar 2>&1)"
+printf '%s' "$out" | grep -q 'nível padrão: 2 | proteção: estrita (do .sdd/config.yml, mantido)' && ok "atualização mostra os valores do config" || fail "valores do config na atualização" "$out"
+# sensivel sem ref, sem Git Flow: conta os commits da feature.
+W4="$TMP/cenario-sensivel"; mkdir -p "$W4/src/auth"
+(cd "$W4" && git init -q -b master && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && subst 's/^gitflow: .*/gitflow: desligado/; s#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' .sdd/config.yml \
+  && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Login" >/dev/null && GT add -A && GT commit -qm "docs(001): spec" \
+  && printf 'x\n' > src/auth/a.js && GT add -A && GT commit -qm "feat(001): T-001 login")
+(cd "$W4" && assert_exit 0 "sensivel sem ref acha o commit sensível da feature (sem Git Flow)" sdd-estado sensivel)
+[ "$(sdd_feature_ler_t "$W4" 001-login seguranca)" = "obrigatoria" ] && ok "sensivel torna a segurança obrigatória" || fail "segurança obrigatória sem Git Flow"
+# sensivel sem ref, com Git Flow: base no ponto em que a branch saiu de develop.
+W5="$TMP/cenario-sensivel-gf"; mkdir -p "$W5/src/auth"
+(cd "$W5" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && subst 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' .sdd/config.yml && sdd-gitflow iniciar >/dev/null 2>&1 \
+  && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Login" >/dev/null && sdd-gitflow feature 001-login >/dev/null 2>&1 \
+  && GT add -A && GT commit -qm "docs(001): spec" && printf 'x\n' > src/auth/a.js && GT add -A && GT commit -qm "feat(001): T-001 login")
+(cd "$W5" && assert_exit 0 "sensivel sem ref acha o commit sensível da feature (Git Flow)" sdd-estado sensivel)
+# Artefato aprovado que muda depois: status marca ✗ e pendências apontam.
+W6="$TMP/cenario-alterado"; mkdir -p "$W6"
+(cd "$W6" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml && sdd-estado nova "Cupom" >/dev/null \
+  && printf '# Spec\n\n- RF-001: o sistema DEVE aplicar o cupom.\n- CA-001: Dado x, Quando y, Então z.\n' > specs/001-cupom/spec.md \
+  && sdd-estado aprovar >/dev/null && printf '# Tarefas\n\n- [ ] T-001 aplica o cupom (atende: RF-001, CA-001; depende de: nenhuma)\n' > specs/001-cupom/tarefas.md \
+  && sdd-estado aprovar >/dev/null && printf 'mudou\n' >> specs/001-cupom/spec.md)
+out="$(cd "$W6" && sdd-status 001-cupom 2>&1)"
+printf '%s' "$out" | grep -q '✗ spec.md (alterado depois da aprovação' && ok "status marca ✗ o artefato alterado depois de aprovado" || fail "status ✗" "$out"
+out="$(cd "$W6" && sdd-pendencias 2>&1)"
+printf '%s' "$out" | grep -q 'spec.md foi alterado depois de aprovado (a feature está em red)' && ok "pendências apontam spec alterada numa fase seguinte" || fail "pendências spec alterada" "$out"
+
+# O casamento de globs não depende do diretório atual.
+(cd "$PLUGIN" && . lib/sdd-comum.sh && cd "$W6" && mkdir -p tests && : > tests/existente.test.js && sdd_casa_glob "tests/novo.test.js" "tests/**") \
+  && ok "glob casa arquivo novo com o cwd no projeto" || fail "glob depende do cwd"
+(cd "$PLUGIN" && . lib/sdd-comum.sh && cd / && sdd_casa_glob "tests/novo.test.js" "tests/**") \
+  && ok "glob casa arquivo novo com o cwd na raiz do disco" || fail "glob com cwd /"
+# Marcar [x] não invalida a aprovação do tarefas.md; mudar o texto, sim.
+subst 's/^- \[ \] T-001/- [x] T-001/' "$W6/specs/001-cupom/tarefas.md"
+(cd "$W6" && assert_exit 0 "marcar [x] não invalida a aprovação das tarefas" sdd-estado aprovado tarefas.md 001-cupom)
+printf -- '- [ ] T-002 outra (atende: RF-001; depende de: nenhuma)\n' >> "$W6/specs/001-cupom/tarefas.md"
+(cd "$W6" && assert_exit 4 "acrescentar tarefa invalida a aprovação" sdd-estado aprovado tarefas.md 001-cupom)
+# Versões: o pré-lançamento vem antes da final e não vira referência.
+W7="$TMP/cenario-rc"; mkdir -p "$W7"
+(cd "$W7" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+  && sdd-release nova 1.0.0 --objetivo x >/dev/null && sdd-release nova 1.0.0-rc.1 --objetivo x >/dev/null)
+out="$(cd "$W7" && sdd-release listar 2>&1)"
+[ "$(printf '%s\n' "$out" | grep -oE '1\.0\.0(-rc\.1)?' | head -1)" = "1.0.0-rc.1" ] && ok "listar põe o rc antes da final" || fail "ordem SemVer" "$out"
+(cd "$W7" && sdd-release nova 0.1.0-rc.1 --objetivo x >/dev/null && sdd-release proxima --pre rc 2>/dev/null | grep -qx '0\.1\.0-rc\.2') && ok "próximo rc conta as releases já criadas" || fail "rc.2" "$(cd "$W7" && sdd-release proxima --pre rc 2>&1)"
+# sdd-gitflow feature acha a feature que só existe na branch dela.
+(cd "$W5" && GT switch -q develop 2>/dev/null; sdd-gitflow feature 001-login >/dev/null 2>&1)
+[ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/001-login" ] && ok "gitflow feature acha a feature fora da árvore atual" || fail "feature fora da árvore" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"

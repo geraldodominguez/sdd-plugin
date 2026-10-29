@@ -3,7 +3,7 @@ name: incidente
 description: Trilha de incidentes em produção. Registra o incidente com severidade, ajuda a mitigar, abre o hotfix (correção expressa com teste de regressão e spec retroativa obrigatória) e conduz o post-mortem sem culpados, transformando as ações em itens de backlog.
 argument-hint: "[abrir <o que aconteceu> | ver | mitigar | hotfix | resolver | post-mortem]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-gitflow *), Bash(sdd-incidente *), Bash(sdd-incidente), Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-release *), Bash(sdd-status *), Bash(git log *), Bash(git diff *), Bash(git show *), Read, Write, Edit, Glob, Grep, Bash(git status *)
+allowed-tools: Bash(git switch develop), Bash(sdd-gitflow *), Bash(sdd-incidente *), Bash(sdd-incidente), Bash(sdd-estado *), Bash(sdd-backlog *), Bash(sdd-release *), Bash(sdd-status *), Bash(git log *), Bash(git diff *), Bash(git show *), Read, Write, Edit, Glob, Grep, Bash(git status *)
 ---
 
 # /sdd:incidente
@@ -52,13 +52,23 @@ Depois: `sdd-incidente situacao INC-NNN mitigado --nota "o que foi feito"`.
 1. `sdd-incidente hotfix INC-NNN "título da correção" [--capacidade nome]`. Ele
    cria uma feature de nível 1, tipo hotfix, **já na fase red**, sem exigir spec
    antes, e reserva a branch `hotfix/X.Y.Z` (a próxima versão patch).
-   **Git Flow:** faça o commit do registro do incidente em `develop`
-   (`docs(NNN): INC-NNN hotfix aberto`, com o número do hotfix), **sem** a pasta nova do hotfix em `specs/`,
-   porque o `sdd-gitflow` não troca de branch com alterações pendentes (o hook
-   aceita este commit em `develop` enquanto a branch do hotfix não existe).
-   Depois, rode `sdd-gitflow feature NNN-slug`, que cria
-   `hotfix/X.Y.Z` a partir de `main` (não de `develop`: a correção parte do que
-   está em produção) e muda para ela. Todo o hotfix é commitado ali.
+   **Git Flow:** o registro do incidente é commitado em `develop`. Se você está
+   em outra branch (a de uma feature em andamento, por exemplo), confira com
+   `git status` que não há código pendente e rode `git switch develop`: o
+   registro e a pasta nova vão junto. Em `develop`, faça o commit do registro
+   (`docs(NNN): INC-NNN hotfix aberto`, com o número do hotfix), **sem** a
+   pasta nova do hotfix em `specs/` (`git add -A ':!specs/'`): o hook aceita
+   este commit em `develop` enquanto a branch do hotfix não existe. Depois,
+   rode `sdd-gitflow feature NNN-slug`, que cria `hotfix/X.Y.Z` a partir de
+   `main` (não de `develop`: a correção parte do que está em produção) e muda
+   para ela, levando a pasta do hotfix. Todo o hotfix é commitado ali.
+
+   Na `hotfix/X.Y.Z`, os registros que só existem em `develop` não aparecem:
+   o incidente (leia com `git show develop:incidentes/INC-NNN.md`) e o estado
+   das releases e features mais recentes. As atualizações do incidente
+   (`sdd-incidente nota`, `situacao`) são feitas em `develop`, antes da troca
+   ou depois do `finalizar`. Uma feature que estava em andamento continua na
+   branch dela: depois, `sdd-gitflow feature <NNN-slug dela>` volta para lá.
 2. Diga ao usuário para rodar `/sdd:implementar`: o escritor-de-testes escreve
    primeiro o **teste de regressão que reproduz o incidente** (ele deve falhar).
    Depois de `/sdd:aprovar` dos testes, vem a correção, com os testes congelados.

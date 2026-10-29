@@ -402,7 +402,7 @@ O Git Flow da release:
 | `preparar` | a versão sai dos commits (`sdd-release analisar`: a primeira é 0.1.0); `release/0.1.0` nasce de `develop`; o push dela implanta em homologação |
 | correção pedida na homologação | commit em `release/0.1.0` |
 | antes do go | `sdd-release changelog 0.1.0 --escrever`: a seção da versão no `CHANGELOG.md`, revisada por você |
-| "go" no `implantar` | `sdd-gitflow finalizar 0.1.0`: merge em `main`, tag `v0.1.0`, merge de volta em `develop` |
+| "go" no `implantar` | `sdd-release autorizar 0.1.0` e o commit `chore(release): 0.1.0 autorizada` na branch da release; depois, `sdd-gitflow finalizar 0.1.0`: merge em `main`, tag `v0.1.0`, merge de volta em `develop` |
 | você publica | `git push origin main develop v0.1.0`: a tag dispara o deploy de produção, que confere o go |
 | `concluir` | a release fica em produção; o agente faz o commit `chore(release): 0.1.0 em produção` em `develop`, e você publica com `git push origin develop` |
 

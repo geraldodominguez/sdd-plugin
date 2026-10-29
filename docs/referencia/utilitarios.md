@@ -196,6 +196,10 @@ registrada, a fase não avança, e a saída lista o que reaprovar.
 | 5 | não aprovado, ou aprovação invalidada por reabertura |
 | 1 | o artefato não existe |
 
+No `tarefas.md`, marcar uma tarefa como feita (`[ ]` para `[x]`) é progresso,
+não alteração: as duas caixas entram iguais no hash. Mudar o texto, acrescentar
+ou tirar uma tarefa, ou trocar uma marca `[O]`, conta como alteração.
+
 **Hash dos testes por bloco:** um bloco começa na linha com a marca
 `sdd:NNN:` e vai até a marca de outra feature (ou o fim do arquivo). Testes que
 outra feature acrescenta no mesmo arquivo não mudam o hash desta.
@@ -209,7 +213,9 @@ devolve é o `sdd-release reprovar`, que mantém a release coerente.
 
 **Sensível** lista os arquivos alterados (desde `ref`, mais os não commitados)
 que casam com `areas_sensiveis` e, se houver, marca `seguranca=obrigatoria`.
-Saída 0 quando encontrou, 1 quando não.
+Sem `ref`, a base é o início da feature: com o Git Flow, o ponto em que a branch
+dela saiu de `develop`; sem ele, o commit anterior ao que criou a pasta da
+feature. Saída 0 quando encontrou, 1 quando não.
 
 **Hotfix** (`--tipo hotfix`, normalmente pelo `sdd-incidente hotfix`): nível 1,
 origem obrigatória num incidente, nasce na fase `red`, sem tarefas; a entrega
@@ -270,7 +276,7 @@ sdd-release ver [versão] | listar | atual
 | `remover` | `preparacao` | | a feature estar na release |
 | `homologar` | `preparacao` | `homologacao` | features prontas e com aprovações em dia; `testes.md` completo com `Resultado: aprovado`; roteiro (`| H-NNN |`) em `homologacao.md` |
 | `aceitar` | `homologacao` | `aceita` | roteiro com passos `H-NNN`, nenhum `pendente` ou `reprovado`, nenhum campo `{{...}}`; `--por` |
-| `reprovar` | `homologacao`, `aceita` | `preparacao` | a feature reprovada volta ao green; as demais voltam a `pronta` |
+| `reprovar` | `homologacao`, `aceita` | `preparacao` | a feature reprovada sai da release e volta ao green (com o Git Flow, a `release/<versão>` passa a ser a branch dela, onde a correção é feita); as demais voltam a `pronta`. Pronta de novo, a feature volta com `incluir` |
 | `autorizar` (go) | `aceita` | `implantacao` | `implantacao.md` (com Rollback) e `notas.md` completos |
 | `concluir` | `implantacao` | `producao` | `--verificacao`; as features vão para `producao` |
 | `reverter` | `implantacao`, `producao` | `revertida` | as features voltam a `pronta` |
@@ -332,6 +338,11 @@ sdd-status <NNN-slug>    o detalhe de uma feature
 sdd-status --ativa       o detalhe da feature ativa
 ```
 
+No detalhe, cada artefato aparece com `✓` (existe, com a situação da
+aprovação), `✗` (alterado depois de aprovado) ou `·` (ainda não existe). Com o
+Git Flow, a linha `branch:` de uma feature pronta diz se ela já está em
+`develop`, inclusive quando a branch local foi apagada depois do `integrar`.
+
 ## sdd-pendencias
 
 ```
@@ -339,7 +350,8 @@ sdd-pendencias [--contar]
 ```
 
 Incidentes, releases paradas, aprovações pendentes ou invalidadas (inclusive
-a transição de uma feature adotada), revisões de segurança devidas, dúvidas,
+a transição de uma feature adotada, e um artefato de fase anterior alterado
+depois de aprovado, como a spec mexida durante o green), revisões de segurança devidas, dúvidas,
 delta specs e ADRs propostos, consolidações pendentes, prontas fora de release,
 backlog a triar, itens da sprint sem spec, artefatos **fora do padrão** (com
 `/sdd:iniciar --adotar`) e problemas de **Git Flow** (falta de `develop`, branch
@@ -466,12 +478,12 @@ completo, com cada momento do ciclo, está em [Git Flow](git-flow.md).
 
 | Comando | Faz | Recusa quando |
 |---|---|---|
-| `conferir` | lista branches fora do padrão (com o nome sugerido), a falta de `main` ou `develop`, e se a branch atual é a da feature ativa | saída 3 com problemas |
-| `iniciar` | garante `main`, cria `develop` a partir dela e, se você está em `main`, muda para `develop` | não há commit; a produção tem outro nome (`master`); alteração pendente em código ao trocar |
+| `conferir` | lista branches fora do padrão (com o nome sugerido), a falta de `main` ou `develop`, e se a branch atual é a da feature ativa. Num repositório sem commit, mostra a branch inicial ("master (sem nenhum commit ainda)") | saída 3 com problemas |
+| `iniciar` | garante `main`, cria `develop` a partir dela e muda para `develop`, de qualquer branch (sem código pendente) | não há commit; a produção tem outro nome (`master`); alteração pendente em código ao trocar |
 | `renomear` | `git branch -m` local para um nome do padrão; imprime os passos do remoto | o nome novo está fora do padrão, já existe, ou é `feature/` de uma feature que não existe |
-| `feature` | cria a branch da feature (de `develop`; de `main` num hotfix) ou muda para ela | a feature não existe; alteração pendente em código |
+| `feature` | cria a branch da feature (de `develop`; de `main` num hotfix) ou muda para ela. Se a pasta da feature não existe na branch atual (ela ainda não foi integrada), procura a branch local que a tem (`feature/`, `hotfix/` ou `release/`) e muda para ela. Numa feature reprovada na homologação, a branch é a `release/X.Y.Z`; terminada a release, volta a ser `feature/NNN-slug` | a feature não existe em nenhuma branch local; alteração pendente em código |
 | `release`, `hotfix` | cria `release/X.Y.Z` (de `develop`) ou `hotfix/X.Y.Z` (de `main`) | versão inválida; alteração pendente em código |
-| `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; a branch não existe localmente; alteração não commitada (fora do `.sdd/`); conflito (o merge fica em andamento) |
+| `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; foi corrigida numa `release/` (volta pela release, com `sdd-release incluir`); a branch não existe localmente; alteração não commitada (fora do `.sdd/`); conflito (o merge fica em andamento) |
 | `finalizar` | merge da `release/` (ou `hotfix/`) em `main`, tag `vX.Y.Z`, merge de `main` em `develop`; com `--apos-pr`, só a tag e o `develop`, depois do merge feito na plataforma | a release não tem o go (`implantacao` ou `producao`); a branch não existe localmente; com `--apos-pr`, a branch ainda não está em `main`; alteração não commitada; conflito |
 | `pode-integrar` | saída 0 se o fluxo é permitido (`feature/*` para `develop`; `release/*` e `hotfix/*` para `main` ou `develop`; `main` para `develop`) | saída 3 nos demais |
 

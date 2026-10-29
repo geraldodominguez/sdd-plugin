@@ -143,12 +143,21 @@ Para homologar uma versão grande antes de fechá-la, use um release candidate:
 | Comando | Resultado |
 |---|---|
 | `sdd-release proxima --pre rc` | `1.3.0-rc.1` |
-| (depois da tag `v1.3.0-rc.1`) `sdd-release proxima --pre rc` | `1.3.0-rc.2` |
-| `sdd-release proxima` | `1.3.0` (a tag de pré-lançamento não vira a base) |
+| (com a release `1.3.0-rc.1` criada, ou a tag `v1.3.0-rc.1`) `sdd-release proxima --pre rc` | `1.3.0-rc.2` |
+| `sdd-release proxima` | `1.3.0` (o pré-lançamento nunca vira a base) |
 
 Também valem `alpha` e `beta`. A ordem do SemVer é
-`1.3.0-alpha.1 < 1.3.0-beta.1 < 1.3.0-rc.1 < 1.3.0`. A release, a branch
-(`release/1.3.0-rc.1`) e a tag (`v1.3.0-rc.1`) aceitam o sufixo.
+`1.3.0-alpha.1 < 1.3.0-beta.1 < 1.3.0-rc.1 < 1.3.0`, e é nessa ordem que o
+`sdd-release listar` mostra as releases. A release e a branch
+(`release/1.3.0-rc.1`) aceitam o sufixo.
+
+Um release candidate é **só homologado**: preparar, homologar e aceitar, sem
+`autorizar`, `finalizar` nem `concluir`. Com o aceite, o `/sdd:release` o
+cancela (`sdd-release cancelar 1.3.0-rc.1 --motivo "substituída pela 1.3.0"`,
+e as features voltam a prontas), leva a `develop` as correções feitas em
+`release/1.3.0-rc.1` e prepara a `1.3.0` com as mesmas features. Se ele fosse
+até produção, viraria a versão em produção e a final não teria mais o que
+entregar.
 
 ## 6. O CHANGELOG.md
 
@@ -196,6 +205,7 @@ negócio, para quem usa o sistema.
 | `/sdd:release preparar` | o agente roda `sdd-release analisar` e propõe a versão, com o motivo; você confirma ou escolhe outra |
 | a versão está decidida | `sdd-gitflow release X.Y.Z` cria `release/X.Y.Z`; `sdd-release nova X.Y.Z` cria `releases/X.Y.Z/` |
 | `/sdd:release implantar`, antes do go | `sdd-release changelog X.Y.Z --escrever`, revisado com você, e o commit `docs(release): changelog X.Y.Z` na branch da release |
+| o go | `sdd-release autorizar X.Y.Z` e o commit `chore(release): X.Y.Z autorizada` na branch da release |
 | depois do go | `sdd-gitflow finalizar X.Y.Z`: a tag `vX.Y.Z` em `main`, que o pipeline implanta |
 
 Um hotfix é sempre patch: `hotfix/X.Y.Z` já nasce com a próxima patch.

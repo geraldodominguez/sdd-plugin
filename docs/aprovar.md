@@ -36,14 +36,23 @@ Uma feature ativa com o artefato da fase pronto.
 ## Aprovação com hash
 
 O registro guarda um hash curto do artefato. Se alguém mudar a spec depois de
-aprovada, o hash deixa de bater, e isso aparece em três lugares:
+aprovada, o hash deixa de bater, e isso aparece:
 
-- `sdd-estado aprovado spec.md` sai com 4 (alterado depois da aprovação);
-- os comandos das fases seguintes recusam continuar e pedem uma nova aprovação;
-- o `auditor-de-drift` registra o desvio na seção de processo da auditoria.
+- no `sdd-estado aprovado spec.md`, que sai com 4 (alterado depois da aprovação);
+- no `/sdd:status` da feature, que marca o artefato com `✗`, e no
+  `/sdd:pendencias`, que pede para aprovar de novo ou desfazer a mudança;
+- no `/sdd:implementar`, que para antes de implementar sobre uma spec (ou um
+  plano) alterada;
+- na entrega, que recusa deixar a feature pronta com um artefato alterado;
+- no `auditor-de-drift`, que registra o desvio na seção de processo da auditoria.
 
 O mesmo vale para os testes: aprovados na fase red, qualquer mudança neles
-durante a implementação fica visível.
+durante a implementação fica visível. No `tarefas.md`, marcar uma tarefa como
+feita (`[x]`) não conta como mudança; mudar o texto de uma tarefa, sim.
+
+Aprovar de novo um artefato de fase anterior é `/sdd:aprovar spec.md` (ou o
+artefato que mudou): o agente mostra o diff e registra a nova aprovação sem
+mudar a fase.
 
 O histórico e o estado de cada feature só são escritos pelos utilitários: o hook
 de proteção bloqueia a edição manual desses arquivos pelo agente.
@@ -58,10 +67,17 @@ reaprovar. Com a feature pronta, o `/sdd:aprovar` conduz a consolidação na
 
 ## Feature pronta entra em develop
 
-Quando a feature fica pronta, ele pergunta se pode levá-la para `develop`:
-pelo `sdd-gitflow integrar` (merge `--no-ff`, com `integracao: local`) ou por
-pull request (com `integracao: pr`). Um hotfix não passa por aqui: ele vai para
-`main` pela release de correção. Ver [Git Flow](referencia/git-flow.md).
+Quando a feature fica pronta, ele faz o commit do que a aprovação mudou
+(`docs(NNN): feature pronta`) e pergunta se pode levá-la para `develop`: pelo
+`sdd-gitflow integrar` (merge `--no-ff`, com `integracao: local`) ou por pull
+request (com `integracao: pr`, depois que você publica a branch com `git push
+-u origin feature/NNN-slug`). Duas exceções: um hotfix vai para `main` pela
+release de correção, e uma feature corrigida depois de reprovada na
+homologação volta para a release dela (`sdd-release incluir`), não para
+`develop`. Ver [Git Flow](referencia/git-flow.md).
+
+Na aprovação do plano, os ADRs que o `/sdd:planejar` propôs para a feature
+passam de `proposta` para `aceita`.
 
 ## Perguntas frequentes
 
@@ -81,7 +97,7 @@ aprovou o quê.
 ## Está funcionando se
 
 - Toda troca de fase no `historico.md` vem logo depois de uma linha de aprovação.
-- Mudar a spec aprovada faz o `/sdd:status` mostrar "aguarda aprovação" de novo.
+- Mudar a spec aprovada faz o `/sdd:status` marcá-la com `✗` e o `/sdd:pendencias` pedir uma nova aprovação.
 - Nenhum comando de fase segue adiante com um artefato anterior não aprovado.
 
 ## Onde se encaixa

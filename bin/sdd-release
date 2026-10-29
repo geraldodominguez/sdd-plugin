@@ -104,12 +104,22 @@ versoes() { # versões existentes, em ordem SemVer crescente
   local d
   for d in "$DIR"/*/; do
     [ -f "$d/release.md" ] && basename "$d"
-  done | sort -t. -k1,1n -k2,2n -k3,3n
+  done | awk '{
+    # Chave de ordenação SemVer: a pré-lançamento (1.3.0-rc.1) vem antes da final.
+    v = $0; base = v; pre = ""
+    i = index(v, "-"); if (i) { base = substr(v, 1, i - 1); pre = substr(v, i + 1) }
+    split(base, n, ".")
+    printf "%09d %09d %09d %d %s %s\n", n[1], n[2], n[3], (pre == "" ? 1 : 0), pre, v
+  }' | sort | awk '{ print $NF }'
 }
 
 ultima_em_producao() {
   local v ult=""
-  for v in $(versoes); do [ "$(situacao "$v")" = "producao" ] && ult="$v"; done
+  # Um pré-lançamento nunca é a referência da próxima versão.
+  for v in $(versoes); do
+    case "$v" in *-*) continue ;; esac
+    [ "$(situacao "$v")" = "producao" ] && ult="$v"
+  done
   printf '%s\n' "$ult"
 }
 
@@ -192,7 +202,11 @@ proxima_versao() { # proxima_versao <auto|major|minor|patch> [id de pré-lançam
   fi
   if [ -n "$pre" ]; then
     printf '%s' "$pre" | grep -qE '^[0-9A-Za-z-]+$' || { echo "sdd-release proxima: identificador de pré-lançamento inválido: $pre" >&2; exit 1; }
-    n="$(git -C "$RAIZ" tag --list "v$prox-$pre.*" 2>/dev/null | sed -E "s/^v$prox-$pre\.//" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)"
+    # O número do pré-lançamento segue o maior já usado, em tag ou em releases/.
+    n="$( { git -C "$RAIZ" tag --list "v$prox-$pre.*" 2>/dev/null | sed -E "s/^v//"
+            for d in "$DIR/$prox-$pre".*/; do if [ -d "$d" ]; then basename "$d"; fi; done
+            true
+          } | sed -E "s/^$prox-$pre\.//" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)"
     prox="$prox-$pre.$(( ${n:-0} + 1 ))"
   fi
   printf '%s\n' "$prox"
@@ -484,11 +498,21 @@ case "$cmd" in
     existe "$v"; exige "$v" homologacao aceita
     features "$v" | grep -qx "$f" || { echo "sdd-release: $f não está na release $v." >&2; exit 1; }
     "$AQUI/sdd-estado" reabrir "$f" --pela-release --fase green --motivo "reprovada na homologação da $v: $motivo" >/dev/null
+    # Com o Git Flow, a correção é feita na branch da release, e a feature passa
+    # a ser trabalhada nela (sdd-gitflow esperada, o hook e o integrar sabem disso).
+    if sdd_gitflow_ativo "$RAIZ" && git -C "$RAIZ" show-ref --verify --quiet "refs/heads/release/$v"; then
+      sdd_feature_gravar "$RAIZ" "$f" branch "release/$v"
+    fi
     reescrever_features "$v" "$(features "$v" | grep -vx "$f" || true)"
     for g in $(features "$v"); do "$AQUI/sdd-estado" transicionar "$g" pronta "release $v voltou à preparação" >/dev/null; done
     historico "$v" reprovacao "$f: $motivo"
     mudar_situacao "$v" preparacao "feature $f reprovada"
-    echo "$f reprovada e reaberta no green. A release $v voltou à preparação: refaça os testes de sistema e a homologação."
+    echo "$f reprovada e reaberta no green. A release $v voltou à preparação."
+    if [ "$(sdd_feature_ler "$RAIZ" "$f" branch)" = "release/$v" ]; then
+      echo "A correção é feita em release/$v. Com a feature pronta de novo: sdd-release incluir $v $f, e refaça os testes de sistema e a homologação."
+    else
+      echo "Com a feature pronta de novo: sdd-release incluir $v $f, e refaça os testes de sistema e a homologação."
+    fi
     ;;
 
   autorizar)

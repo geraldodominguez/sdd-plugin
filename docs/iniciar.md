@@ -86,7 +86,10 @@ Rode `/sdd:iniciar` em cada um. Num projeto com `.sdd/`, ela faz a
 **atualização**, não a preparação: atualiza o bloco de regras e o
 `.gitattributes`, mostra os templates que diferem dos do plugin e as chaves
 novas do config, e pergunta, uma a uma, o que trocar e que valor usar. Depois
-prepara o Git Flow, se ele estiver ativo. A constituição, as chaves que você já
+prepara o Git Flow, se ele estiver ativo. A atualização é commitada em
+`develop`: se você estava no meio de uma feature, ela desativa a feature,
+muda para `develop` (sem código pendente) e, no fim, reativa a feature, que
+continua na branch dela. A constituição, as chaves que você já
 preencheu e as specs ficam como estão. Até você rodar, as chaves novas valem
 pelo padrão do plugin: numa versão que liga o Git Flow, o hook já age.
 

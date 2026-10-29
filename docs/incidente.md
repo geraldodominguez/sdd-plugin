@@ -52,6 +52,13 @@ desenvolvimento. Depois do go da release de correção, o `sdd-gitflow
 finalizar` leva o hotfix para `main`, com a tag, e para `develop`. Ver
 [Git Flow](referencia/git-flow.md#44-um-hotfix).
 
+O registro do incidente é commitado em `develop` antes de a branch do hotfix
+nascer. Se você estava no meio de outra feature, o agente volta para `develop`
+para esse commit (sem código pendente) e, depois, a outra feature continua na
+branch dela (`sdd-gitflow feature <NNN-slug>`). Na `hotfix/X.Y.Z`, que sai de
+`main`, o registro do incidente não aparece: o agente o lê de `develop`, e as
+atualizações do incidente são feitas em `develop`.
+
 ## O post-mortem
 
 Sem culpados. As perguntas que importam: qual foi a causa raiz, e **qual etapa

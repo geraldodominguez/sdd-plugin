@@ -173,7 +173,11 @@ if ! grep -qF '# sdd:inicio' "$ATRIB" 2>/dev/null; then
 fi
 
 echo "SDD iniciado em: $RAIZ"
-echo "  nível padrão: $NIVEL | proteção: $PROTECAO"
+if [ "$ATUALIZACAO" -eq 1 ] && [ "$FORCAR" -ne 1 ]; then
+  echo "  nível padrão: $(sdd_config "$RAIZ" nivel_padrao 1) | proteção: $(sdd_config "$RAIZ" protecao leve) (do .sdd/config.yml, mantido)"
+else
+  echo "  nível padrão: $NIVEL | proteção: $PROTECAO"
+fi
 if [ ${#criados[@]} -gt 0 ]; then
   echo "Criado ou atualizado:"
   printf '  + %s\n' "${criados[@]}"

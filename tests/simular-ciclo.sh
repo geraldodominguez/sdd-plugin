@@ -115,6 +115,22 @@ subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "$R/tes
 subst 's/{{[^}]*}}/ok/g' "$R/homologacao.md"
 sdd-release homologar "$V" >/dev/null
 espera "fase da feature" "$(fase $F)" homologacao
+echo "   [Bia reprova um passo: a feature volta ao green e é corrigida na própria release]"
+sdd-release reprovar "$V" "$F" --motivo "o e-mail sai sem o nome da loja" >/dev/null
+espera "branch da feature reprovada" "$(grep '^branch=' "specs/$F/estado" | tail -1 | cut -d= -f2)" "release/$V"
+sdd-estado usar "$F" >/dev/null
+espera "branch esperada para a correção" "$(sdd-gitflow esperada)" "release/$V"
+if sdd-gitflow integrar "$F" >/dev/null 2>&1; then echo "   ✗ integrar deveria recusar a feature corrigida na release"; exit 1; fi
+echo "   ✓ integrar recusa: a feature corrigida volta pela release"
+printf 'loja\n' > src/email.txt && git add -A && git commit -qm "fix(001): T-002 o e-mail leva o nome da loja"
+sdd-estado definir fase=seguranca >/dev/null
+sdd-estado aprovar --decisao aprovar >/dev/null
+sdd-estado aprovar --decisao aprovar >/dev/null
+espera "feature corrigida" "$(fase $F)" pronta
+sdd-release incluir "$V" "$F" >/dev/null
+git add -A && git commit -qm "chore(release): $V volta à homologação com a correção da 001"
+sdd-release homologar "$V" >/dev/null
+espera "de novo em homologação" "$(fase $F)" homologacao
 echo "   [Bia, dona do produto, executa o roteiro e aprova cada passo]"
 subst 's/| pendente |/| aprovado |/' "$R/homologacao.md"
 sdd-release aceitar "$V" --por "Bia, dona do produto" >/dev/null

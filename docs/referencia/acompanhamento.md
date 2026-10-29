@@ -94,7 +94,7 @@ o seu próprio caminho e os seus próprios gates humanos:
 | Aceite | `/sdd:release aceitar` | o dono do produto |
 | Revisar o changelog | `/sdd:release implantar` gera a seção do `CHANGELOG.md` a partir dos commits | você confere o texto antes do go |
 | Go/no-go | `/sdd:release implantar` | quem responde pela produção |
-| Publicar | depois do go, `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag, merge em `develop`) e `git push origin main develop vX.Y.Z` | quem tem permissão de push em `main` |
+| Publicar | depois do go e do commit dele (`chore(release): X.Y.Z autorizada`), `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag, merge em `develop`) e `git push origin main develop vX.Y.Z` | quem tem permissão de push em `main` |
 | Implantar e verificar | o pipeline (disparado pela tag, confere o go) e `/sdd:release concluir` | o time de operação |
 
 Um ritmo comum: uma release por sprint, aberta no planejamento e concluída

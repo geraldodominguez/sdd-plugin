@@ -21,7 +21,7 @@ workflow:
 stages: [verificar, implantar]
 
 variables:
-  SDD_VERSAO: {{versão do plugin SDD instalado, ex.: v1.0.0}}   # fixa, para o CI não mudar sozinho
+  SDD_VERSAO: {{versão do plugin SDD instalado, ex.: v1.0.1}}   # fixa, para o CI não mudar sozinho
 
 default:
   image: {{imagem da stack, ex.: node:22}}

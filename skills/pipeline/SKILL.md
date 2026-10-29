@@ -44,11 +44,18 @@ tag não implanta nada.
    `sdd-verificar` só existem a partir da versão que as trouxe: com uma versão
    anterior, o CI não as faz.
 4. **Mostre o arquivo** e explique cada estágio em uma linha. Escreva só com
-   aprovação. Avise o que precisa ser configurado fora do repositório
+   aprovação. Com `protecao: estrita` e uma feature ativa numa fase em que só
+   se editam artefatos ou testes, o hook bloqueia gravar o arquivo do
+   pipeline: guarde a feature ativa (a linha `feature=` do `sdd-estado ver`), desative-a
+   (`sdd-estado definir feature=`), grave e reative (`sdd-estado usar
+   <NNN-slug>`). Avise o que precisa ser configurado fora do repositório
    (segredos, proteção dos ambientes, revisores obrigatórios do ambiente de
-   produção) e a **proteção das branches** do Git Flow na plataforma: `main` e
-   `develop` só por pull request, com o estágio `verificar` obrigatório, sem
-   push direto e sem force-push.
+   produção) e a **proteção das branches** do Git Flow na plataforma: `main` só
+   por pull request, com o estágio `verificar` obrigatório, sem push direto e
+   sem force-push. Para `develop`, depende da `integracao`: com `pr`, também
+   só por pull request; com `local`, quem integra faz o merge na própria
+   máquina e publica com `git push origin develop`, então `develop` precisa
+   aceitar esse push (proteja só contra force-push).
 5. Rode `sdd-verificar` localmente e mostre o resultado: é o que o CI vai ver.
 
 ## Conferir

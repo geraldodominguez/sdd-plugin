@@ -303,7 +303,10 @@ gera a seção da versão no `CHANGELOG.md` a partir dos commits
 commit em `release/0.1.0` (`docs(release): changelog 0.1.0`). Então pergunta:
 go ou no-go?
 
-Com o go, `sdd-gitflow finalizar 0.1.0` faz o merge de `release/0.1.0` em
+Com o go, `sdd-release autorizar 0.1.0` registra a decisão, e o agente faz o
+commit desses registros na branch da release
+(`chore(release): 0.1.0 autorizada`): o `finalizar` exige tudo commitado.
+Então `sdd-gitflow finalizar 0.1.0` faz o merge de `release/0.1.0` em
 `main`, cria a tag `v0.1.0` e faz o merge de volta em `develop`. Você publica:
 
 ```

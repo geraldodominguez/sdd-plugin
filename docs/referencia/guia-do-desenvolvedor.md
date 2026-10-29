@@ -238,7 +238,7 @@ para `develop`: com o seu "sim", `sdd-gitflow integrar 004-slug` faz o merge
 |---|---|
 | uma feature reprovada | a correção é commitada em `release/X.Y.Z` |
 | antes do go | `sdd-release changelog X.Y.Z --escrever` gera a seção do `CHANGELOG.md`; você revisa, e o commit `docs(release): changelog X.Y.Z` vai na branch da release |
-| depois do go | `sdd-gitflow finalizar X.Y.Z`: merge em `main`, tag `vX.Y.Z`, merge de volta em `develop`; você publica com `git push origin main develop vX.Y.Z` |
+| depois do go | o commit dos registros do go (`chore(release): X.Y.Z autorizada`), depois `sdd-gitflow finalizar X.Y.Z`: merge em `main`, tag `vX.Y.Z`, merge de volta em `develop`; você publica com `git push origin main develop vX.Y.Z` |
 | depois do `concluir` | commit em `develop` (`chore(release): X.Y.Z em produção`) e `git branch -d release/X.Y.Z` |
 
 Se a implantação der errado: `/sdd:release reverter`, que executa o rollback do

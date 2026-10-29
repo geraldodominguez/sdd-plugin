@@ -37,11 +37,11 @@ A 1.0.0 se declara de propósito (`sdd-release proxima major`).
 |---|---|
 | `sdd-release analisar` | os commits desde a última versão, o impacto de cada um e a sugestão, com o motivo |
 | `sdd-release proxima` | a próxima versão, calculada pelos commits (ou `major`, `minor`, `patch` explícitos) |
-| `sdd-release proxima --pre rc` | o próximo pré-lançamento: `X.Y.Z-rc.1`, `-rc.2`... |
+| `sdd-release proxima --pre rc` | o próximo pré-lançamento: `X.Y.Z-rc.1`, `-rc.2`... Um pré-lançamento só é homologado, nunca vai para produção (ver o `/sdd:release`, Release candidate) |
 | `sdd-release changelog X.Y.Z [--escrever]` | a seção da versão no `CHANGELOG.md` |
 
 A versão de referência é a última release em produção; sem nenhuma, a última
-tag `vX.Y.Z` final (tags de pré-lançamento não contam). Commits fora do padrão
+tag `vX.Y.Z` final (pré-lançamentos, em release ou em tag, não contam). Commits fora do padrão
 não contam para a versão: o `analisar` os lista.
 
 ## Regras

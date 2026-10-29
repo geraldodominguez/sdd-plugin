@@ -53,6 +53,20 @@ pipeline é a garantia determinística, igual para todo o time, antes do merge.
 Clona o repositório do plugin numa versão fixa (`SDD_VERSAO`), para o pipeline
 não mudar sozinho quando o plugin for atualizado.
 
+**Como proteger as branches na plataforma?**
+
+`main` só por pull request, com o estágio `verificar` obrigatório e sem
+force-push. `develop` depende da `integracao` do config: com `pr`, também só por
+pull request; com `local`, o plugin faz o merge na sua máquina e você publica
+com `git push origin develop`, então `develop` precisa aceitar esse push
+(proteja só contra force-push).
+
+**O hook bloqueou a gravação do arquivo do pipeline.**
+
+Com `protecao: estrita` e uma feature ativa numa fase em que só se editam
+artefatos ou testes, o hook não deixa gravar `.github/workflows/` nem
+`.gitlab-ci.yml`. O agente desativa a feature, grava o arquivo e a reativa.
+
 ## Está funcionando se
 
 - Um pull request com uma spec alterada depois de aprovada fica vermelho.

@@ -78,8 +78,10 @@ transição" até você aprovar a transição, e as tarefas feitas fora do plugi
 (`[O]`) aparecem à parte. No topo, a branch em que você está; se a feature
 ativa é feita em outra, um aviso diz qual.
 
-No detalhe de uma feature (`/sdd:status 005-exportar-csv`), aparecem também a
-branch dela e, depois de pronta, se já foi integrada em `develop`.
+No detalhe de uma feature (`/sdd:status 005-exportar-csv`), cada artefato
+aparece com `✓` (com a situação da aprovação), `✗` (alterado depois de
+aprovado: aprove de novo ou desfaça) ou `·` (ainda não existe). Aparecem
+também a branch dela e, depois de pronta, se já foi integrada em `develop`.
 
 ## Está funcionando se
 
