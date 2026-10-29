@@ -3,7 +3,7 @@ name: iniciar
 description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
 argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write
+allowed-tools: Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write
 ---
 
 # /sdd:iniciar
@@ -148,7 +148,13 @@ modelo do SDD e registre no `transicao.md` como era e como ficou, para o
 usuário aprovar a transição e o plugin continuar de onde o outro processo
 parou.
 
-1. **Descubra onde a feature parou.** Para cada tarefa do original, procure no
+1. **Ative a feature e acerte o nível.** `sdd-estado usar NNN-slug`. A feature
+   nasce com o `nivel_padrao`; se ela mexe em domínio, schema, contrato público
+   ou segurança, proponha o nível 2 e, com a confirmação do usuário, rode
+   `sdd-estado definir nivel=2`. Defina a capacidade da spec do sistema com
+   `sdd-estado definir capacidade=<nome>`.
+
+2. **Descubra onde a feature parou.** Para cada tarefa do original, procure no
    código a evidência de que foi feita (`Grep` pelos nomes, caminho:linha). A
    caixa marcada no original não basta: sem evidência, a tarefa conta como
    aberta. Escolha a **fase de destino**:
@@ -163,7 +169,7 @@ parou.
    No nível 2, o plano convertido precisa cumprir o modelo (contratos,
    ameaças, implantação). Se o original não tem isso, o destino é `plano`.
 
-2. **Converta, na ordem do destino**, usando os modelos (`sdd-estado template
+3. **Converta, na ordem do destino**, usando os modelos (`sdd-estado template
    <nome>` dá o caminho):
    - **`spec.md`**: reescreva no modelo da spec (leve no nível 1, completa no
      nível 2). Cada requisito do original vira um `RF`/`RNF` em EARS, e cada
@@ -183,13 +189,13 @@ parou.
      tarefas `[O]` e liste-os em "Testes que já existiam". Não os edite agora:
      a marca é acrescentada na fase red.
 
-3. **Preencha o `transicao.md`**, sem deixar nenhum `{{...}}`: a fase de
+4. **Preencha o `transicao.md`**, sem deixar nenhum `{{...}}`: a fase de
    destino e o porquê, a situação encontrada (com caminho:linha), e as tabelas
    de **como era** e **como vai ficar** dos requisitos e das tarefas, linha a
    linha, com o texto original ao lado do ID novo. Rode `sdd-rastrear` na
    feature e corrija as tarefas sem referência ou com ID inexistente.
 
-4. **Gate da transição.** Mostre ao usuário, para cada feature: a fase de
+5. **Gate da transição.** Mostre ao usuário, para cada feature: a fase de
    destino com a evidência, o "como era" e o "como vai ficar" lado a lado,
    quantas tarefas ficam `[O]` e quantas `[ ]`, e o que ficou de fora. Ele
    aprova com `/sdd:aprovar` (feature ativa: `sdd-estado usar NNN-slug`), que

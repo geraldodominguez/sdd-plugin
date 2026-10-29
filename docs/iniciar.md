@@ -125,4 +125,6 @@ ignorá-la.
 Configuração de uma vez, antes de tudo. Depois dela vêm o
 [especificar](especificar.md), para uma mudança imediata, ou o
 [backlog](backlog.md) e a [sprint](sprint.md), para organizar uma lista de
-trabalho. O mapa completo está na [ajuda](ajuda.md).
+trabalho. O passo a passo está nos guias [projeto novo](referencia/projeto-novo.md)
+e [projeto em andamento](referencia/projeto-em-andamento.md). O mapa completo
+está na [ajuda](ajuda.md).

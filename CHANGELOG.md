@@ -18,8 +18,11 @@ configuração) sempre sobem a versão maior.
 - `sdd-verificar` avisa sobre artefatos fora do padrão, e `sdd-pendencias` os lista na seção "Fora do padrão".
 - Regra 10 no bloco do `CLAUDE.md` e do `AGENTS.md`: artefatos só nos lugares do padrão.
 
+- Guias passo a passo: [começar um projeto novo](docs/referencia/projeto-novo.md) e [adotar o SDD num projeto em andamento](docs/referencia/projeto-em-andamento.md), com as saídas reais dos comandos e o que olhar em cada gate, e o exemplo [`exemplos/adocao/`](exemplos/adocao/), com o antes e o depois de uma adoção.
+
 ### Mudanças
 
+- O aviso de links para o caminho antigo ignora o bloco de regras do SDD, os registros da adoção e as citações parciais (`TODO.md` não casa com `docs/legado/TODO.md`).
 - O `.sdd/adocao.md` entra na lista de arquivos que só os utilitários escrevem.
 - `sdd_slug`, `sdd_proximo_numero_feature` e `sdd_proximo_numero_adr` passam para a `lib/sdd-comum.sh`.
 

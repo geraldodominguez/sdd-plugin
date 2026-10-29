@@ -577,6 +577,7 @@ grep -q '`.kiro/specs/pagamento/design.md` | `specs/002-pagamento/plano.md`' "$L
 (cd "$L" && git status --short | grep -q '^R  TODO.md -> docs/legado/TODO.md') && ok "usa git mv (o histórico do arquivo segue)" || fail "git mv" "$(cd "$L" && git status --short)"
 [ ! -d "$L/.kiro" ] && [ ! -d "$L/docs/specs" ] && [ ! -d "$L/docs/decisions" ] && ok "remove as pastas que ficaram vazias" || fail "pastas vazias"
 echo "$out" | grep -q 'README.md cita docs/specs/login/requirements.md' && ok "aponta links para o caminho antigo" || fail "links antigos" "$out"
+echo "$out" | grep -qE '! (CLAUDE\.md|AGENTS\.md|\.sdd/[^ ]*|[^ ]*transicao\.md) cita' && fail "links: falso positivo" "$out" || ok "links: ignora o bloco do SDD, a transição e o .sdd/"
 [ "$(cd "$L" && sdd-adotar contar)" = "0" ] && ok "depois da adoção, nada fora do padrão" || fail "contar depois" "$(cd "$L" && sdd-adotar inventario)"
 out="$(cd "$L" && sdd-status)"
 echo "$out" | grep -q '001-login-com-e-mail' && ok "o quadro mostra as features adotadas" || fail "quadro com adotadas"

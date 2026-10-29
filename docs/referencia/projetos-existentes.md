@@ -1,5 +1,9 @@
 # Projetos existentes
 
+> O passo a passo completo, com os comandos, as saídas e o que olhar em cada
+> gate, está no guia [adotar o SDD num projeto em andamento](projeto-em-andamento.md).
+> Esta página explica os princípios.
+
 O uso mais comum do SDD não é começar do zero, e sim mudar um sistema que já
 existe.
 

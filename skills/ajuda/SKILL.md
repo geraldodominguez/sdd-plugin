@@ -29,7 +29,12 @@ espalhados por outros agentes (`docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`,
 `.specify/`)? O mesmo **`/sdd:iniciar`** detecta, lê tudo e, com a sua
 aprovação, traz para o padrão. Com o projeto já preparado, rode
 **`/sdd:iniciar --adotar`** sempre que o `/sdd:pendencias` mostrar artefatos
-"Fora do padrão".
+"Fora do padrão". Cada feature adotada fica em transição até o usuário aprovar
+o `transicao.md` com **`/sdd:aprovar`**; depois, continua de onde parou.
+
+Para quem pede um passo a passo, aponte o guia da situação:
+`docs/referencia/projeto-novo.md` (repositório novo) ou
+`docs/referencia/projeto-em-andamento.md` (projeto que já existe).
 
 ## Fluxo da feature: do pedido à feature pronta
 

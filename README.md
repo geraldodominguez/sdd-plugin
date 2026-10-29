@@ -26,8 +26,15 @@ caixa de entrada lista o que espera a sua decisão.
 É pequeno de propósito: vinte skills, seis subagents, dois hooks e doze
 utilitários em bash. Tudo em markdown legível. Adapte à vontade.
 
-> **Primeira vez?** Leia o [guia do desenvolvedor](docs/referencia/guia-do-desenvolvedor.md)
-> (do zero ao primeiro deploy, com os comandos de cada etapa) e depois o
+> **Primeira vez?** Escolha o guia passo a passo da sua situação:
+>
+> | Você tem | Leia |
+> |---|---|
+> | um repositório novo | [começar um projeto novo](docs/referencia/projeto-novo.md) |
+> | um projeto em andamento, com ou sem specs e tarefas de outros agentes | [adotar o SDD num projeto em andamento](docs/referencia/projeto-em-andamento.md) |
+>
+> Depois, o [guia do desenvolvedor](docs/referencia/guia-do-desenvolvedor.md)
+> (o dia a dia, com os comandos de cada etapa) e o
 > [ciclo de vida](docs/referencia/ciclo-de-vida.md) (o mapa do processo
 > inteiro: etapas, gates, quem decide o quê e onde fica cada coisa).
 
@@ -383,6 +390,8 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Guias
 
+- [Começar um projeto novo, passo a passo](docs/referencia/projeto-novo.md)
+- [Adotar o SDD num projeto em andamento, passo a passo](docs/referencia/projeto-em-andamento.md)
 - [Guia do desenvolvedor: do zero ao primeiro deploy](docs/referencia/guia-do-desenvolvedor.md)
 - [Ciclo de vida: o processo inteiro, etapa por etapa](docs/referencia/ciclo-de-vida.md)
 - [Guia de acompanhamento: a rotina do humano](docs/referencia/acompanhamento.md)

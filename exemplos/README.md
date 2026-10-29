@@ -50,6 +50,28 @@ pronta. Depois vêm a consolidação, a release e o incidente.
 Leia o `historico.md` da release para ver os gates em ordem: testes, aceite (de
 quem homologou), go (de quem responde pela produção) e verificação.
 
+## A adoção de um projeto em andamento
+
+[`adocao/`](adocao/) mostra uma loja que outro agente começou fora do plugin:
+a exportação de pedidos com o CSV feito e o PDF não, uma decisão de banco e um
+`TODO.md`. É o exemplo do guia
+[adotar o SDD num projeto em andamento](../docs/referencia/projeto-em-andamento.md).
+
+| Arquivo | O que mostra |
+|---|---|
+| [`antes/`](adocao/antes/) | os arquivos como o outro processo os deixou: `docs/specs/`, `tasks/`, `docs/decisions/`, `TODO.md` |
+| [`adocao-mapa.txt`](adocao/adocao-mapa.txt) | o mapa que o agente propôs e o usuário aprovou, com o motivo de cada grupo |
+| [`depois/specs/001-exportar-pedidos/transicao.md`](adocao/depois/specs/001-exportar-pedidos/transicao.md) | **como era** e **como vai ficar**: arquivos, requisitos e tarefas, linha a linha, e a fase de destino |
+| [`depois/specs/001-exportar-pedidos/spec.md`](adocao/depois/specs/001-exportar-pedidos/spec.md) | a spec convertida para o modelo, com RF e CA |
+| [`depois/specs/001-exportar-pedidos/tarefas.md`](adocao/depois/specs/001-exportar-pedidos/tarefas.md) | duas tarefas `[O]` (feitas fora do plugin) e duas `[ ]` (o plugin continua daqui) |
+| [`depois/specs/001-exportar-pedidos/historico.md`](adocao/depois/specs/001-exportar-pedidos/historico.md) | a adoção com o hash de cada original e a aprovação da transição, que leva a feature à fase red |
+| [`depois/docs/adr/0001-usar-postgres.md`](adocao/depois/docs/adr/0001-usar-postgres.md), [`depois/docs/legado/TODO.md`](adocao/depois/docs/legado/TODO.md) | o ADR numerado e o TODO preservado no legado (o item em aberto foi para o backlog) |
+| [`depois/.sdd/adocao.md`](adocao/depois/.sdd/adocao.md) | o registro de onde veio cada arquivo |
+
+Compare `antes/docs/specs/exportar-pedidos.md` com `depois/specs/001-exportar-pedidos/spec.md`,
+e `antes/tasks/exportar-pedidos.md` com `depois/specs/001-exportar-pedidos/tarefas.md`:
+é exatamente o que o `transicao.md` descreve.
+
 ## O acompanhamento
 
 | Arquivo | No projeto fica em | O que mostra |

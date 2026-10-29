@@ -69,6 +69,10 @@ autor registrado nas suas aprovações.
 
 ## 3. Preparar o repositório
 
+O passo a passo detalhado está em dois guias: [começar um projeto
+novo](projeto-novo.md) e [adotar o SDD num projeto em
+andamento](projeto-em-andamento.md). O resumo:
+
 Uma vez por repositório, normalmente feito pelo tech lead:
 
 ```

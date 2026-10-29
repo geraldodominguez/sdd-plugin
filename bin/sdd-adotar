@@ -273,7 +273,8 @@ aplicar() {
     {
       printf '# Adoção do SDD\n\n'
       printf '> Gerado pelo sdd-adotar. Cada linha é um arquivo trazido de outro processo\n'
-      printf '> para o lugar do padrão. O conteúdo original foi movido, não reescrito.\n\n'
+      printf '> e renomeado para o lugar do padrão. O conteúdo original fica no git; nas\n'
+      printf '> features adotadas, o transicao.md guarda o hash dele e o que mudou.\n\n'
       printf '| Data | Origem | Destino |\n|---|---|---|\n'
     } > "$relatorio"
   fi
@@ -338,15 +339,21 @@ aplicar() {
     printf '%s\n' "$features_novas" | sed "s#^#  + $PASTA_SPECS/#"
   fi
 
-  # Referências que ficaram apontando para o caminho antigo.
-  local refs=() arq
+  # Referências que ficaram apontando para o caminho antigo. Ficam de fora os
+  # registros da própria adoção (.sdd/, históricos, transicao.md) e o bloco de
+  # regras do SDD no CLAUDE.md e no AGENTS.md, que cita nomes como TODO.md de
+  # propósito. O caminho só conta inteiro: "TODO.md" não casa com
+  # "docs/legado/TODO.md".
+  local refs=() arq re texto
   while IFS= read -r arq; do
     [ -n "$arq" ] || continue
-    case "$arq" in .sdd/adocao.md|.sdd/historico.md|*/historico.md) continue ;; esac
+    case "$arq" in .sdd/*|*/historico.md|*/transicao.md) continue ;; esac
     case "$arq" in *.md|*.mdx|*.markdown|*.yml|*.yaml|*.json|*.txt) ;; *) continue ;; esac
     [ -f "$RAIZ/$arq" ] || continue
+    texto="$(awk '$0 == "<!-- sdd:inicio -->" { p = 1; next } $0 == "<!-- sdd:fim -->" { p = 0; next } !p' "$RAIZ/$arq")"
     for o in "${origens[@]}"; do
-      if grep -qF -- "$o" "$RAIZ/$arq" 2>/dev/null; then
+      re="$(printf '%s' "$o" | sed 's/[][\\.*^$()+?{}|]/\\&/g')"
+      if printf '%s\n' "$texto" | grep -qE -- "(^|[^A-Za-z0-9_./-])$re(\$|[^A-Za-z0-9_-])"; then
         refs+=("$arq cita $o")
       fi
     done
