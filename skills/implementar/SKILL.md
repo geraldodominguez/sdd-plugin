@@ -38,7 +38,18 @@ Leia `comando_teste` e `protecao` no `.sdd/config.yml`. Sem `comando_teste`, des
 e confirme com o usuário.
 
 Pergunte uma vez, no início, se o usuário quer **um commit por tarefa**, no
-formato `tipo(NNN): T-XXX descrição`. Respeite a resposta até o fim.
+formato `tipo(NNN): T-XXX descrição` (Conventional Commits). Respeite a
+resposta até o fim. O tipo decide a próxima versão, então escolha pelo que a
+tarefa faz para quem usa o sistema:
+
+| A tarefa | Tipo |
+|---|---|
+| entrega comportamento novo | `feat` |
+| corrige comportamento errado | `fix` |
+| melhora desempenho sem mudar o comportamento | `perf` |
+| só testes (fase red) | `test` |
+| reorganiza o código sem mudar o comportamento | `refactor` |
+| quebra um contrato público (API, evento, schema consumido por outros) | o tipo com `!` (`feat(NNN)!:`) e o rodapé `BREAKING CHANGE: <o que quebrou>` |
 
 ## Fase red: os testes primeiro
 

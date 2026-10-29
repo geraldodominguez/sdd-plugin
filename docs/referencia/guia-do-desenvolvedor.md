@@ -163,8 +163,11 @@ Tarefas pequenas, cada uma ligada aos requisitos que atende.
 | um contrato precisa mudar | para e propõe voltar ao plano |
 | a mudança tocou uma área sensível | avisa que a revisão de segurança passou a ser obrigatória |
 
-Commits citam a tarefa: `feat(004): T-002 valida token expirado`. O hook
-recusa commit sem isso nas fases de construção e revisão. Todos vão na branch
+Commits seguem o Conventional Commits e citam a tarefa:
+`feat(004): T-002 valida token expirado`. O tipo decide a próxima versão
+(`feat` minor, `fix` patch, `!` major; ver [versionamento](versionamento.md)).
+O hook recusa mensagem fora do formato e, nas fases de construção e revisão,
+sem a tarefa. Todos vão na branch
 `feature/004-slug`, criada pelo `/sdd:especificar` (ver [Git Flow](git-flow.md)).
 
 ### 4.6 Revisar

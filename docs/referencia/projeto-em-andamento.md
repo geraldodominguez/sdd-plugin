@@ -156,6 +156,13 @@ No remoto, quando o time estiver de acordo:
   git push origin --delete master
 ```
 
+Se o projeto já publicou versões, a última precisa da tag `vX.Y.Z` em `main`:
+é dela que o plugin calcula a próxima versão. Tags em outro formato (`1.4.2`,
+`release-1.4.2`) aparecem como aviso no `conferir`, e o agente propõe criar
+`v1.4.2` no mesmo commit. Os commits antigos, que talvez não sigam o
+Conventional Commits, ficam antes da tag e não contam (ver
+[versionamento](versionamento.md#8-projeto-que-já-existe)).
+
 Depois, `sdd-gitflow iniciar` cria `develop` (se ainda não existir) e muda para
 ela. Detalhes em [Git Flow](git-flow.md#8-projeto-que-já-existe-trazer-as-branches-para-o-padrão).
 

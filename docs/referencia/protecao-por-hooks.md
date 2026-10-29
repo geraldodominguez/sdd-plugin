@@ -101,7 +101,25 @@ globs_de_contrato: src/domain/contracts/**,db/migrations/**
 Intercepta `Bash`. Faz duas coisas: confere a mensagem dos commits e, com o
 Git Flow ativo, as branches.
 
-### A mensagem do commit
+### O formato da mensagem
+
+Com `commits: convencional` no config (o padrão), nas proteções `leve` e
+`estrita`, toda mensagem inline segue o Conventional Commits:
+`tipo(escopo)!: descrição`, com tipo `feat`, `fix`, `perf`, `docs`, `chore`,
+`refactor`, `test`, `build`, `ci`, `style` ou `revert`. É dela que sai a
+próxima versão e o `CHANGELOG.md` (ver [versionamento](versionamento.md)). A
+mensagem lida é o assunto do `-m` (também dentro de um heredoc
+`"$(cat <<'EOF' ... EOF)"`). Mensagens `Merge ...` e `Revert ...`, commits sem
+mensagem inline e a resolução de um merge não são conferidos.
+
+| Mensagem | Resultado |
+|---|---|
+| `feat(004): T-002 valida token expirado` | permitida |
+| `chore: atualiza dependências` | permitida |
+| `feat(api)!: remove o campo total` | permitida (mudança incompatível) |
+| `ajustes`, `Feat: x`, `feat:x` | bloqueada |
+
+### A tarefa na mensagem
 
 Só age quando:
 

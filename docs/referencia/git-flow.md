@@ -152,9 +152,10 @@ obrigatório, sem force-push). O `/sdd:pipeline` lembra disso.
 
 | Você | O agente | No git |
 |---|---|---|
-| `/sdd:release preparar` | confere que as features estão em `develop`; `sdd-gitflow release X.Y.Z` | cria `release/X.Y.Z` a partir de `develop` |
+| `/sdd:release preparar` | `sdd-release analisar` sugere a versão pelos commits ([versionamento](versionamento.md)); confere que as features estão em `develop`; `sdd-gitflow release X.Y.Z` | cria `release/X.Y.Z` a partir de `develop` |
 | `/sdd:release homologar` | implanta em homologação | o push de `release/X.Y.Z` dispara o deploy de homologação no pipeline |
 | (correção pedida na homologação) | commits da correção | em `release/X.Y.Z` |
+| `/sdd:release implantar`, antes do go | `sdd-release changelog X.Y.Z --escrever` | commit `docs(release): changelog X.Y.Z` em `release/X.Y.Z` |
 | `/sdd:release implantar`, e "go" | `sdd-release autorizar`; pergunta e roda `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge de `main` em `develop` |
 | publica | | `git push origin main develop vX.Y.Z`; a tag dispara o deploy de produção, que confere o go |
 | `/sdd:release concluir` | depois da verificação | `git branch -d release/X.Y.Z` (local) |

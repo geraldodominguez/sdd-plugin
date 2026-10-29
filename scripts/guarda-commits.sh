@@ -5,6 +5,12 @@
 # mensagem inline cite uma tarefa (T-NNN) ou o número da feature no formato
 # "(NNN)". Exemplo: "feat(004): T-002 valida token expirado".
 #
+# Com commits convencionais (commits: convencional no config, o padrão), nas
+# proteções leve e estrita, a mensagem inline segue o Conventional Commits:
+# "tipo(escopo)!: descrição", com tipo feat, fix, docs, chore, refactor, test,
+# perf, build, ci, style ou revert. É dela que sai a próxima versão SemVer
+# (sdd-release proxima) e o CHANGELOG.md (sdd-release changelog).
+#
 # Com o Git Flow ativo (gitflow: ativo no config, o padrão), nas proteções leve
 # e estrita:
 #   - criar ou renomear uma branch (git checkout -b, git switch -c, git branch,
@@ -107,6 +113,44 @@ if sdd_gitflow_ativo "$RAIZ"; then
         esac
       fi
     fi
+  fi
+fi
+
+# O assunto da mensagem inline (-m, -am, --message), também quando ela vem de um
+# heredoc ("$(cat <<'EOF' ... EOF)"). Vazio quando não dá para ler: aí não se
+# confere nada.
+assunto_commit() {
+  printf '%s' "$1" | awk -v ap="'" '
+    { t = t $0 "\n" }
+    END {
+      if (!match(t, /(^|[[:space:]])(-[a-zA-Z]*m|--message)([[:space:]]+|=)/)) exit
+      r = substr(t, RSTART + RLENGTH)
+      q = substr(r, 1, 1)
+      if (q == "\"" || q == ap) r = substr(r, 2); else q = ""
+      if (substr(r, 1, 2) == "$(") {
+        n = index(r, "\n"); if (!n) exit
+        r = substr(r, n + 1); sub(/^[[:space:]]+/, "", r)
+        q = ""
+      }
+      n = index(r, "\n"); if (n) r = substr(r, 1, n - 1)
+      if (q != "") { e = index(r, q); if (e) r = substr(r, 1, e - 1) }
+      else if (r !~ /^[a-z]+(\([^)]*\))?!?: /) sub(/[[:space:]].*/, "", r)
+      print r
+    }'
+}
+
+if [ "$E_COMMIT" -eq 1 ] && [ "$(sdd_config "$RAIZ" commits convencional)" = "convencional" ] && ! sdd_merge_em_andamento "$RAIZ"; then
+  ASSUNTO="$(assunto_commit "$CMD")"
+  if [ -n "$ASSUNTO" ] && ! sdd_cc_valida "$ASSUNTO"; then
+    case "$ASSUNTO" in
+      Merge\ *|Revert\ *) ;;
+      *)
+        NUM_EX="${FEATURE%%-*}"; [ -n "$NUM_EX" ] || NUM_EX="004"
+        bloquear "SDD bloqueou o commit: a mensagem \"$ASSUNTO\" não segue o Conventional Commits." \
+          "Formato: tipo(escopo): descrição. Tipos: feat (funcionalidade, sobe o minor), fix (correção, sobe o patch), perf, docs, chore, refactor, test, build, ci, style, revert." \
+          "Mudança incompatível: tipo(escopo)!: descrição, ou o rodapé BREAKING CHANGE: (sobe o major)." \
+          "O escopo é o número da feature. Exemplo: feat($NUM_EX): T-002 valida token expirado." ;;
+    esac
   fi
 fi
 

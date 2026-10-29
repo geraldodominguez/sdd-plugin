@@ -205,6 +205,7 @@ Abra `.sdd/config.yml`. O agente sugere os valores; você confirma:
 | `excecoes_de_layout` | documentos com nome de artefato que não são do SDD (raro num projeto novo) | `docs/manual/**` |
 | `gitflow` | `ativo` (padrão) ou `desligado` | `ativo` |
 | `integracao` | `local` ou `pr` | `local` |
+| `commits` | `convencional` (padrão) ou `livre` | `convencional` |
 
 Os comandos de entrega podem ficar vazios até a primeira release. O
 `comando_teste`, não: sem ele, o escritor de testes e o auditor perguntam a
@@ -330,8 +331,13 @@ só aparece em projetos adotados: ver o [outro guia](projeto-em-andamento.md).)
 
 Na primeira rodada, os testes devem **falhar** pelo motivo certo (o
 comportamento ainda não existe). Na segunda, o agente implementa até eles
-passarem, sem poder editá-los. Os commits citam a tarefa:
-`feat(001): T-001 gera o CSV`.
+passarem, sem poder editá-los.
+
+Os commits seguem o **Conventional Commits** e citam a tarefa:
+`feat(001): T-001 gera o CSV`, `test(001): T-002 critérios da exportação`,
+`fix(001): T-003 corrige o fuso`. O tipo não é enfeite: é dele que sai a
+próxima versão (`feat` sobe o minor, `fix` o patch, `!` o major). O hook
+bloqueia mensagem fora do formato. Ver [versionamento](versionamento.md).
 
 ### 10.5 Entregar a feature
 
@@ -382,8 +388,9 @@ O Git Flow da release:
 
 | Momento | No git |
 |---|---|
-| `preparar` | `release/0.1.0` nasce de `develop`; o push dela implanta em homologação |
+| `preparar` | a versão sai dos commits (`sdd-release analisar`: a primeira é 0.1.0); `release/0.1.0` nasce de `develop`; o push dela implanta em homologação |
 | correção pedida na homologação | commit em `release/0.1.0` |
+| antes do go | `sdd-release changelog 0.1.0 --escrever`: a seção da versão no `CHANGELOG.md`, revisada por você |
 | "go" no `implantar` | `sdd-gitflow finalizar 0.1.0`: merge em `main`, tag `v0.1.0`, merge de volta em `develop` |
 | você publica | `git push origin main develop v0.1.0`: a tag dispara o deploy de produção, que confere o go |
 

@@ -29,8 +29,13 @@ configuração) sempre sobem a versão maior.
 - O `/sdd:iniciar` põe os históricos do SDD com `merge=union` no `.gitattributes`, para os merges do Git Flow não darem conflito neles.
 - A simulação do ciclo roda o Git Flow inteiro, com branches, merges e tags reais.
 
+- **Versão pelos commits:** SemVer calculado pelos Conventional Commits. `sdd-release proxima` (agora `auto` por padrão) sugere a próxima versão (`!` ou `BREAKING CHANGE:` major, minor antes da 1.0.0; `feat` minor; o resto patch), `--pre rc` dá o próximo pré-lançamento, `sdd-release analisar` mostra a conta e o motivo, e `sdd-release changelog X.Y.Z [--escrever]` gera a seção no `CHANGELOG.md` (Keep a Changelog). Ver [docs/referencia/versionamento.md](docs/referencia/versionamento.md) e o [ADR 0016](.agents/adr/0016-versao-pelos-commits.md).
+- O hook `guarda-commits` confere o formato Conventional Commits das mensagens inline (também em heredoc), com a chave nova `commits` (`convencional` ou `livre`).
+- O `sdd-gitflow conferir` avisa quando nenhuma tag segue `vX.Y.Z`; o `/sdd:iniciar` propõe a tag da versão em produção num projeto adotado.
+
 ### Mudanças
 
+- `sdd-release proxima` sem argumento calcula pelos commits (antes, era sempre minor).
 - O aviso de links para o caminho antigo ignora o bloco de regras do SDD, os registros da adoção e as citações parciais (`TODO.md` não casa com `docs/legado/TODO.md`).
 - O `.sdd/adocao.md` entra na lista de arquivos que só os utilitários escrevem.
 - `sdd_slug`, `sdd_proximo_numero_feature` e `sdd_proximo_numero_adr` passam para a `lib/sdd-comum.sh`.

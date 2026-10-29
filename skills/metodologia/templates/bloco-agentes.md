@@ -10,7 +10,7 @@ Este projeto usa SDD. As especificações em `specs/` são a fonte de verdade.
 3. Respeite `.sdd/constituicao.md` em toda decisão técnica.
 4. Na implementação, nunca altere um teste para fazê-lo passar. Teste errado significa voltar à spec, com aprovação humana.
 5. Os contratos (`specs/NNN/contratos/`) ficam congelados durante a implementação.
-6. Commits citam a tarefa: `tipo(NNN): T-XXX descrição`.
+6. Commits seguem o Conventional Commits e citam a tarefa: `tipo(NNN): T-XXX descrição`. Tipos: `feat` (funcionalidade nova), `fix` (correção), `perf`, `docs`, `chore`, `refactor`, `test`, `build`, `ci`, `style`, `revert`. Mudança que quebra contrato público leva `!` (`feat(NNN)!: ...`) ou o rodapé `BREAKING CHANGE: <o que quebrou>`. É dos commits que sai a próxima versão (SemVer) e o CHANGELOG.md: escolha o tipo com cuidado.
 7. Na dúvida sobre um requisito, pergunte. Não suponha.
 8. Aprovações são do usuário, pelo `/sdd:aprovar` e pelo `/sdd:release`. Nunca registre uma aprovação nem avance a fase por conta própria. Antes de cada fase, confira a anterior com `sdd-estado aprovado <artefato>`.
 

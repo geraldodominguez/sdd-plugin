@@ -103,7 +103,8 @@ sdd-gitflow integrar "$F" --apagar >/dev/null
 espera "feature integrada, de volta em" "$(branch)" develop
 
 etapa "6. Entrega: release, testes de sistema, homologação, go/no-go, produção (/sdd:release)"
-V="$(sdd-release proxima minor)"
+V="$(sdd-release proxima)"
+espera "versão sugerida pelos commits (primeira)" "$V" 0.1.0
 sdd-gitflow release "$V" >/dev/null
 espera "branch da release" "$(branch)" "release/$V"
 sdd-release nova "$V" --objetivo "Autoatendimento de senha" >/dev/null
@@ -120,6 +121,8 @@ sdd-release aceitar "$V" --por "Bia, dona do produto" >/dev/null
 echo "   [plano de implantação com rollback e notas escritos; humano diz: go]"
 subst 's/{{[^}]*}}/ok/g' "$R/implantacao.md" "$R/notas.md"
 sdd-release autorizar "$V" --nota "janela de terça" >/dev/null
+sdd-release changelog "$V" --escrever >/dev/null
+grep -q "^- Redefinição de senha (001)$" CHANGELOG.md && echo "   ✓ CHANGELOG.md gerado dos commits: Adicionado, Redefinição de senha (001)"
 git add -A && git commit -qm "chore(release): $V pronta para produção"
 echo "   [com o go, a release vai para main com a tag]"
 sdd-gitflow finalizar "$V" >/dev/null
@@ -162,6 +165,7 @@ sdd-release homologar "$VH" >/dev/null
 subst 's/| pendente |/| aprovado |/' "releases/$VH/homologacao.md"; subst 's/{{[^}]*}}/ok/g' "releases/$VH/implantacao.md" "releases/$VH/notas.md"
 sdd-release aceitar "$VH" --por "Bia (homologação expressa)" >/dev/null && sdd-release autorizar "$VH" >/dev/null
 git add -A && git commit -qm "fix(002): T-001 invalida o link após o uso"
+sdd-release changelog "$VH" --escrever >/dev/null && git add -A && git commit -qm "docs(release): changelog $VH"
 sdd-gitflow finalizar "$VH" >/dev/null
 espera "tag do hotfix em main" "$(git describe --tags --exact-match main 2>/dev/null)" "v$VH"
 sdd-release concluir "$VH" --verificacao "link usado é recusado" >/dev/null
@@ -213,6 +217,8 @@ espera "feature adotada integrada, de volta em" "$(branch)" develop
 etapa "11. Git Flow: o histórico do repositório"
 espera "branches" "$(git branch --format='%(refname:short)' | grep -vE '^(main|develop|feature/[0-9]{3}-[a-z0-9-]+|release/[0-9.]+|hotfix/[0-9.]+)$' | wc -l | tr -d ' ')" 0
 espera "tags em main" "$(git tag | tr '\n' ' ')" "v$V v$VH "
+espera "próxima versão pelos commits (feat da 003 depois da $VH)" "$(sdd-release proxima)" 0.2.0
+grep -q "^## \[$VH\]" CHANGELOG.md && grep -q "^- Invalidar link após o uso (002)$" CHANGELOG.md && echo "   ✓ CHANGELOG.md com as duas versões"
 espera "marcas de conflito nos arquivos" "$(grep -rl '^<<<<<<<' --exclude-dir=.git . | wc -l | tr -d ' ')" 0
 git log --oneline --graph --all | head -24 | sed 's/^/   /'
 

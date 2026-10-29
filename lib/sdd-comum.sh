@@ -935,3 +935,68 @@ sdd_pode_integrar() {
   esac
   return 1
 }
+
+# ---------------------------------------------------------------------------
+# Conventional Commits e versão
+#
+# A mensagem de commit segue https://www.conventionalcommits.org:
+#   tipo(escopo)!: descrição
+# O escopo, no SDD, é o número da feature (NNN). O tipo decide o impacto na
+# versão SemVer: "!" ou um rodapé BREAKING CHANGE é major, feat é minor, fix e
+# perf são patch, o resto (docs, chore, refactor, test, build, ci, style,
+# revert) não muda a versão. Ver docs/referencia/versionamento.md.
+# ---------------------------------------------------------------------------
+
+# shellcheck disable=SC2034  # usado por quem carrega este arquivo
+SDD_CC_TIPOS="feat fix docs chore refactor test perf build ci style revert"
+
+# sdd_cc_valida <assunto>: 0 se o assunto segue o Conventional Commits do SDD.
+sdd_cc_valida() {
+  printf '%s' "$1" | grep -qE '^(feat|fix|docs|chore|refactor|test|perf|build|ci|style|revert)(\([A-Za-z0-9._/-]+\))?!?: [^[:space:]]'
+}
+
+# sdd_cc_commits <raiz> <base ou vazio>: um commit por linha, sem os merges,
+# no formato "impacto<TAB>tipo<TAB>escopo<TAB>descrição", com impacto major,
+# minor, patch ou nenhum, e escopo "-" quando não há (um campo vazio sumiria
+# na leitura com IFS de tabulação). Sem base, lê o histórico inteiro de HEAD.
+sdd_cc_commits() {
+  local raiz="$1" base="${2:-}" faixa=HEAD
+  [ -n "$base" ] && faixa="$base..HEAD"
+  git -C "$raiz" log --no-merges --format='%s%x1f%b%x1e' "$faixa" 2>/dev/null | awk '
+    BEGIN { RS = "\036"; FS = "\037" }
+    {
+      s = $1; b = $2
+      sub(/^[\n\r]+/, "", s)
+      if (s == "") next
+      tipo = "outro"; escopo = ""; bang = 0; desc = s
+      if (match(s, /^[a-z]+(\([^)]*\))?!?: /)) {
+        cab = substr(s, 1, RLENGTH - 2); desc = substr(s, RLENGTH + 1)
+        if (substr(cab, length(cab), 1) == "!") { bang = 1; cab = substr(cab, 1, length(cab) - 1) }
+        p = index(cab, "(")
+        if (p) { tipo = substr(cab, 1, p - 1); escopo = substr(cab, p + 1, length(cab) - p - 1) } else { tipo = cab }
+      }
+      imp = "nenhum"
+      if (match(b, /BREAKING[ -]CHANGE: [^\n]*/)) {
+        nota = substr(b, RSTART, RLENGTH); sub(/^BREAKING[ -]CHANGE: /, "", nota)
+        desc = desc " (incompatível: " nota ")"
+        bang = 1
+      }
+      if (bang) imp = "major"
+      else if (tipo == "feat") imp = "minor"
+      else if (tipo == "fix" || tipo == "perf") imp = "patch"
+      if (escopo == "") escopo = "-"
+      printf "%s\t%s\t%s\t%s\n", imp, tipo, escopo, desc
+    }'
+}
+
+# sdd_semver_somar <versão> <major|minor|patch>: a versão seguinte, sem o
+# sufixo de pré-lançamento.
+sdd_semver_somar() {
+  local base="${1%%[-+]*}" tipo="$2" ma mi pa
+  IFS=. read -r ma mi pa <<< "$base"
+  case "$tipo" in
+    major) echo "$((ma + 1)).0.0" ;;
+    minor) echo "$ma.$((mi + 1)).0" ;;
+    *) echo "$ma.$mi.$((pa + 1))" ;;
+  esac
+}

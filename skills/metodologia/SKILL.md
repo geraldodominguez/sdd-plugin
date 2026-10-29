@@ -34,7 +34,7 @@ que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 
 - `sdd-estado ver | definir | nova | usar | aprovar | aprovado | cancelar | reabrir | sensivel | listar | historico | caminho | template`
 - `sdd-sistema listar | nova | ver | consolidar | consolidada | pendentes`
-- `sdd-release proxima | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
+- `sdd-release proxima | analisar | changelog | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
 - `sdd-adotar inventario | contar | aplicar` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
 - `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | pode-integrar`
@@ -110,7 +110,11 @@ fica. Nada avança antes de o usuário aprovar a transição (`/sdd:aprovar`).
 **Testes:** todo CA tem teste com a marca `sdd:<NNN>:<CA-ID>`. O hash dos testes
 cobre só os blocos marcados com o número da feature.
 
-**Commits:** `tipo(NNN): T-XXX descrição`.
+**Commits:** Conventional Commits, `tipo(NNN): T-XXX descrição`
+([VERSIONAMENTO.md](VERSIONAMENTO.md)). O tipo decide a versão: `feat` sobe o
+minor, `fix` e `perf` o patch, `!` ou `BREAKING CHANGE:` o major; `docs`,
+`chore`, `refactor`, `test`, `build`, `ci`, `style` e `revert` não mudam a
+versão. O hook bloqueia mensagem fora do formato.
 
 **Git Flow** ([GIT-FLOW.md](GIT-FLOW.md)): nomes fixos em todo projeto.
 `main` (produção, só por merge, tag `vX.Y.Z`), `develop` (integração),

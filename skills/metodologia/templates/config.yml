@@ -24,6 +24,13 @@ gitflow: ativo
 #   pr     o agente abre o pull request (gh) e o merge acontece na plataforma
 integracao: local
 
+# Mensagens de commit (ver docs/referencia/versionamento.md no plugin):
+#   convencional  Conventional Commits, "tipo(NNN): descrição" (feat, fix, docs,
+#                 chore, refactor, test, perf, build, ci, style, revert); é dela
+#                 que saem a próxima versão SemVer e o CHANGELOG.md
+#   livre         o hook não confere o formato
+commits: convencional
+
 # Pastas, relativas à raiz do projeto.
 pasta_specs: specs             # uma pasta por feature: o que cada mudança alterou
 pasta_sistema: sistema         # spec viva do sistema, por capacidade: o que ele faz hoje

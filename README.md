@@ -27,6 +27,9 @@ E usa o mesmo **Git Flow** em todo projeto: `main`, `develop`,
 `feature/NNN-slug`, `release/X.Y.Z` e `hotfix/X.Y.Z`, com as branches criadas,
 juntadas e marcadas com a tag `vX.Y.Z` nos momentos certos do ciclo. Nenhum
 agente inventa outro nome. Ver [Git Flow](docs/referencia/git-flow.md).
+As versões seguem o SemVer e são **calculadas pelos commits** (Conventional
+Commits), com o `CHANGELOG.md` no formato Keep a Changelog. Ver
+[versionamento](docs/referencia/versionamento.md).
 
 É pequeno de propósito: vinte skills, seis subagents, dois hooks e treze
 utilitários em bash. Tudo em markdown legível. Adapte à vontade.
@@ -398,6 +401,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 - [Começar um projeto novo, passo a passo](docs/referencia/projeto-novo.md)
 - [Adotar o SDD num projeto em andamento, passo a passo](docs/referencia/projeto-em-andamento.md)
 - [Git Flow: as branches de cada momento do ciclo](docs/referencia/git-flow.md)
+- [Versionamento: SemVer, Conventional Commits e o CHANGELOG](docs/referencia/versionamento.md)
 - [Guia do desenvolvedor: do zero ao primeiro deploy](docs/referencia/guia-do-desenvolvedor.md)
 - [Ciclo de vida: o processo inteiro, etapa por etapa](docs/referencia/ciclo-de-vida.md)
 - [Guia de acompanhamento: a rotina do humano](docs/referencia/acompanhamento.md)

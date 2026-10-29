@@ -13,6 +13,10 @@ _Evite_: documentação (sugere algo secundário, escrito depois)
 As regras inegociáveis de um projeto (stack, arquitetura, testes, segurança, convenções), em `.sdd/constituicao.md`. Todo **plano** é checado contra ela.
 _Evite_: guia de estilo, padrões
 
+**Versão**:
+O número SemVer `MAJOR.MINOR.PATCH` de uma release, com a tag `vX.Y.Z` em `main`. Calculada pelos **Conventional Commits** desde a última versão em produção, e decidida por uma pessoa no `/sdd:release`.
+_Evite_: build, número da sprint
+
 **Layout**:
 Os lugares fixos de cada artefato de processo: `specs/NNN-slug/`, `docs/adr/NNNN-slug.md`, `.sdd/`, `sistema/`, `releases/`, `incidentes/`, `docs/arquitetura/` e `docs/legado/`. Um contrato: o hook bloqueia criar artefato fora dele.
 _Evite_: estrutura de pastas (sugere algo que cada um decide)
@@ -28,6 +32,10 @@ _Evite_: migração
 **Tarefa `[O]`**:
 Tarefa feita fora do plugin, antes da adoção, sem gate. Não se refaz; os testes dos critérios dela vêm na fase red e devem passar de início.
 _Evite_: tarefa concluída (essa é a `[x]`, feita no plugin)
+
+**Conventional Commits**:
+O formato da mensagem de commit, `tipo(NNN): descrição`. O tipo (`feat`, `fix`, `perf`, `docs`, `chore`...) e o `!` decidem a próxima **versão** e o `CHANGELOG.md`.
+_Evite_: mensagem livre ("ajustes", "wip")
 
 **Git Flow**:
 O modelo de branches do plugin, com os mesmos nomes em todo projeto: `main` (produção, tag `vX.Y.Z`), `develop` (integração), `feature/NNN-slug`, `release/X.Y.Z` e `hotfix/X.Y.Z`. As branches são criadas e juntadas pelo `sdd-gitflow`, nos momentos do ciclo.

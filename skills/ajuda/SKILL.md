@@ -38,6 +38,11 @@ Todo projeto usa o mesmo **Git Flow**: `main`, `develop`, `feature/NNN-slug`,
 `/sdd:status`, e o `sdd-gitflow conferir` mostra o que está fora do padrão.
 Detalhes em `docs/referencia/git-flow.md`.
 
+As **versões** seguem o SemVer e saem dos commits (Conventional Commits): o
+`/sdd:release preparar` sugere a próxima com `sdd-release analisar`, e o
+`sdd-release changelog` escreve o `CHANGELOG.md`. Detalhes em
+`docs/referencia/versionamento.md`.
+
 Para quem pede um passo a passo, aponte o guia da situação:
 `docs/referencia/projeto-novo.md` (repositório novo) ou
 `docs/referencia/projeto-em-andamento.md` (projeto que já existe).

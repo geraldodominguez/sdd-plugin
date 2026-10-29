@@ -29,13 +29,23 @@ mostre num bloco de código. Acrescente o próximo passo em uma linha.
    (`sdd-estado listar`, fase `pronta`). Confira que cada uma está consolidada na
    spec do sistema (`sdd-sistema pendentes`); se não, diga para rodar
    `/sdd:sistema consolidar` antes. Proponha o conjunto ao usuário.
-2. **Proponha a versão** com `sdd-release proxima <tipo>`:
+2. **Proponha a versão.** A versão segue o SemVer e é **calculada pelos
+   commits** (Conventional Commits) desde a última versão. Rode, em `develop`,
+   `sdd-release analisar` e mostre ao usuário a sugestão e o motivo:
 
-   | Mudança | Tipo |
-   |---|---|
-   | algum contrato público quebrou (API, evento, schema consumido por outros) | major |
-   | há capacidade nova ou comportamento novo | minor |
-   | só correções | patch |
+   | Os commits têm | Versão | Exemplo a partir da 1.4.2 |
+   |---|---|---|
+   | `!` no tipo, ou o rodapé `BREAKING CHANGE:` (contrato público quebrado) | major (antes da 1.0.0, minor) | 2.0.0 |
+   | `feat` | minor | 1.5.0 |
+   | só `fix` ou `perf` | patch | 1.4.3 |
+   | só manutenção (`docs`, `chore`, `refactor`, `test`...) | patch | 1.4.3 |
+
+   Confira a sugestão contra as features da release: uma feature que quebra
+   contrato público e não tem commit com `!` é um commit mal classificado, e a
+   versão certa é a major. O usuário decide; `sdd-release proxima major|minor|patch`
+   dá a versão de um tipo explícito. Para homologar um release candidate,
+   `sdd-release proxima --pre rc` dá `X.Y.Z-rc.N`. Commits fora do padrão
+   (`analisar` lista) não contam: avise.
 
 3. Com a confirmação: `sdd-release nova <versão> --objetivo "..."` e
    `sdd-release incluir <versão> <features...>`.
@@ -91,7 +101,12 @@ Nunca registre o aceite em nome de quem não homologou.
    migrations), passos, **verificação pós-implantação** e **rollback com
    critério objetivo de acionamento**. Use a seção "Ambientes e entrega" da
    constituição.
-2. Revise as notas.
+2. Revise as notas (`notas.md`, em linguagem de negócio) e gere a seção da
+   versão no **CHANGELOG.md** (formato Keep a Changelog, a partir dos commits):
+   `sdd-release changelog <versão>` mostra; com a aprovação do usuário,
+   `sdd-release changelog <versão> --escrever` grava. Revise o texto com ele
+   (as linhas vêm das descrições dos commits e dos títulos das features) e faça
+   o commit na branch da release: `docs(release): changelog <versão>`.
 3. Apresente o plano e pergunte: **"Go ou no-go?"**. Só com "go":
    `sdd-release autorizar <versão> --nota "..."`.
 4. **Git Flow: a release vai para `main`.** Só depois do go, e perguntando,

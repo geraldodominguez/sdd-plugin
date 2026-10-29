@@ -27,6 +27,7 @@ edit_json() { # edit_json <cwd> <arquivo>
 }
 bash_json() { # bash_json <cwd> <comando>
   local cmd="${2//\"/\\\"}"
+  cmd="${cmd//$'\n'/\\n}"
   printf '{"session_id":"t","cwd":"%s","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" "$cmd"
 }
 write_json() { # write_json <cwd> <arquivo>
@@ -190,7 +191,7 @@ for parser in jq python grep; do
   assert_exit 0 "ignora outros comandos" guard_commit "$P" 'npm test'
   assert_exit 0 "ignora git log" guard_commit "$P" 'git log --oneline'
   (cd "$P" && sdd-estado definir fase=especificacao >/dev/null)
-  assert_exit 0 "fora de red/green/auditoria: permite" guard_commit "$P" 'git commit -m "spec inicial"'
+  assert_exit 0 "fora de red/green/auditoria: permite (sem T-NNN)" guard_commit "$P" 'git commit -m "docs: spec inicial"'
 
   echo "projeto sem SDD (leitor: $parser)"
   Q="$TMP/sem-sdd"; mkdir -p "$Q/tests"
@@ -782,6 +783,74 @@ echo "git flow: CI"
 (cd "$G" && assert_exit 3 "verificar recusa PR feature -> main" env GITHUB_HEAD_REF=feature/$GF GITHUB_BASE_REF=main sdd-verificar --silencioso)
 out="$(cd "$G" && env CI_MERGE_REQUEST_SOURCE_BRANCH_NAME=feat-x CI_MERGE_REQUEST_TARGET_BRANCH_NAME=develop sdd-verificar 2>&1)"
 echo "$out" | grep -q 'o pull request feat-x -> develop não é permitido' && ok "verificar lê o merge request do GitLab" || fail "verificar gitlab" "$out"
+
+echo "versão: Conventional Commits e SemVer"
+cc_ok() { (. "$PLUGIN/lib/sdd-comum.sh"; sdd_cc_valida "$1"); }
+for m in "feat(001): T-001 exporta" "fix: corrige" "feat(api)!: remove campo" "chore(release): 1.0.0" "docs(001): spec"; do
+  cc_ok "$m" && ok "mensagem válida: $m" || fail "mensagem válida: $m"
+done
+for m in "ajustes" "Feat: x" "feat:x" "feature(001): x" "feat(001) x" "wip"; do
+  cc_ok "$m" && fail "mensagem inválida aceita: $m" || ok "mensagem inválida: $m"
+done
+VR="$TMP/versao"
+mkdir -p "$VR"
+(cd "$VR" && git init -q && git symbolic-ref HEAD refs/heads/main && git config user.name T && git config user.email t@t \
+  && git commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null && git add -A && git commit -qm "chore: sdd")
+[ "$(cd "$VR" && sdd-release proxima)" = "0.1.0" ] && ok "sem versão anterior: 0.1.0" || fail "primeira versão"
+[ "$(cd "$VR" && sdd-release proxima major)" = "1.0.0" ] && ok "sem versão anterior, major: 1.0.0" || fail "primeira major"
+(cd "$VR" && git tag v1.2.0)
+(cd "$VR" && sdd-estado nova "Exportar pedidos" >/dev/null && git add -A && git commit -qm "docs(001): spec")
+(cd "$VR" && git commit -q --allow-empty -m "fix(001): T-002 data errada")
+[ "$(cd "$VR" && sdd-release proxima)" = "1.2.1" ] && ok "só fix: patch (1.2.1)" || fail "auto patch" "$(cd "$VR" && sdd-release proxima)"
+(cd "$VR" && git commit -q --allow-empty -m "feat(001): T-001 exportar CSV" && git commit -q --allow-empty -m "atualiza coisas")
+[ "$(cd "$VR" && sdd-release proxima)" = "1.3.0" ] && ok "com feat: minor (1.3.0)" || fail "auto minor"
+[ "$(cd "$VR" && sdd-release proxima patch)" = "1.2.1" ] && ok "o tipo explícito vale" || fail "explícito"
+[ "$(cd "$VR" && sdd-release proxima --pre rc)" = "1.3.0-rc.1" ] && ok "pré-lançamento rc.1" || fail "rc.1"
+(cd "$VR" && git tag v1.3.0-rc.1)
+[ "$(cd "$VR" && sdd-release proxima --pre rc)" = "1.3.0-rc.2" ] && ok "o próximo rc conta as tags" || fail "rc.2"
+[ "$(cd "$VR" && sdd-release proxima)" = "1.3.0" ] && ok "tag de pré-lançamento não vira a base" || fail "base sem rc"
+out="$(cd "$VR" && sdd-release analisar)"
+echo "$out" | grep -q 'Sugestão: 1.3.0 (minor: há feat e nenhuma mudança incompatível)' && ok "analisar explica a sugestão" || fail "analisar" "$out"
+echo "$out" | grep -q 'fora do Conventional Commits (não contam): 1' && ok "analisar aponta commit fora do padrão" || fail "analisar fora" "$out"
+(cd "$VR" && git commit -q --allow-empty -m "refactor: troca o formato" -m "BREAKING CHANGE: o CSV muda de colunas")
+[ "$(cd "$VR" && sdd-release proxima)" = "2.0.0" ] && ok "BREAKING CHANGE no rodapé: major" || fail "breaking rodapé"
+(cd "$VR" && git tag v2.0.0 && git commit -q --allow-empty -m "feat(api)!: remove o campo total")
+[ "$(cd "$VR" && sdd-release proxima)" = "3.0.0" ] && ok "feat! : major" || fail "bang major"
+V0="$TMP/versao0"; mkdir -p "$V0"
+(cd "$V0" && git init -q && git config user.name T && git config user.email t@t && git commit -q --allow-empty -m "chore: x" && sdd-iniciar >/dev/null && git tag v0.4.0 && git commit -q --allow-empty -m "feat!: muda tudo")
+[ "$(cd "$V0" && sdd-release proxima)" = "0.5.0" ] && ok "antes da 1.0.0, incompatível sobe o minor" || fail "0.x"
+out="$(cd "$VR" && sdd-release changelog 3.0.0)"
+echo "$out" | grep -q '^## \[3.0.0\] - ' && echo "$out" | grep -q '^- \*\*Incompatível:\*\* remove o campo total (api)$' && ok "changelog: seção e incompatível" || fail "changelog" "$out"
+(cd "$VR" && git tag -d v2.0.0 >/dev/null)
+out="$(cd "$VR" && sdd-release changelog 3.0.0)"
+echo "$out" | grep -q '^- Exportar pedidos (001)$' && ok "changelog: a feature aparece uma vez, pelo título" || fail "changelog feature" "$out"
+[ "$(echo "$out" | grep -c 'Exportar pedidos')" = "1" ] && ok "changelog: os commits da feature não se repetem" || fail "changelog repetido" "$out"
+echo "$out" | grep -q 'o CSV muda de colunas' && ok "changelog: a nota do BREAKING CHANGE" || fail "nota breaking" "$out"
+echo "$out" | grep -q 'docs(001)\|spec$' && fail "changelog sem docs" "$out" || ok "changelog deixa docs de fora"
+(cd "$VR" && assert_exit 0 "changelog --escrever cria o CHANGELOG.md" sdd-release changelog 3.0.0 --escrever)
+grep -q '^## \[Não lançado\]$' "$VR/CHANGELOG.md" && grep -q '^## \[3.0.0\]' "$VR/CHANGELOG.md" && ok "CHANGELOG.md no formato Keep a Changelog" || fail "formato changelog"
+(cd "$VR" && assert_exit 1 "changelog não duplica a versão" sdd-release changelog 3.0.0 --escrever)
+(cd "$VR" && sdd-release changelog 3.1.0 --escrever >/dev/null)
+[ "$(grep -n '^## \[' "$VR/CHANGELOG.md" | cut -d: -f2 | tr '\n' ' ')" = "## [Não lançado] ## [3.1.0] - $(date +%Y-%m-%d) ## [3.0.0] - $(date +%Y-%m-%d) " ] \
+  && ok "a versão nova entra acima das anteriores" || fail "ordem changelog" "$(grep '^## \[' "$VR/CHANGELOG.md")"
+
+VT="$TMP/tags-antigas"; mkdir -p "$VT"
+(cd "$VT" && git init -q && git symbolic-ref HEAD refs/heads/main && git config user.name T && git config user.email t@t && git commit -q --allow-empty -m "chore: x" && git tag 1.4.2 && git branch develop)
+out="$(cd "$VT" && sdd-gitflow conferir 2>&1)"
+echo "$out" | grep -q 'nenhuma tag segue vX.Y.Z (há 1.4.2' && ok "conferir avisa de tags fora de vX.Y.Z" || fail "aviso tags" "$out"
+
+echo "versão: o hook confere a mensagem"
+subst 's/^gitflow: .*/gitflow: desligado/' "$VR/.sdd/config.yml"
+assert_exit 2 "commit fora do Conventional Commits bloqueado" guard_commit "$VR" 'git commit -m "ajustes"'
+out="$(guard_commit "$VR" 'git commit -m "ajustes"' 2>&1)"
+echo "$out" | grep -q 'feat (funcionalidade, sobe o minor)' && ok "a mensagem ensina os tipos" || fail "mensagem tipos" "$out"
+assert_exit 0 "commit convencional permitido" guard_commit "$VR" 'git commit -m "chore: atualiza dependências"'
+assert_exit 0 "heredoc convencional permitido" guard_commit "$VR" "$(printf 'git commit -m "$(cat <<%sEOF%s\nfix: corrige o login\n\nCorpo.\nEOF\n)"' "'" "'")"
+assert_exit 2 "heredoc fora do padrão bloqueado" guard_commit "$VR" "$(printf 'git commit -m "$(cat <<%sEOF%s\nCorrige o login\nEOF\n)"' "'" "'")"
+assert_exit 0 "mensagem do editor não é conferida" guard_commit "$VR" 'git commit'
+subst 's/^commits: .*/commits: livre/' "$VR/.sdd/config.yml"
+assert_exit 0 "commits: livre não confere o formato" guard_commit "$VR" 'git commit -m "ajustes"'
+subst 's/^commits: .*/commits: convencional/' "$VR/.sdd/config.yml"
 
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"

@@ -93,6 +93,11 @@ conferir() {
       avisos+=("$b não corresponde a nenhuma feature em $(sdd_pasta_specs "$RAIZ")/")
     fi
   done < <(g for-each-ref --format='%(refname:short)' refs/heads/)
+  local tags
+  tags="$(g tag --list 2>/dev/null)"
+  if [ -n "$tags" ] && ! printf '%s\n' "$tags" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+    avisos+=("nenhuma tag segue vX.Y.Z (há $(printf '%s\n' "$tags" | head -3 | tr '\n' ' ')...): crie a tag da versão em produção (git tag -a vX.Y.Z <commit>), ou a próxima versão começa em 0.1.0")
+  fi
   atual="$(sdd_branch_atual "$RAIZ")"
   esperada="$(branch_esperada)"
   if [ -n "$esperada" ] && [ -n "$atual" ] && [ "$atual" != "$esperada" ]; then

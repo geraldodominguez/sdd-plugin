@@ -47,6 +47,13 @@ Argumentos: `$ARGUMENTS`
      (`development`, `dev`), proponha a troca e, com aprovação, rode
      `sdd-gitflow renomear <antiga> main` (ou `develop`). Mostre os comandos do
      remoto que ele imprime; não os rode sem pedir.
+   - **Versões.** Se o projeto já tem versões publicadas, a última precisa de
+     uma tag `vX.Y.Z` em `main`: é dela que o `sdd-release` calcula a próxima
+     (ver `VERSIONAMENTO.md` da skill metodologia). Tags em outro formato
+     (`1.4.2`, `release-1.4.2`) aparecem no `sdd-gitflow conferir`; proponha a
+     tag `v1.4.2` no mesmo commit (`git tag -a v1.4.2 <commit> -m "versão 1.4.2"`)
+     e crie só com aprovação. Os commits anteriores à adoção podem não seguir
+     o Conventional Commits: eles ficam antes da tag e não contam.
    - Rode `sdd-gitflow iniciar`: ele garante `main`, cria `develop` e muda para
      ela. Todo commit daqui em diante (a preparação do SDD, a adoção) é feito
      em `develop`. Repositório sem nenhum commit: peça o primeiro commit em

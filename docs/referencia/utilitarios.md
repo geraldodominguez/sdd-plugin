@@ -166,7 +166,9 @@ feature". O texto da capacidade é editado antes, pelo agente.
 ## sdd-release
 
 ```
-sdd-release proxima [major|minor|patch]
+sdd-release proxima [auto|major|minor|patch] [--pre alpha|beta|rc]
+sdd-release analisar
+sdd-release changelog <versão> [--escrever]
 sdd-release nova <versão> [--objetivo "texto"] [--hotfix]
 sdd-release incluir <versão> <NNN-slug> [...]
 sdd-release remover <versão> <NNN-slug>
@@ -180,6 +182,17 @@ sdd-release reverter <versão> --motivo "texto"
 sdd-release cancelar <versão> --motivo "texto"
 sdd-release ver [versão] | listar | atual
 ```
+
+**Versão** (SemVer pelos Conventional Commits; ver [versionamento](versionamento.md)):
+
+| Comando | Faz |
+|---|---|
+| `proxima` (ou `proxima auto`) | a próxima versão pelos commits desde a última release em produção (ou a última tag `vX.Y.Z` final): `!` ou `BREAKING CHANGE:` é major (minor antes da 1.0.0), `feat` é minor, o resto é patch. Sem versão anterior, 0.1.0 |
+| `proxima major\|minor\|patch` | a versão de um tipo explícito |
+| `proxima --pre rc` | o próximo pré-lançamento (`X.Y.Z-rc.N`, contando as tags existentes) |
+| `analisar` | os commits desde a última versão, por impacto, os fora do padrão e a sugestão com o motivo |
+| `changelog <versão>` | a seção da versão no formato Keep a Changelog: uma linha por feature (pelo título, no maior impacto), as demais por commit; `docs`, `chore`, `refactor`, `test`, `build`, `ci` e `style` ficam de fora |
+| `changelog <versão> --escrever` | grava a seção no `CHANGELOG.md` (cria o arquivo se faltar), abaixo de `## [Não lançado]`; recusa versão repetida |
 
 | Comando | De | Para | Exige |
 |---|---|---|---|
@@ -390,7 +403,8 @@ escreve nos históricos do SDD. Com `gitflow: desligado` no config, os hooks e o
 
 **Configuração** (`.sdd/config.yml`): `gitflow` (`ativo` ou `desligado`) e
 `integracao` (`local`: o `sdd-gitflow` faz os merges; `pr`: os merges são
-pull requests na plataforma).
+pull requests na plataforma). O `conferir` também avisa quando nenhuma tag
+segue `vX.Y.Z` (a base do cálculo de versão).
 
 ## Formatos
 
@@ -404,4 +418,5 @@ pull requests na plataforma).
 | Evento do histórico | `- AAAA-MM-DDTHH:MM:SSZ \| evento \| detalhe \| por: Nome` |
 | Branch | `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z`; tag `vX.Y.Z` |
 | Linha do mapa de adoção | `origem -> destino`, com destino `feature:<slug>/<arquivo>`, `adr:<slug>`, `legado:<caminho>`, `arquitetura:<caminho>` ou um caminho do padrão |
-| Commit (red, green, segurança, auditoria) | `tipo(NNN): T-XXX descrição`, ou `tipo(NNN): descrição` para artefatos |
+| Commit | Conventional Commits: `tipo(NNN): T-XXX descrição`, com tipo `feat`, `fix`, `perf`, `docs`, `chore`, `refactor`, `test`, `build`, `ci`, `style` ou `revert`; `!` ou o rodapé `BREAKING CHANGE:` para mudança incompatível. Nas fases red a auditoria, a tarefa (`T-XXX`) ou o número `(NNN)` é obrigatório |
+| Versão | SemVer `X.Y.Z`, com pré-lançamento `X.Y.Z-rc.N`; tag `vX.Y.Z` |
