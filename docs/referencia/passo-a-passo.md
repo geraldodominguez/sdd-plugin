@@ -240,14 +240,8 @@ inalterados, e a feature fica **pronta**.
 
 ## 11. Consolidar na spec do sistema
 
-Pronta não é em produção, mas o comportamento já está decidido. O
-`/sdd:aprovar` emenda:
-
-```
-/sdd:sistema consolidar
-```
-
-O agente reescreve `sistema/autenticacao.md` para descrever como a autenticação
+Pronta não é em produção, mas o comportamento já está decidido. O próprio
+`/sdd:aprovar` conduz a consolidação, sem outro comando: o agente reescreve `sistema/autenticacao.md` para descrever como a autenticação
 funciona **agora**, com cada item ligado à origem:
 
 ```markdown
@@ -271,8 +265,8 @@ request). Você publica: `git push origin develop`.
 ```
 
 O agente lista as features prontas e confere que estão em `develop`. A versão
-sai dos commits: `sdd-release analisar` sugere `0.1.0` (há `feat` e nenhuma
-mudança incompatível, então sobe o minor), e você confirma. Então
+sai dos commits: `sdd-release analisar` sugere `0.1.0` (sem nenhuma versão
+anterior, a primeira é sempre `0.1.0`), e você confirma. Então
 `sdd-gitflow release 0.1.0` cria `release/0.1.0` a partir de `develop`, e só
 depois `sdd-release nova 0.1.0` e `sdd-release incluir` criam
 `releases/0.1.0/`. Ele chama o `testador-de-sistema`, que roda a regressão, os
@@ -325,8 +319,8 @@ está registrado) e implanta. Depois da verificação em produção:
 
 A feature vai para `producao` e as notas ficam publicadas. A tag já existe
 (veio do `finalizar`). O agente faz o commit em `develop`
-(`chore(release): 0.1.0 em produção`) e apaga a branch local:
-`git branch -d release/0.1.0`.
+(`chore(release): 0.1.0 em produção`) e oferece apagar a branch local
+(`git branch -d release/0.1.0`).
 
 ## 13. Manutenção: um incidente
 
@@ -356,7 +350,8 @@ registro do incidente em `develop`, sem a pasta nova do hotfix
 partir de **`main`**: a correção parte do que está em produção.
 
 Na branch do hotfix: o `escritor-de-testes` escreve o teste que reproduz o
-problema; você aprova; o agente corrige (`fix(003): T-001 ...`); a **spec
+problema; você aprova; o agente corrige (`fix(003): invalida o link após o uso`; um hotfix não tem
+`tarefas.md`, então o escopo `(003)` basta); a **spec
 retroativa** é escrita e aprovada (sem ela, a entrega é recusada); como tocou
 `src/auth/`, passa pela revisão de segurança; é consolidada em
 `sistema/autenticacao.md`; e sai na release `0.1.1`, com a mesma versão da

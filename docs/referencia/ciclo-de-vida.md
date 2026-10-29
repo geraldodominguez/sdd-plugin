@@ -192,6 +192,7 @@ stateDiagram-v2
     preparacao --> homologacao: homologar (testes de sistema aprovados)
     homologacao --> aceita: aceitar (roteiro sem pendências)
     homologacao --> preparacao: reprovar (feature volta ao green)
+    aceita --> preparacao: reprovar
     aceita --> implantacao: autorizar (go)
     implantacao --> producao: concluir (verificação ok)
     implantacao --> revertida: reverter (rollback)

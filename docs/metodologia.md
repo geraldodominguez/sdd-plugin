@@ -11,8 +11,9 @@ ela não conduz o fluxo, ensina o agente a seguir o fluxo bem.
 
 Digite `/sdd:metodologia`, ou o agente recorre a ela quando a tarefa pede: num
 projeto com `.sdd/`, ao escrever ou revisar specs e planos, ou quando você pede
-uma mudança de comportamento sem usar um comando. Todos os comandos de fase a
-carregam no início.
+uma mudança de comportamento sem usar um comando. Os comandos `/sdd:especificar`,
+`/sdd:clarificar`, `/sdd:planejar`, `/sdd:tarefas`, `/sdd:implementar` e
+`/sdd:seguranca` a carregam no início.
 
 ## O que ela carrega
 

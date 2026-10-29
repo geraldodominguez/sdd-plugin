@@ -11,8 +11,9 @@ REVISÃO        seguranca -> [decisão] -> auditar -> [decisão]  ==> feature PR
 ENTREGA        release: preparar (testes de sistema, roteiro, notas)
                -> homologar -> [aceite do negócio] -> plano de implantação
                -> [go/no-go] -> implantar -> verificar -> concluir  ==> PRODUÇÃO
-DEVOPS         pipeline: verificar e seguranca em todo push; homologação na main;
-               produção na tag vX.Y.Z, só com o go registrado
+DEVOPS         pipeline: verificar e seguranca em todo push; homologação no
+               push de release/ e hotfix/; produção na tag vX.Y.Z, só com o
+               go registrado
 MANUTENÇÃO     incidente -> mitigar -> hotfix (red, green, spec retroativa)
                -> release de hotfix -> resolver -> post-mortem -> backlog
 ```

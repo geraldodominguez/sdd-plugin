@@ -171,8 +171,8 @@ Commits seguem o Conventional Commits e citam a tarefa:
 `feat(004): T-002 valida token expirado`. O tipo decide a próxima versão
 (`feat` o minor, `fix` o patch, `!` o major, ou o minor antes da 1.0.0; ver
 [versionamento](versionamento.md)).
-O hook recusa mensagem fora do formato e, nas fases de construção e revisão,
-sem a tarefa. Todos vão na branch
+O hook recusa mensagem fora do formato e, nas fases red, green, segurança e
+auditoria, sem a tarefa (`T-XXX`) ou o número da feature no escopo. Todos vão na branch
 `feature/004-slug`, criada pelo `/sdd:especificar` (ver [Git Flow](git-flow.md)).
 
 ### 4.6 Revisar
@@ -315,7 +315,7 @@ Referência completa em [utilitários](utilitarios.md).
 | entregar um hotfix sem spec | recusado | o hotfix é rápido, mas deixa rastro |
 | reabrir uma feature em produção | recusado | mudança nova é feature nova; defeito é incidente |
 | implantar pela tag sem go | o pipeline falha | a decisão de ir para produção é humana |
-| commit sem `T-XXX` durante a implementação | o hook bloqueia | rastreabilidade do commit à tarefa |
+| commit sem `T-XXX` nem o número da feature no escopo, durante a implementação | o hook bloqueia | rastreabilidade do commit à tarefa |
 | commit em `main`, ou fora da branch da feature ativa | o hook bloqueia | `main` só recebe releases depois do go; cada feature na sua branch |
 | branch com nome fora do padrão (`feat/x`, `development`) | o hook bloqueia | os mesmos nomes em todo projeto (ver [Git Flow](git-flow.md)) |
 
@@ -338,6 +338,6 @@ determinística. Ver [proteção por hooks](protecao-por-hooks.md).
 | commit bloqueado em `main` | `main` só recebe merge de release | mude para `develop` ou para a branch da feature |
 | o repositório tem `master` (o padrão do `git init`) | o nome fora do padrão | `sdd-gitflow renomear master main` (o `/sdd:iniciar` propõe isso) |
 | "há alteração pendente em código" ao trocar de branch | o `sdd-gitflow` leva só os arquivos do SDD | faça o commit (ou `git stash`) do código antes |
-| conflito no `.sdd/historico.md` num merge | repositório sem o `.gitattributes` do SDD | rode `/sdd:iniciar` de novo; ele acrescenta o merge por união |
+| conflito no `.sdd/historico.md` num merge | repositório sem o `.gitattributes` do SDD | rode `/sdd:iniciar` de novo (sem `--forcar`); ele acrescenta o merge por união e não mexe no config nem na constituição |
 
 Mais em [FAQ e projetos existentes](projetos-existentes.md).

@@ -31,10 +31,10 @@ A configuração de cada projeto (todas as chaves do `.sdd/config.yml`) está em
 |---|---|---|
 | `.sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual); fora do git | `sdd-estado`, `sdd-sprint` |
 | `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `adocao` (só nas adotadas: `transicao` ou `regularizada`), `branch` (a do Git Flow: `feature/NNN-slug`, ou `hotfix/X.Y.Z` num hotfix), `atualizado` | `sdd-estado`, `sdd-release`, `sdd-adotar`, `sdd-incidente` |
-| `specs/NNN-slug/historico.md` | eventos da feature: criação, fases, aprovações (inclusive a da transição), reaberturas, consolidação, incidentes ligados a ela, adoção (com o hash de cada original) | `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-adotar` |
+| `specs/NNN-slug/historico.md` | eventos da feature: `criada`, `fase`, `aprovacao` (inclusive a da transição), `reabertura`, `cancelamento`, `nivel`, `seguranca`, `capacidade`, `release` (inclusão e remoção), `consolidacao`, `incidente` (os ligados a ela) e `adocao` (com o hash de cada original) | `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-adotar` |
 | `releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix), `atualizado` | `sdd-release` |
-| `releases/<versão>/historico.md` | testes, aceite, go (evento `autorizacao`), verificação, mudanças de situação (inclusive para `revertida`) | `sdd-release` |
-| `.sdd/historico.md` | eventos do projeto: backlog, sprints, releases, incidentes, capacidades | todos |
+| `releases/<versão>/historico.md` | `criada`, `inclusao`, `remocao`, `testes`, `aceite`, `reprovacao`, `autorizacao` (o go), `verificacao` e `situacao` (cada mudança de situação, inclusive para `cancelada` e `revertida`) | `sdd-release` |
+| `.sdd/historico.md` | eventos do projeto: `backlog`, `sprint`, `release`, `incidente`, `sistema` (capacidades) e `adocao` | `sdd-backlog`, `sdd-sprint`, `sdd-release`, `sdd-incidente`, `sdd-sistema`, `sdd-adotar` (o `sdd-gitflow` não escreve histórico) |
 | `.sdd/backlog.md`, `.sdd/sprints/<id>.md` | itens e sprints | `sdd-backlog`, `sdd-sprint`, e você |
 | `sistema/<capacidade>.md` | comportamento vigente | o agente, com a sua confirmação; `sdd-sistema` registra |
 | `incidentes/INC-NNN.md` | um incidente | `sdd-incidente`, e você |
@@ -134,7 +134,7 @@ recusada), `capacidade=` (uma ou mais, separadas por vírgula, como
 
 | Fase | Artefato | Decisão | Próxima fase |
 |---|---|---|---|
-| `especificacao`, `clarificacao` | `spec.md` | | `plano` (nível 2) ou `tarefas` (nível 1) |
+| `especificacao`, `clarificacao` | `spec.md` | | `plano` (nível 2) ou `tarefas` (nível 1); num hotfix, a aprovação é registrada e a fase não muda |
 | `plano` | `plano.md` (o hash inclui `contratos/`) | | `tarefas` |
 | `tarefas` | `tarefas.md` | | `red` |
 | `red` | `testes` (os blocos marcados `sdd:NNN:`) | | `green` |
@@ -206,7 +206,8 @@ sdd-sistema pendentes
 ```
 
 `consolidar` exige a feature pronta (ou além), a capacidade definida e o arquivo
-da capacidade citando a feature (`origem: NNN/...`). Registra no histórico da
+da capacidade citando a feature (`origem: NNN/...`). Com `--sem-mudanca`, só a
+fase pronta (ou além) é exigida: a feature não mudou o comportamento descrito. Registra no histórico da
 feature, acrescenta a linha no histórico da capacidade e atualiza "Última
 feature". O texto da capacidade é editado antes, pelo agente.
 
@@ -238,7 +239,7 @@ sdd-release ver [versão] | listar | atual
 | `proxima major\|minor\|patch` | a versão de um tipo explícito |
 | `proxima --pre rc` | o próximo pré-lançamento (`X.Y.Z-rc.N`, contando as tags existentes) |
 | `analisar` | os commits desde a última versão, por impacto, os fora do padrão e a sugestão com o motivo |
-| `changelog <versão>` | a seção da versão no formato Keep a Changelog: uma linha por feature (pelo título, no maior impacto), as demais por commit; `docs`, `chore`, `refactor`, `test`, `build`, `ci` e `style` ficam de fora |
+| `changelog <versão>` | a seção da versão no formato Keep a Changelog: uma linha por feature (pelo título, no maior impacto), as demais por commit; `docs`, `chore`, `refactor`, `test`, `build`, `ci`, `style`, `revert` e os commits fora do padrão ficam de fora |
 | `changelog <versão> --escrever` | grava a seção no `CHANGELOG.md` (cria o arquivo se faltar), abaixo de `## [Não lançado]`; recusa versão repetida |
 
 | Comando | De | Para | Exige |
@@ -320,8 +321,9 @@ Incidentes, releases paradas, aprovações pendentes ou invalidadas (inclusive
 a transição de uma feature adotada), revisões de segurança devidas, dúvidas,
 delta specs e ADRs propostos, consolidações pendentes, prontas fora de release,
 backlog a triar, itens da sprint sem spec, artefatos **fora do padrão** (com
-`/sdd:iniciar --adotar`) e problemas de **Git Flow** (branch fora do padrão,
-falta de `main` ou `develop`, commit fora da branch da feature ativa).
+`/sdd:iniciar --adotar`) e problemas de **Git Flow** (falta de `develop`, branch
+fora do padrão, feature pronta ainda não integrada em `develop`, release com o
+go e sem a tag `vX.Y.Z`).
 
 ## sdd-rastrear
 

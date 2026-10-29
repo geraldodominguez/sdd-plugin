@@ -24,8 +24,12 @@ Argumentos: `$ARGUMENTS`
      preparação, com a aprovação dele, e siga do passo 2.
    - **Com `.sdd/`:** rode `sdd-status` e mostre. Se há inventário, ou se veio
      `--adotar`, pule para a **Adoção** (abaixo): não reaplique nada. Senão,
-     pergunte se o usuário quer reaplicar; `sdd-iniciar --forcar` sobrescreve
-     templates e config, mas **não** apaga specs. Sem confirmação, pare aqui.
+     pergunte se o usuário quer atualizar o projeto para esta versão do plugin.
+     `sdd-iniciar` (sem `--forcar`) só cria o que falta, atualiza o bloco de
+     regras no `CLAUDE.md` e no `AGENTS.md` e acrescenta o `.gitattributes`:
+     é o caminho para atualizar. `sdd-iniciar --forcar` sobrescreve também o
+     config, a constituição e os templates (não apaga specs): só com o
+     usuário pedindo isso explicitamente. Sem confirmação, pare aqui.
 
 2. **Escolha os parâmetros.** Se os argumentos não trazem nível e proteção,
    proponha um padrão e confirme numa única pergunta:

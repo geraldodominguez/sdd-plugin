@@ -16,7 +16,7 @@ especificadas.
 
 O mesmo vale para a spec do sistema (`sistema/`): a capacidade nasce quando a
 primeira feature mexe nela, e cresce a cada consolidação. Se quiser um ponto de
-partida, `/sdd:sistema mapear <capacidade>` descreve o comportamento atual a
+partida, `/sdd:sistema mapear` (o agente pergunta qual área) descreve o comportamento atual a
 partir do código e dos testes, marcando cada item com a origem no código (`origem: código, caminho:linha`), para
 você revisar. Mapeie só a capacidade que vai mudar, não o sistema inteiro.
 
@@ -56,7 +56,7 @@ Depois de preparar o repositório, ele faz a **adoção**:
 |---|---|---|
 | Ler | o agente | lê por inteiro cada artefato encontrado, e a pasta inteira quando ela é de outra ferramenta |
 | Classificar | o agente | agrupa o que é da mesma mudança e decide o destino de cada arquivo, olhando o código para saber o que já foi implementado |
-| Mapa | o agente | escreve o mapa (`origem -> destino`) e o confere com `sdd-adotar aplicar --simular` |
+| Mapa | o agente | escreve o mapa (`origem -> destino`) e o confere com `sdd-adotar aplicar .sdd/adocao-mapa.txt --simular` |
 | Gate | **você** | aprova o mapa, com cada destino e o motivo, as features que vão nascer e as dúvidas |
 | Aplicar | o `sdd-adotar` | renomeia para o padrão com `git mv`, numera features e ADRs, cria cada feature em **transição** com o `transicao.md` e registra tudo em `.sdd/adocao.md` |
 | Arrumar | o agente | põe os itens em aberto no backlog, leva as regras para a constituição e atualiza os links |

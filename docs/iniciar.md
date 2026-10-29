@@ -18,8 +18,9 @@ padrão. Ela não move nada sem a sua aprovação do mapa.
 
 Você digita `/sdd:iniciar`; o agente não a usa por conta própria. Use uma vez
 por repositório, antes de qualquer outro comando. Pode rodar de novo para
-atualizar o bloco de regras depois de atualizar o plugin: ela não duplica nem
-apaga o que você escreveu no `CLAUDE.md`. Com o projeto já preparado, use
+atualizar o bloco de regras e o `.gitattributes` depois de atualizar o plugin:
+ela não duplica nem apaga o que você escreveu no `CLAUDE.md`, e só sobrescreve
+o config, a constituição e os templates se você pedir (`--forcar`). Com o projeto já preparado, use
 `/sdd:iniciar --adotar` quando o `/sdd:pendencias` mostrar artefatos "Fora do
 padrão".
 

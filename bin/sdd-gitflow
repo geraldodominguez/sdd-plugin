@@ -27,7 +27,8 @@
 #
 # Nunca faz push, nunca apaga branch remota, nunca reescreve histórico. Ao
 # trocar de branch, as alterações pendentes nos arquivos do SDD (specs/,
-# sistema/, releases/, incidentes/, docs/, .sdd/, CLAUDE.md, AGENTS.md) vão
+# sistema/, releases/, incidentes/, docs/, .sdd/, CLAUDE.md, AGENTS.md,
+# .gitattributes, CHANGELOG.md) vão
 # junto; em código, recusa. Os merges (integrar, finalizar) exigem tudo
 # commitado. Não escreve nos históricos do SDD: o registro de branches, merges
 # e tags é o próprio git. Saída: 0 ok, 1 erro ou recusa, 3 conferência com

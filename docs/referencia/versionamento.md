@@ -177,7 +177,8 @@ commits:
 | `fix` sem feature | uma linha em Corrigido |
 | `perf` sem feature | uma linha em Modificado |
 | incompatíveis | uma linha em Modificado, marcada **Incompatível**, com a nota do `BREAKING CHANGE:` |
-| `docs`, `chore`, `refactor`, `test`, `build`, `ci`, `style` | nada: não mudam o que o usuário vê |
+| `docs`, `chore`, `refactor`, `test`, `build`, `ci`, `style`, `revert` | nada: não mudam o que o usuário vê |
+| fora do Conventional Commits | nada: o `analisar` os lista à parte |
 
 Com `--escrever`, a seção entra no `CHANGELOG.md` (criado no formato Keep a
 Changelog se não existir), logo abaixo de `## [Não lançado]`, acima das

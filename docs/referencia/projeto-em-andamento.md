@@ -505,10 +505,10 @@ nenhum não precisa de spec retroativa:
 | Situação | O que fazer |
 |---|---|
 | o sistema inteiro sem spec | nada: só o que muda ganha spec. Em poucos meses, as partes mais mexidas estarão especificadas |
-| uma área que você vai mudar e quer entender antes | `/sdd:sistema mapear <capacidade>`: descreve o comportamento atual a partir do código e dos testes, marcando a origem de cada item |
+| uma área que você vai mudar e quer entender antes | `/sdd:sistema mapear` (o agente pergunta qual área): descreve o comportamento atual a partir do código e dos testes, marcando a origem de cada item |
 | área sem testes que vai ser mudada | uma primeira tarefa de **testes de caracterização**, que registram o comportamento atual antes da mudança |
 | projeto sem testes nenhum | a constituição diz o que vale **daqui para a frente**; a infraestrutura de teste vira tarefa da primeira feature |
-| CI que já existe | `/sdd:pipeline conferir`: acrescenta o `sdd-verificar` e o go/no-go sem reescrever o que existe |
+| CI que já existe | `/sdd:pipeline conferir`: aponta o que falta (o `sdd-verificar`, o go/no-go, o Git Flow) sem alterar nada, e oferece gerar a correção |
 | deploy que já existe | a release do SDD registra as decisões; o pipeline consulta o go antes do passo de produção que você já tem |
 
 Mais em [projetos existentes](projetos-existentes.md).

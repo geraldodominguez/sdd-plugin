@@ -202,7 +202,7 @@ ativo:
 
 Ao trocar de branch, o `sdd-gitflow` leva junto as alterações pendentes nos
 arquivos do SDD (`specs/`, `sistema/`, `releases/`, `incidentes/`, `docs/`,
-`.sdd/`, `CLAUDE.md`, `AGENTS.md`), que são commitadas na branch nova, e
+`.sdd/`, `CLAUDE.md`, `AGENTS.md`, `.gitattributes`, `CHANGELOG.md`), que são commitadas na branch nova, e
 **recusa** se houver alteração pendente em código, para que o trabalho de uma
 branch não vaze para outra. Se o git não conseguir levar um arquivo (ele é
 diferente na outra branch), o `sdd-gitflow` explica e pede o commit (ou o
@@ -269,7 +269,7 @@ O `/sdd:iniciar` faz isto na adoção (ver o guia
      git push origin --delete master
    ```
 
-4. `sdd-gitflow iniciar` cria `develop` (se não existir) e muda para ela.
+4. `sdd-gitflow iniciar` cria `develop` (se não existir) e, se você está em `main`, muda para ela.
 
 Avise o time antes de renomear branches publicadas: quem tem um clone precisa
 atualizar (`git fetch --prune` e `git branch -u origin/main main`).
@@ -300,7 +300,7 @@ qualquer código; nesse caso o agente para e resolve com você.
 | Comando | O que faz |
 |---|---|
 | `sdd-gitflow conferir` | lista branches fora do padrão, a falta de `main` ou `develop`, e se você está na branch da feature ativa. Saída 3 com problemas |
-| `sdd-gitflow iniciar` | garante `main`, cria `develop` a partir dela e muda para `develop` |
+| `sdd-gitflow iniciar` | garante `main`, cria `develop` a partir dela e, se você está em `main`, muda para `develop` |
 | `sdd-gitflow renomear <antiga> <nova>` | renomeia uma branch local para um nome do padrão e diz o que fazer no remoto |
 | `sdd-gitflow feature <NNN-slug>` | cria (a partir de `develop`, ou de `main` num hotfix) ou ativa a branch da feature |
 | `sdd-gitflow release <X.Y.Z>` | cria `release/X.Y.Z` a partir de `develop` |

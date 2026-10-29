@@ -6,8 +6,12 @@ configuração) sempre sobem a versão maior.
 
 ## Não lançado
 
-A próxima versão é **maior** (2.0.0): ela muda formatos rastreáveis e o
-comportamento padrão. Ver "Incompatível", abaixo.
+## 1.0.0 - 2026-10-29
+
+Versão maior: muda formatos rastreáveis e o comportamento padrão. Ver
+"Incompatível", abaixo. Para atualizar um projeto que já usa o plugin, rode
+`/sdd:iniciar` de novo (sem `--forcar`): ele atualiza o bloco de regras e o
+`.gitattributes` e não mexe no config nem na constituição.
 
 ### Incompatível
 
@@ -58,6 +62,8 @@ comportamento padrão. Ver "Incompatível", abaixo.
 - Todo utilitário responde a `--ajuda` (e `-h`), mesmo fora de um projeto, com o cabeçalho completo; antes, algumas ajudas saíam cortadas ou com linhas de código.
 - O hook `guarda-commits` lê a mensagem de `git commit -F arquivo` para conferir o formato e a tarefa citada.
 - `sdd_config` devolvia o comentário da linha quando a chave estava vazia.
+- O `/sdd:iniciar` num projeto já preparado oferecia só o `--forcar`, que sobrescreve config e constituição; agora atualiza pelo caminho seguro, sem `--forcar`.
+- Documentação conferida contra o código: eventos de histórico completos, seção Git Flow do `sdd-pendencias`, `consolidar --sem-mudanca`, aprovação da spec num hotfix, reprovação a partir de `aceita`, `revert` fora do changelog, commits de hotfix sem `T-NNN`, `/sdd:sistema mapear`, `/sdd:pipeline conferir` e homologação no push de `release/` e `hotfix/`.
 - Ao trocar de branch, o `sdd-gitflow` leva as alterações pendentes nos arquivos do SDD e recusa, com a explicação, quando há alteração pendente em código; antes, a troca podia falhar com a mensagem crua do git.
 
 ## 0.1.0

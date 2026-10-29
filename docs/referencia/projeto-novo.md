@@ -125,7 +125,7 @@ feature). A **proteção** diz o quanto os hooks impõem o fluxo:
 | Proteção | O que os hooks fazem |
 |---|---|
 | `desligada` | nada; só as instruções orientam |
-| `leve` | congelam os testes depois da fase red, exigem `T-NNN` nos commits, protegem histórico e estado, e mantêm o layout |
+| `leve` | congelam os testes depois da fase red, exigem `T-NNN` (ou o número da feature no escopo) nos commits, protegem histórico e estado, e mantêm o layout |
 | `estrita` | tudo da `leve`, mais: nada de código antes do plano, só testes na fase red, nada de edição na auditoria |
 
 Na dúvida, comece com `leve`. Dá para subir depois, no `.sdd/config.yml`.

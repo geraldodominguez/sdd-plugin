@@ -12,7 +12,8 @@ o processo, não o quebra.
 
 Você digita `/sdd:incidente`; o agente não o usa por conta própria. Use quando
 algo está errado **em produção**. Defeito encontrado antes da produção é
-correção na própria feature (`sdd-estado reabrir`); melhoria é item de backlog.
+correção na própria feature (`sdd-estado reabrir`; em homologação, a reprovação
+no `/sdd:release aceitar`); melhoria é item de backlog.
 
 | Severidade | Quando |
 |---|---|

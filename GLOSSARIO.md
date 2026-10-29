@@ -145,7 +145,7 @@ _Evite_: concluída, entregue (a entrega é a **release**)
 A **fase** de uma **feature** que não vai mais ser feita. Fica no histórico, com o motivo, e sai do **quadro**. Pode ser **reaberta**.
 
 **Reabertura**:
-Volta de uma feature **pronta**, em **homologação** ou **cancelada** para `especificacao` ou `green`, com motivo. Invalida as **aprovações** dos artefatos da fase de reabertura em diante.
+Volta de uma feature **pronta** ou **cancelada** para `especificacao` ou `green` (a cancelada, sempre `especificacao`), com motivo. Uma feature em **homologação** só volta pela reprovação na release (`sdd-release reprovar`), e sempre para o `green`. Invalida as **aprovações** dos artefatos da fase de reabertura em diante.
 
 **Área sensível**:
 Um caminho do código (glob em `areas_sensiveis`, no `.sdd/config.yml`) cuja alteração torna a **revisão de segurança** obrigatória, mesmo no nível 1.

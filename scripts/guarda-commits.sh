@@ -19,8 +19,8 @@
 #   - nada de commit direto em main (que só recebe merge, pelo sdd-gitflow);
 #   - nada de commit numa branch fora do padrão;
 #   - com uma feature ativa em construção ou revisão, o commit é na branch
-#     dela (feature/NNN-slug ou hotfix/X.Y.Z), ou numa release/ ou hotfix/ em
-#     homologação; não em develop nem na branch de outra feature. (Exceção: um
+#     dela (feature/NNN-slug ou hotfix/X.Y.Z), ou numa branch release/ ou
+#     hotfix/ (a correção pedida na homologação); não em develop nem na branch de outra feature. (Exceção: um
 #     hotfix cuja branch ainda não existe aceita, em develop, o commit do
 #     registro do incidente.)
 #   Um merge em andamento (resolução de conflito) não é bloqueado.
