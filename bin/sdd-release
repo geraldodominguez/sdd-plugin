@@ -104,12 +104,20 @@ versoes() { # versões existentes, em ordem SemVer crescente
   local d
   for d in "$DIR"/*/; do
     [ -f "$d/release.md" ] && basename "$d"
-  done | awk '{
-    # Chave de ordenação SemVer: a pré-lançamento (1.3.0-rc.1) vem antes da final.
+  done | ordenar_semver
+}
+
+ordenar_semver() { # lê versões (uma por linha) e as imprime em ordem SemVer crescente
+  awk 'NF {
+    # Chave de ordenação: o pré-lançamento (1.3.0-rc.1) vem antes da final, e os
+    # identificadores numéricos dele se comparam como números (rc.2 < rc.10).
     v = $0; base = v; pre = ""
     i = index(v, "-"); if (i) { base = substr(v, 1, i - 1); pre = substr(v, i + 1) }
     split(base, n, ".")
-    printf "%09d %09d %09d %d %s %s\n", n[1], n[2], n[3], (pre == "" ? 1 : 0), pre, v
+    k = ""
+    m = split(pre, p, ".")
+    for (j = 1; j <= m; j++) k = k (j > 1 ? "." : "") (p[j] ~ /^[0-9]+$/ ? sprintf("%09d", p[j]) : p[j])
+    printf "%09d %09d %09d %d %s %s\n", n[1], n[2], n[3], (pre == "" ? 1 : 0), (k == "" ? "-" : k), v
   }' | sort | awk '{ print $NF }'
 }
 
@@ -149,11 +157,14 @@ transicionar_features() { # transicionar_features <versão> <fase> <nota>
 # A versão de referência: a última em produção; sem nenhuma, a última tag
 # vX.Y.Z alcançável a partir de HEAD.
 versao_base() {
+  # A maior entre a última release em produção (ou com o go) e a última tag
+  # vX.Y.Z final alcançável: uma versão revertida já tem tag em main, e a
+  # próxima não pode andar para trás.
   local ult tag
   ult="$(ultima_em_producao)"
-  if [ -n "$ult" ]; then printf '%s\n' "$ult"; return; fi
-  tag="$(ultima_tag)"
-  if [ -n "$tag" ] && sdd_semver_valida "${tag#v}"; then printf '%s\n' "${tag#v}"; fi
+  tag="$(ultima_tag)"; tag="${tag#v}"
+  sdd_semver_valida "$tag" 2>/dev/null || tag=""
+  printf '%s\n%s\n' "$ult" "$tag" | ordenar_semver | tail -1
   return 0
 }
 
@@ -202,6 +213,14 @@ proxima_versao() { # proxima_versao <auto|major|minor|patch> [id de pré-lançam
     fi
     prox="$(sdd_semver_somar "$base" "$tipo")"
   fi
+  # Uma versão já usada (pasta em releases/, tag, ou branch release/ ou hotfix/
+  # reservada) não se repete: uma release cancelada, por exemplo, guarda o número.
+  while [ -z "$pre" ] && { [ -d "$DIR/$prox" ] \
+      || git -C "$RAIZ" rev-parse -q --verify "refs/tags/v$prox" >/dev/null 2>&1 \
+      || git -C "$RAIZ" show-ref --verify --quiet "refs/heads/release/$prox" 2>/dev/null \
+      || git -C "$RAIZ" show-ref --verify --quiet "refs/heads/hotfix/$prox" 2>/dev/null; }; do
+    prox="$(sdd_semver_somar "$prox" patch)"
+  done
   if [ -n "$pre" ]; then
     printf '%s' "$pre" | grep -qE '^[0-9A-Za-z-]+$' || { echo "sdd-release proxima: identificador de pré-lançamento inválido: $pre" >&2; exit 1; }
     # O número do pré-lançamento segue o maior já usado, em tag ou em releases/.

@@ -348,7 +348,7 @@ Nasce a feature `003-invalidar-link-apos-o-uso` (a 002 é a do último acesso,
 que saiu na 0.1.0), do tipo hotfix, já na fase red, e com a branch
 `hotfix/0.1.1` reservada (a próxima versão patch). O agente faz o commit do
 registro do incidente em `develop`, sem a pasta nova do hotfix
-(`git add -A ':!specs/'`, mensagem `docs(003): INC-001 hotfix aberto`), e roda
+(`git add -A ':!specs/003-invalidar-link-apos-o-uso/'`, mensagem `docs(003): INC-001 hotfix aberto`), e roda
 `sdd-gitflow feature 003-invalidar-link-apos-o-uso`, que cria `hotfix/0.1.1` a
 partir de **`main`**: a correção parte do que está em produção.
 

@@ -251,7 +251,16 @@ feature() {
         return 0
       fi
     done
-    erro "a feature '$f' não existe em $specs/ nem em nenhuma branch local."
+    # Só no remoto (um clone novo, ou a branch local apagada): cria a local
+    # rastreando a remota.
+    if g cat-file -e "origin/feature/$f:$specs/$f/estado" 2>/dev/null; then
+      exige_codigo_limpo
+      g branch -q --track "feature/$f" "origin/feature/$f" || erro "não consegui criar feature/$f a partir de origin/feature/$f."
+      trocar "feature/$f"
+      echo "Criada feature/$f a partir de origin/feature/$f."
+      return 0
+    fi
+    erro "a feature '$f' não existe em $specs/ nem em nenhuma branch (local ou origin/)."
   fi
   b="$(sdd_branch_da_feature "$RAIZ" "$f")"
   case "$b" in

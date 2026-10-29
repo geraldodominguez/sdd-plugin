@@ -183,8 +183,10 @@ specs e os históricos ficam como estão.
 9. **Encerre** com o que mudou (bloco, `.gitattributes`, templates trocados,
    chaves acrescentadas, branches), o que ficou como estava e, se houver,
    features adotadas esperando o `/sdd:aprovar`. Se havia uma feature ativa no
-   passo 5, reative-a (`sdd-estado usar <NNN-slug>`) e diga que o trabalho
-   dela continua na branch dela: `sdd-gitflow feature <NNN-slug>`.
+   passo 5, o trabalho dela continua na branch dela: proponha
+   `sdd-gitflow feature <NNN-slug>` e só então `sdd-estado usar <NNN-slug>`
+   (em `develop`, a pasta de uma feature ainda não integrada não existe, e o
+   `usar` recusa).
 
 ## Adoção
 

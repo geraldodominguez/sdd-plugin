@@ -106,8 +106,10 @@ mostre num bloco de código. Acrescente o próximo passo em uma linha.
 4. Refaça os testes de sistema (o `testes.md`) e o roteiro, e
    `/sdd:release homologar`.
 
-**A release segue sem a feature.** Siga com as outras (`sdd-release
-homologar` de novo, com os testes refeitos). A correção espera a release
+**A release segue sem a feature.** Se ela é a feature ativa, desative-a
+(`sdd-estado definir feature=`): de volta ao green, ela faria o hook pedir uma
+tarefa em todo commit da release. Siga com as outras (`sdd-release homologar`
+de novo, com os testes refeitos). A correção espera a release
 terminar: depois do `finalizar`, `sdd-gitflow feature <feature>` cria
 `feature/<feature>` a partir de `develop`, e ela segue o fluxo normal até
 uma próxima release.

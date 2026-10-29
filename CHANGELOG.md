@@ -36,6 +36,10 @@ executando os comandos de verdade. Nenhum formato rastreável mudou.
 - Pré-lançamento não vai para produção: `sdd-release autorizar` e `sdd-gitflow finalizar` recusam `X.Y.Z-rc.N`, e o `aceitar` de um candidate diz o próximo passo certo.
 - Um hotfix aberto entre o `finalizar` e o `concluir` reservava a mesma versão já marcada com a tag: a release com o go (`implantacao`) passa a ser a base da próxima versão.
 - Uma feature reprovada numa release que já terminou voltava à branch da release: agora ganha uma `feature/NNN-slug` nova a partir de `develop`.
+- A versão de referência é a maior entre a última release em produção (ou com o go) e a última tag final: depois de uma versão revertida, a próxima não anda mais para trás. E uma versão já usada (release cancelada, tag, branch reservada) não é reproposta.
+- O `sdd-release listar` ordena os pré-lançamentos pelo SemVer (`rc.2` antes de `rc.10`).
+- `sdd-gitflow feature` cria a branch local de uma feature que só existe no remoto.
+- O commit do registro do incidente exclui só a pasta do hotfix (`':!specs/NNN-slug/'`), não a pasta `specs/` inteira, que deixava de fora o histórico da feature de origem e travava a troca de branch.
 - Documentação conferida contra a saída real: o quadro do `sdd-status`, a mensagem de bloqueio do Conventional Commits, o `git log` da simulação e o hash da transição no exemplo da adoção.
 
 ## 1.0.0 - 2026-10-29

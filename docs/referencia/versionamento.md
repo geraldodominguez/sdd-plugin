@@ -97,7 +97,7 @@ só enxerga os commits que, por acaso, seguirem o padrão.
 
 ## 4. Como o plugin calcula a próxima versão
 
-1. **A versão de referência** é a última release em produção ou com o go (`releases/X.Y.Z/` na situação `producao` ou `implantacao`: com o go, ela já está em `main` com a tag). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
+1. **A versão de referência** é a maior entre a última release em produção ou com o go (`releases/X.Y.Z/` na situação `producao` ou `implantacao`: com o go, ela já está em `main` com a tag) e a última tag `vX.Y.Z` final alcançável (uma versão revertida continua com a tag em `main`, e a próxima não pode andar para trás). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
 2. **Os commits** são os desde a tag dessa versão, sem os merges. Se essa
    versão não tem tag, contam os desde a última tag `vX.Y.Z` final; sem tag
    nenhuma, o histórico inteiro.
@@ -110,6 +110,10 @@ só enxerga os commits que, por acaso, seguirem o padrão.
 | só `fix` ou `perf` | patch | 1.4.3 |
 | só manutenção | patch | 1.4.3 |
 | (não há versão anterior) | 0.1.0 | |
+
+Uma versão já usada não se repete: se a calculada já tem pasta em `releases/`
+(uma release cancelada, por exemplo), tag ou branch `release/` ou `hotfix/`
+reservada, o plugin sobe o patch até achar uma livre.
 
 O `sdd-release analisar` mostra a conta inteira:
 

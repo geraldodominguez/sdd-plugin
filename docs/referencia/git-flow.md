@@ -171,7 +171,7 @@ push (proteja só contra force-push). O `/sdd:pipeline` lembra disso.
 | Você | O agente | No git |
 |---|---|---|
 | `/sdd:incidente abrir` | registra o incidente | commit do registro em `develop` |
-| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit do registro em `develop` **sem** a pasta nova em `specs/` (`git add -A ':!specs/'`, mensagem `docs(NNN): INC-NNN hotfix aberto`); `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`**, levando a pasta do hotfix, que é commitada lá |
+| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit do registro em `develop` **sem** a pasta nova em `specs/` (`git add -A ':!specs/NNN-slug/'`, mensagem `docs(NNN): INC-NNN hotfix aberto`); `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`**, levando a pasta do hotfix, que é commitada lá |
 | red, green, spec retroativa | commits `test(NNN): ...` e `fix(NNN): ...` (o hotfix não tem `tarefas.md`: o número no escopo basta) | em `hotfix/X.Y.Z` |
 | release de correção (`--hotfix`, mesma versão) e "go" | `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge em `develop` |
 

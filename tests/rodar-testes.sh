@@ -971,6 +971,25 @@ FP="$(cd "$W5/specs" && ls -d ./*-perfil | sed 's#^\./##')"
 [ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/$FP" ] && [ "$(sdd_feature_ler_t "$W5" "$FP" branch)" = "feature/$FP" ] \
   && ok "feature de release terminada volta a feature/ nova" || fail "release terminada" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
 
+# Feature que só existe no remoto: sdd-gitflow feature cria a branch local.
+RB="$TMP/remoto.git"; git init -q --bare "$RB"
+(cd "$W5" && git remote add origin "$RB" && GT switch -q "feature/$FP" 2>/dev/null; GT push -q origin "feature/$FP" 2>/dev/null \
+  && GT switch -q develop && git branch -q -D "feature/$FP" && GT fetch -q origin && sdd-gitflow feature "$FP" >/dev/null 2>&1)
+[ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/$FP" ] && ok "gitflow feature cria a branch local a partir do remoto" || fail "feature só no remoto" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
+# Versões: uma versão já usada não se repete; o rc.10 vem depois do rc.2.
+W9="$TMP/cenario-usadas"; mkdir -p "$W9"
+(cd "$W9" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+  && for v in 0.1.0-rc.1 0.1.0-rc.10 0.1.0-rc.2 0.1.0; do sdd-release nova "$v" --objetivo x >/dev/null; done)
+[ "$(cd "$W9" && sdd-release listar | awk '{print $1}' | tr '\n' ' ')" = "0.1.0-rc.1 0.1.0-rc.2 0.1.0-rc.10 0.1.0 " ] && ok "listar ordena os identificadores numéricos do rc" || fail "ordem rc.10" "$(cd "$W9" && sdd-release listar)"
+[ "$(cd "$W9" && sdd-release proxima 2>/dev/null)" = "0.1.1" ] && ok "versão já usada (release cancelada) não é reproposta" || fail "versão usada" "$(cd "$W9" && sdd-release proxima 2>&1)"
+# Base: uma tag mais nova que a última em produção (versão revertida) vale.
+W10="$TMP/cenario-revertida"; mkdir -p "$W10"
+(cd "$W10" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml && sdd-release nova 0.1.0 --objetivo x >/dev/null \
+  && printf 'fase=producao\ntipo=normal\natualizado=x\n' > releases/0.1.0/estado && GT add -A && GT commit -qm "chore: x" && git tag v0.1.0 \
+  && GT commit -q --allow-empty -m "feat: y" && git tag v0.2.0)
+[ "$(cd "$W10" && sdd-release proxima patch)" = "0.2.1" ] && ok "a tag mais nova é a base, mesmo com a release dela revertida" || fail "base revertida" "$(cd "$W10" && sdd-release proxima patch 2>&1)"
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"

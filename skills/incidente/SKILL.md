@@ -57,7 +57,7 @@ Depois: `sdd-incidente situacao INC-NNN mitigado --nota "o que foi feito"`.
    `git status` que não há código pendente e rode `git switch develop`: o
    registro e a pasta nova vão junto. Em `develop`, faça o commit do registro
    (`docs(NNN): INC-NNN hotfix aberto`, com o número do hotfix), **sem** a
-   pasta nova do hotfix em `specs/` (`git add -A ':!specs/'`): o hook aceita
+   pasta nova do hotfix em `specs/` (`git add -A ':!specs/NNN-slug/'`, só a pasta do hotfix fica de fora): o hook aceita
    este commit em `develop` enquanto a branch do hotfix não existe. Depois,
    rode `sdd-gitflow feature NNN-slug`, que cria `hotfix/X.Y.Z` a partir de
    `main` (não de `develop`: a correção parte do que está em produção) e muda
