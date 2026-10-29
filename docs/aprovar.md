@@ -16,6 +16,7 @@ um comando de fase terminar dizendo "próximo: `/sdd:aprovar`", ou quando o
 
 | Fase | O que você aprova | Para onde a feature vai |
 |---|---|---|
+| qualquer, com a feature em transição (adotada de outro processo) | o `transicao.md`: como era e como vai ficar, e com ele a spec, o plano e as tarefas convertidos | a fase de destino do `transicao.md`: especificação, plano, tarefas ou red |
 | especificação ou clarificação | a `spec.md` | plano (nível 2) ou tarefas (nível 1) |
 | plano | o `plano.md` e os `contratos/` | tarefas |
 | tarefas | o `tarefas.md` | red |
@@ -54,6 +55,13 @@ plano (nível 2) e a revisão de segurança (quando obrigatória) estão aprovad
 **e inalterados** desde a aprovação. Se algo mudou, ele recusa e lista o que
 reaprovar. Com a feature pronta, o `/sdd:aprovar` conduz a consolidação na
 [spec do sistema](sistema.md).
+
+## Feature pronta entra em develop
+
+Quando a feature fica pronta, ele pergunta se pode levá-la para `develop`:
+pelo `sdd-gitflow integrar` (merge `--no-ff`, com `integracao: local`) ou por
+pull request (com `integracao: pr`). Um hotfix não passa por aqui: ele vai para
+`main` pela release de correção. Ver [Git Flow](referencia/git-flow.md).
 
 ## Perguntas frequentes
 

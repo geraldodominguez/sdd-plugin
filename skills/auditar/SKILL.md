@@ -1,7 +1,7 @@
 ---
 name: auditar
 description: Auditoria independente da feature ativa. Um subagent com contexto limpo compara o diff com a spec, os contratos, a constituição e os testes, aponta o drift e propõe a delta spec. A decisão final é sua.
-argument-hint: "[ref git base, por exemplo main]"
+argument-hint: "[ref git base, por exemplo develop]"
 disable-model-invocation: true
 allowed-tools: Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(git diff *), Bash(git log *), Bash(git merge-base *), Read, Glob, Grep, Edit
 ---
@@ -20,7 +20,7 @@ Ref base: `$ARGUMENTS`
    - Rode `sdd-estado definir fase=auditoria`.
 
 2. **Defina a base da comparação.** Use `$ARGUMENTS`, se veio. Senão, tente
-   `git merge-base HEAD main` (ou `master`). Sem resultado, pergunte ao usuário.
+   `git merge-base HEAD develop` com o Git Flow ativo (a feature nasceu de `develop`; contra `main`, o diff traria as features de `develop` ainda não lançadas), ou `git merge-base HEAD main` com `gitflow: desligado`. Sem resultado, pergunte ao usuário.
 
 3. **Chame a ferramenta Agent com o subagent `auditor-de-drift`**, passando
    **apenas**:

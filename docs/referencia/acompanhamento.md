@@ -88,11 +88,14 @@ o seu próprio caminho e os seus próprios gates humanos:
 
 | Momento | Comando | Quem decide |
 |---|---|---|
-| Preparar e testar o sistema | `/sdd:release preparar` (subagent `testador-de-sistema`) | o agente executa, você lê |
-| Homologação | `/sdd:release homologar`, roteiro passo a passo | o dono do produto ou cliente aprova cada passo |
+| Decidir a versão | `/sdd:release preparar` mostra a versão calculada pelos commits (`sdd-release analisar`) e o motivo | você confirma ou escolhe outra (ver [versionamento](versionamento.md)) |
+| Preparar e testar o sistema | `/sdd:release preparar` cria `release/X.Y.Z` e chama o subagent `testador-de-sistema` | o agente executa, você lê |
+| Homologação | `/sdd:release homologar`, roteiro passo a passo (o push de `release/X.Y.Z` implanta em homologação) | o dono do produto ou cliente aprova cada passo |
 | Aceite | `/sdd:release aceitar` | o dono do produto |
+| Revisar o changelog | `/sdd:release implantar` gera a seção do `CHANGELOG.md` a partir dos commits | você confere o texto antes do go |
 | Go/no-go | `/sdd:release implantar` | quem responde pela produção |
-| Implantar e verificar | o pipeline (que confere o go) e `/sdd:release concluir` | o time de operação |
+| Publicar | depois do go, `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag, merge em `develop`) e `git push origin main develop vX.Y.Z` | quem tem permissão de push em `main` |
+| Implantar e verificar | o pipeline (disparado pela tag, confere o go) e `/sdd:release concluir` | o time de operação |
 
 Um ritmo comum: uma release por sprint, aberta no planejamento e concluída
 antes do encerramento. Em produto com deploy contínuo, uma release por feature,
@@ -105,10 +108,13 @@ com homologação curta.
    depois corrija.
 2. Correção urgente: **`/sdd:incidente hotfix`**. Começa por um teste que
    reproduz o problema; a spec vem depois, mas é aprovada antes de entregar.
-3. A correção sai numa release de hotfix (`/sdd:release preparar`, que propõe uma versão patch de hotfix),
-   com homologação expressa.
-4. Resolvido, escreva o **post-mortem** e encerre. As ações viram itens no
-   backlog.
+3. A correção é feita na branch `hotfix/X.Y.Z`, que parte de `main` com a
+   próxima versão patch, reservada pelo `/sdd:incidente hotfix`. Ela sai numa
+   release com a **mesma versão** (`/sdd:release preparar`), com homologação
+   expressa, e o `finalizar` a leva para `main` e para `develop`.
+4. Resolvido (`/sdd:incidente resolver`), escreva o **post-mortem**
+   (`/sdd:incidente post-mortem`), que encerra o incidente. As ações viram
+   itens no backlog.
 
 S1 e S2 abertos aparecem no topo das pendências e geram aviso no CI até o
 encerramento.
@@ -121,11 +127,19 @@ encerramento.
 | `sistema/`, `releases/`, `incidentes/` | sim | são o retrato do produto, das entregas e da operação |
 | `.sdd/estado` (a feature ativa e a sprint atual de cada pessoa) | não | cada pessoa trabalha numa feature |
 
+Cada feature vive na sua branch, `feature/NNN-slug`, criada a partir de
+`develop` pelo `/sdd:especificar`. Duas pessoas em duas features não se
+atrapalham: cada uma commita na sua branch, e a feature só chega a `develop`
+quando fica pronta (ver [Git Flow](git-flow.md)).
+
 O autor de cada aprovação é o nome configurado no git (`git config user.name`).
 Configure-o em cada máquina antes de aprovar.
 
-Num conflito de merge em `historico.md`, mantenha as linhas dos dois lados: cada
-linha é um evento com data.
+Os arquivos de histórico (`.sdd/historico.md` e o `historico.md` de cada
+feature e release) usam o merge por união, configurado no `.gitattributes` pelo
+`/sdd:iniciar`: num merge, o git junta as linhas dos dois lados em vez de dar
+conflito. Se ainda assim aparecer um conflito (num repositório sem essa linha),
+mantenha as linhas dos dois lados: cada linha é um evento com data.
 
 ## Sozinho ou com clientes
 
@@ -145,6 +159,6 @@ linha é um evento com data.
 | A sprint não vai fechar | corte itens com `/sdd:sprint` e devolva-os ao backlog, em vez de estender o prazo |
 | Não sei o que aconteceu enquanto estava fora | `/sdd:retomar` |
 | A feature não vai mais ser feita | `sdd-estado cancelar --motivo "..."` (fica no histórico, sai do quadro) |
-| A homologação reprovou uma feature | `/sdd:release aceitar` registra a reprovação: ela volta ao green e a release volta à preparação |
-| Uma feature pronta precisa mudar antes de sair | `sdd-estado reabrir --motivo "..."`; as aprovações da fase de reabertura em diante caem |
+| A homologação reprovou uma feature | `/sdd:release aceitar` registra a reprovação: ela volta ao green, a release volta à preparação e a correção é commitada em `release/X.Y.Z` |
+| Uma feature pronta precisa mudar antes de sair | `sdd-estado reabrir --motivo "..."`; as aprovações da fase de reabertura em diante caem (em homologação, não: use a reprovação) |
 | O deploy deu errado | `/sdd:release reverter`, execute o rollback do `implantacao.md` e abra um incidente |

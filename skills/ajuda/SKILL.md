@@ -2,6 +2,7 @@
 name: ajuda
 description: Pergunte qual comando ou fluxo do SDD serve para a sua situação, do pedido à manutenção em produção. Um roteador sobre os comandos deste plugin.
 disable-model-invocation: true
+allowed-tools: Bash(sdd-status), Bash(sdd-status *), Bash(sdd-pendencias), Read, Glob, Grep
 ---
 
 # Ajuda do SDD
@@ -23,6 +24,31 @@ Sem pasta `.sdd/`, o primeiro passo é **`/sdd:iniciar`**, uma vez por
 repositório. Ele cria a estrutura, rascunha a **constituição** a partir do
 código e injeta as regras no `CLAUDE.md` e no `AGENTS.md`. Logo depois, vale
 rodar **`/sdd:pipeline`** para o CI conferir o processo.
+
+Projeto que não nasceu com o plugin, ou com specs, planos, tarefas e ADRs
+espalhados por outros agentes (`docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`,
+`.specify/`)? O mesmo **`/sdd:iniciar`** detecta, lê tudo e, com a sua
+aprovação, traz para o padrão. Com o projeto já preparado, rode
+**`/sdd:iniciar --adotar`** sempre que o `/sdd:pendencias` mostrar artefatos
+"Fora do padrão". Cada feature adotada fica em transição até o usuário aprovar
+o `transicao.md` com **`/sdd:aprovar`**; depois, continua de onde parou.
+
+Todo projeto usa o mesmo **Git Flow**: `main`, `develop`, `feature/NNN-slug`,
+`release/X.Y.Z` e `hotfix/X.Y.Z`. Os comandos criam e juntam as branches
+sozinhos (`/sdd:iniciar` cria `develop`, `/sdd:especificar` a da feature,
+`/sdd:aprovar` integra a feature pronta, `/sdd:release` cria a da release e a
+leva a `main` com a tag, `/sdd:incidente` cria a do hotfix); a situação aparece no
+`/sdd:status`, e o `sdd-gitflow conferir` mostra o que está fora do padrão.
+Detalhes em `docs/referencia/git-flow.md`.
+
+As **versões** seguem o SemVer e saem dos commits (Conventional Commits): o
+`/sdd:release preparar` sugere a próxima com `sdd-release analisar`, e o
+`sdd-release changelog` escreve o `CHANGELOG.md`. Detalhes em
+`docs/referencia/versionamento.md`.
+
+Para quem pede um passo a passo, aponte o guia da situação:
+`docs/referencia/projeto-novo.md` (repositório novo) ou
+`docs/referencia/projeto-em-andamento.md` (projeto que já existe).
 
 ## Fluxo da feature: do pedido à feature pronta
 

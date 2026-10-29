@@ -6,7 +6,13 @@
 #   e, fora da ordem: cancelada, revertida
 #
 # Uso:
-#   sdd-release proxima [major|minor|patch]     sugere a próxima versão SemVer
+#   sdd-release proxima [auto|major|minor|patch] [--pre alpha|beta|rc]
+#                                               a próxima versão SemVer; auto (o padrão) calcula
+#                                               pelos commits (Conventional Commits) desde a última versão
+#   sdd-release analisar                        os commits desde a última versão, o impacto de cada
+#                                               um e a versão sugerida, com o motivo
+#   sdd-release changelog <versão> [--escrever] a seção da versão no formato Keep a Changelog,
+#                                               a partir dos commits; --escrever grava no CHANGELOG.md
 #   sdd-release nova <versão> [--objetivo "texto"] [--hotfix]
 #   sdd-release incluir <versão> <NNN-slug> [...]   só features prontas, na preparação
 #   sdd-release remover <versão> <NNN-slug>         só na preparação
@@ -31,6 +37,7 @@ set -euo pipefail
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/sdd-comum.sh
 . "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
 [ -d "$RAIZ/.sdd" ] || { echo "sdd-release: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
@@ -123,25 +130,242 @@ transicionar_features() { # transicionar_features <versão> <fase> <nota>
   done
 }
 
+# ---------------------------------------------------------------------------
+# Versão automática (SemVer pelos Conventional Commits) e changelog
+# ---------------------------------------------------------------------------
+
+# A versão de referência: a última em produção; sem nenhuma, a última tag
+# vX.Y.Z alcançável a partir de HEAD.
+versao_base() {
+  local ult tag
+  ult="$(ultima_em_producao)"
+  if [ -n "$ult" ]; then printf '%s\n' "$ult"; return; fi
+  tag="$(ultima_tag)"
+  if [ -n "$tag" ] && sdd_semver_valida "${tag#v}"; then printf '%s\n' "${tag#v}"; fi
+  return 0
+}
+
+# A última tag de versão final (vX.Y.Z, sem pré-lançamento) alcançável de HEAD.
+ultima_tag() {
+  git -C "$RAIZ" describe --tags --abbrev=0 --match 'v[0-9]*' --exclude 'v*-*' 2>/dev/null || true
+}
+
+# De onde contar os commits: a tag da versão de referência, se existir; senão a
+# última tag alcançável; sem tag nenhuma, o histórico inteiro (vazio).
+ref_base() {
+  local v="$1"
+  if [ -n "$v" ] && git -C "$RAIZ" rev-parse -q --verify "refs/tags/v$v" >/dev/null 2>&1; then
+    printf 'v%s\n' "$v"; return
+  fi
+  ultima_tag
+}
+
+# impacto_maximo: lê as linhas do sdd_cc_commits e imprime o maior impacto.
+impacto_maximo() {
+  awk -F '\t' '
+    $1 == "major" { m = 3 } $1 == "minor" && m < 2 { m = 2 } $1 == "patch" && m < 1 { m = 1 }
+    END { if (m == 3) print "major"; else if (m == 2) print "minor"; else if (m == 1) print "patch"; else print "nenhum" }'
+}
+
+# O tipo de incremento que os commits pedem. Antes da 1.0.0, a mudança
+# incompatível sobe o minor (a API ainda não é estável); sem feat nem fix, patch.
+incremento_automatico() { # incremento_automatico <versão base> <impacto>
+  case "$2" in
+    major) case "$1" in 0.*) echo minor ;; *) echo major ;; esac ;;
+    minor) echo minor ;;
+    *) echo patch ;;
+  esac
+}
+
+proxima_versao() { # proxima_versao <auto|major|minor|patch> [id de pré-lançamento]
+  local tipo="$1" pre="${2:-}" base ref imp prox n
+  base="$(versao_base)"
+  if [ -z "$base" ]; then
+    case "$tipo" in major) prox="1.0.0" ;; *) prox="0.1.0" ;; esac
+  else
+    if [ "$tipo" = "auto" ]; then
+      ref="$(ref_base "$base")"
+      imp="$(sdd_cc_commits "$RAIZ" "$ref" | impacto_maximo)"
+      tipo="$(incremento_automatico "$base" "$imp")"
+    fi
+    prox="$(sdd_semver_somar "$base" "$tipo")"
+  fi
+  if [ -n "$pre" ]; then
+    printf '%s' "$pre" | grep -qE '^[0-9A-Za-z-]+$' || { echo "sdd-release proxima: identificador de pré-lançamento inválido: $pre" >&2; exit 1; }
+    n="$(git -C "$RAIZ" tag --list "v$prox-$pre.*" 2>/dev/null | sed -E "s/^v$prox-$pre\.//" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)"
+    prox="$prox-$pre.$(( ${n:-0} + 1 ))"
+  fi
+  printf '%s\n' "$prox"
+}
+
+analisar() {
+  local base ref linhas imp tipo prox total
+  base="$(versao_base)"; ref="$(ref_base "$base")"
+  linhas="$(sdd_cc_commits "$RAIZ" "$ref")"
+  total="$(printf '%s\n' "$linhas" | grep -c . || true)"
+  if [ -n "$base" ]; then
+    echo "Versão atual: $base${ref:+ (commits desde $ref)}"
+  else
+    echo "Nenhuma versão anterior: a primeira é 0.1.0 (ou 1.0.0, se a API já nasce estável)."
+  fi
+  echo "Commits (sem os merges): $total"
+  conta() { printf '%s\n' "$linhas" | awk -F '\t' -v c="$1" '$1 == c' | grep -c . || true; }
+  echo "  incompatíveis (major): $(conta major)"
+  echo "  feat (minor):          $(conta minor)"
+  echo "  fix e perf (patch):    $(conta patch)"
+  echo "  sem impacto na versão: $(printf '%s\n' "$linhas" | awk -F '\t' '$1 == "nenhum" && $2 != "outro"' | grep -c . || true)"
+  local fora
+  fora="$(printf '%s\n' "$linhas" | awk -F '\t' '$2 == "outro" { print "    - " $4 }')"
+  if [ -n "$fora" ]; then
+    echo "  fora do Conventional Commits (não contam): $(printf '%s\n' "$fora" | grep -c . || true)"
+    printf '%s\n' "$fora"
+  fi
+  if [ -z "$base" ]; then
+    echo "Sugestão: 0.1.0"; return 0
+  fi
+  imp="$(printf '%s\n' "$linhas" | impacto_maximo)"
+  tipo="$(incremento_automatico "$base" "$imp")"
+  prox="$(sdd_semver_somar "$base" "$tipo")"
+  case "$imp" in
+    major) case "$base" in 0.*) motivo="há mudança incompatível, e antes da 1.0.0 ela sobe o minor" ;; *) motivo="há mudança incompatível (! ou BREAKING CHANGE)" ;; esac ;;
+    minor) motivo="há feat e nenhuma mudança incompatível" ;;
+    patch) motivo="só fix ou perf" ;;
+    *) motivo="nenhum feat nem fix: só manutenção" ;;
+  esac
+  echo "Sugestão: $prox ($tipo: $motivo)"
+  local det
+  det="$(printf '%s\n' "$linhas" | awk -F '\t' 'NF && $1 != "nenhum" { printf "  [%s] %s%s: %s\n", $1, $2, ($3 != "-" ? "(" $3 ")" : ""), $4 }')"
+  [ -n "$det" ] && { echo "Commits que mudam a versão:"; printf '%s\n' "$det"; }
+  return 0
+}
+
+# O título de uma feature pelo número (escopo do commit), ou vazio.
+titulo_feature() {
+  local num="$1" d t
+  printf '%s' "$num" | grep -qE '^[0-9]{3}$' || return 0
+  for d in "$RAIZ/$PASTA_SPECS/$num"-*/; do
+    [ -d "$d" ] || continue
+    t="$(head -1 "$d/spec.md" 2>/dev/null | sed -nE 's/^# Spec [^:]*: (.*)$/\1/p')"
+    # Sem título na spec, o título com que a feature foi criada (no histórico).
+    [ -n "$t" ] || t="$( { grep -E '\| criada \| [^|]*: ' "$d/historico.md" 2>/dev/null || true; } | head -1 | sed -E 's/^- [^|]*\| criada \| [^|]*: (.*) \| por: .*$/\1/')"
+    [ -n "$t" ] || t="$(basename "$d" | sed -E 's/^[0-9]{3}-//; s/-/ /g')"
+    printf '%s (%s)\n' "$t" "$num"
+    return 0
+  done
+}
+
+# A seção da versão no formato Keep a Changelog. Commits de uma feature (escopo
+# NNN) viram uma linha com o título dela, na categoria do maior impacto; os
+# demais entram um a um. docs, chore, refactor, test, build, ci e style ficam de
+# fora: não mudam o que o usuário vê.
+secao_changelog() {
+  local v="$1" base ref linhas
+  base="$(versao_base)"; ref="$(ref_base "$base")"
+  linhas="$(sdd_cc_commits "$RAIZ" "$ref")"
+  local adic="" corr="" modi="" l imp tipo esc desc t chave vistos="" impf
+  while IFS="$(printf '\t')" read -r imp tipo esc desc; do
+    [ -n "$imp" ] || continue
+    [ "$esc" = "-" ] && esc=""
+    case "$tipo" in feat|fix|perf) ;; *) [ "$imp" = "major" ] || continue ;; esac
+    t="$(titulo_feature "$esc")"
+    if [ -n "$t" ]; then
+      chave="$esc"
+      printf '%s' "$vistos" | grep -qx "$chave" && continue
+      vistos="$vistos$chave"$'\n'
+      impf="$(printf '%s\n' "$linhas" | awk -F '\t' -v e="$esc" '$3 == e' | impacto_maximo)"
+      case "$impf" in
+        major) modi="$modi- **Incompatível:** $t"$'\n' ;;
+        minor) adic="$adic- $t"$'\n' ;;
+        patch)
+          if printf '%s\n' "$linhas" | awk -F '\t' -v e="$esc" '$3 == e && $2 == "fix"' | grep -q .; then corr="$corr- $t"$'\n'; else modi="$modi- $t"$'\n'; fi ;;
+      esac
+      continue
+    fi
+    l="$desc${esc:+ ($esc)}"
+    if [ "$imp" = "major" ]; then modi="$modi- **Incompatível:** $l"$'\n'
+    elif [ "$tipo" = "feat" ]; then adic="$adic- $l"$'\n'
+    elif [ "$tipo" = "fix" ]; then corr="$corr- $l"$'\n'
+    else modi="$modi- $l"$'\n'
+    fi
+  done <<< "$linhas"
+  printf '## [%s] - %s\n' "$v" "$HOJE"
+  [ -n "$adic" ] && printf '\n### Adicionado\n\n%s' "$adic"
+  [ -n "$modi" ] && printf '\n### Modificado\n\n%s' "$modi"
+  [ -n "$corr" ] && printf '\n### Corrigido\n\n%s' "$corr"
+  if [ -z "$adic$modi$corr" ]; then printf '\nSem mudanças visíveis: só manutenção.\n'; fi
+  return 0
+}
+
+escrever_changelog() { # escrever_changelog <versão> <seção>
+  local v="$1" secao="$2" arq="$RAIZ/CHANGELOG.md" tmp
+  if [ -f "$arq" ] && grep -qE "^## \[$v\]" "$arq"; then
+    echo "sdd-release changelog: o CHANGELOG.md já tem a seção [$v]. Edite à mão, se precisar." >&2
+    exit 1
+  fi
+  if [ ! -f "$arq" ]; then
+    {
+      printf '# Changelog\n\n'
+      printf 'As mudanças relevantes de cada versão. Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),\n'
+      printf 'versões [SemVer](https://semver.org/lang/pt-BR/). Gerado pelo `sdd-release changelog` a partir dos commits\n'
+      printf '(Conventional Commits), e revisado por quem faz a release.\n\n'
+      printf '## [Não lançado]\n'
+    } > "$arq"
+  fi
+  tmp="$arq.tmp.$$"
+  printf '%s\n' "$secao" > "$tmp.secao"
+  # Entra logo antes da primeira versão já lançada, depois do "Não lançado".
+  awk -v sf="$tmp.secao" '
+    !feito && /^## \[/ && $0 !~ /^## \[(Não lançado|Unreleased)\]/ {
+      while ((getline l < sf) > 0) print l
+      print ""
+      feito = 1
+    }
+    { print }
+    END { if (!feito) { print ""; while ((getline l < sf) > 0) print l } }
+  ' "$arq" > "$tmp"
+  mv "$tmp" "$arq"; rm -f "$tmp.secao"
+  echo "CHANGELOG.md: seção [$v] gravada. Revise o texto antes do commit."
+}
+
 cmd="${1:-listar}"
 shift || true
 
 case "$cmd" in
   proxima)
-    tipo="${1:-minor}"
-    ult="$(ultima_em_producao)"
-    if [ -z "$ult" ]; then
-      case "$tipo" in major) echo "1.0.0" ;; *) echo "0.1.0" ;; esac
-      exit 0
+    tipo="auto"; pre=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        auto|major|minor|patch) tipo="$1" ;;
+        --pre) pre="${2:?--pre exige um identificador (alpha, beta, rc)}"; shift ;;
+        *) echo "sdd-release proxima: use auto, major, minor ou patch, e --pre <id>" >&2; exit 1 ;;
+      esac
+      shift
+    done
+    proxima_versao "$tipo" "$pre"
+    ;;
+
+  analisar)
+    analisar
+    ;;
+
+  changelog)
+    v=""; escrever=0
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --escrever) escrever=1 ;;
+        -*) echo "sdd-release changelog: opção desconhecida $1" >&2; exit 1 ;;
+        *) v="$1" ;;
+      esac
+      shift
+    done
+    [ -n "$v" ] || { echo "uso: sdd-release changelog <versão> [--escrever]" >&2; exit 1; }
+    sdd_semver_valida "$v" || { echo "sdd-release: versão inválida: $v" >&2; exit 1; }
+    secao="$(secao_changelog "$v")"
+    if [ "$escrever" -eq 1 ]; then
+      escrever_changelog "$v" "$secao"
+    else
+      printf '%s\n' "$secao"
     fi
-    base="${ult%%-*}"
-    IFS=. read -r ma mi pa <<< "$base"
-    case "$tipo" in
-      major) echo "$((ma + 1)).0.0" ;;
-      minor) echo "$ma.$((mi + 1)).0" ;;
-      patch) echo "$ma.$mi.$((pa + 1))" ;;
-      *) echo "sdd-release proxima: use major, minor ou patch" >&2; exit 1 ;;
-    esac
     ;;
 
   nova)
@@ -259,7 +483,7 @@ case "$cmd" in
     [ -n "$motivo" ] || { echo "sdd-release reprovar: informe --motivo." >&2; exit 1; }
     existe "$v"; exige "$v" homologacao aceita
     features "$v" | grep -qx "$f" || { echo "sdd-release: $f não está na release $v." >&2; exit 1; }
-    "$AQUI/sdd-estado" reabrir "$f" --fase green --motivo "reprovada na homologação da $v: $motivo" >/dev/null
+    "$AQUI/sdd-estado" reabrir "$f" --pela-release --fase green --motivo "reprovada na homologação da $v: $motivo" >/dev/null
     reescrever_features "$v" "$(features "$v" | grep -vx "$f" || true)"
     for g in $(features "$v"); do "$AQUI/sdd-estado" transicionar "$g" pronta "release $v voltou à preparação" >/dev/null; done
     historico "$v" reprovacao "$f: $motivo"
@@ -313,7 +537,11 @@ case "$cmd" in
     historico "$v" verificacao "$verif"
     mudar_situacao "$v" producao "em produção em $HOJE"
     transicionar_features "$v" producao "release $v em produção"
-    echo "Release $v em produção. Sugestão: git tag v$v && git push origin v$v"
+    if git -C "$RAIZ" rev-parse -q --verify "refs/tags/v$v" >/dev/null 2>&1; then
+      echo "Release $v em produção. A tag v$v já existe (sdd-gitflow finalizar); se ainda não a publicou: git push origin v$v"
+    else
+      echo "Release $v em produção. Falta a tag: sdd-gitflow finalizar $v (com o Git Flow), ou git tag -a v$v -m \"versão $v\" && git push origin v$v"
+    fi
     pend="$("$AQUI/sdd-sistema" pendentes 2>/dev/null || true)"
     if [ -n "$pend" ]; then
       echo "Atenção: features ainda não consolidadas na spec do sistema:"
@@ -382,7 +610,7 @@ case "$cmd" in
     ;;
 
   -h|--ajuda|--help|ajuda)
-    sed -n '2,31p' "$0"
+    sdd_ajuda "$0"
     ;;
 
   *)

@@ -21,10 +21,11 @@
 
 | # | Passo | Comando ou ação | Responsável |
 |---|---|---|---|
-| 1 | Criar a tag | `git tag v0.1.0 && git push origin v0.1.0` | Carla |
-| 2 | Pipeline confere o go e implanta | etapa `producao` do CI (`sdd-release pode-implantar v0.1.0`) | automático |
-| 3 | Rodar as migrations | `npm run migrate:prod` | Carla |
-| 4 | Ligar a flag `redefinicao_de_senha` | painel de flags | Carla |
+| 1 | Finalizar a release (merge em `main`, tag `v0.1.0`, merge em `develop`) | `sdd-gitflow finalizar 0.1.0` | Carla |
+| 2 | Publicar as branches e a tag | `git push origin main develop v0.1.0` | Carla |
+| 3 | Pipeline confere o go e implanta | etapa `producao` do CI (`sdd-release pode-implantar v0.1.0`) | automático |
+| 4 | Rodar as migrations | `npm run migrate:prod` | Carla |
+| 5 | Ligar a flag `redefinicao_de_senha` | painel de flags | Carla |
 
 ## Verificação pós-implantação
 

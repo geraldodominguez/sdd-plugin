@@ -11,8 +11,9 @@ corrige nada: aponta os desvios e, quando um deles parece correto, propõe uma
 ## Quando usar
 
 Você digita `/sdd:auditar`; o agente não a usa por conta própria. Use quando a
-fase green terminar. É obrigatória no nível 2 e opcional no nível 1. Informe a
-base da comparação se não for `main`: `/sdd:auditar develop`.
+fase green terminar. É obrigatória no nível 2 e opcional no nível 1. A base da
+comparação é `develop`, de onde a feature nasceu (Git Flow); informe outra se
+precisar: `/sdd:auditar <ref>`.
 
 ## Pré-requisitos
 

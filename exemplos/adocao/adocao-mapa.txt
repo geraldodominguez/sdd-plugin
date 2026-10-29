@@ -1,0 +1,9 @@
+# Exportar pedidos: spec e tarefas da mesma mudança, em andamento (CSV feito, PDF não)
+docs/specs/exportar-pedidos.md -> feature:exportar-pedidos/spec.md
+tasks/exportar-pedidos.md -> feature:exportar-pedidos/tarefas.md
+
+# Decisão de arquitetura
+docs/decisions/banco.md -> adr:usar-postgres
+
+# TODO solto: o item aberto vai para o backlog, o arquivo para o legado
+TODO.md -> legado:TODO.md

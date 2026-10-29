@@ -13,6 +13,34 @@ _Evite_: documentação (sugere algo secundário, escrito depois)
 As regras inegociáveis de um projeto (stack, arquitetura, testes, segurança, convenções), em `.sdd/constituicao.md`. Todo **plano** é checado contra ela.
 _Evite_: guia de estilo, padrões
 
+**Versão**:
+O número SemVer `MAJOR.MINOR.PATCH` de uma release, com a tag `vX.Y.Z` em `main`. Calculada pelos **Conventional Commits** desde a última versão em produção, e decidida por uma pessoa no `/sdd:release`.
+_Evite_: build, número da sprint
+
+**Layout**:
+Os lugares fixos de cada artefato de processo: `specs/NNN-slug/`, `docs/adr/NNNN-slug.md`, `.sdd/`, `sistema/`, `releases/`, `incidentes/`, `docs/arquitetura/` e `docs/legado/`. Um contrato: o hook bloqueia criar artefato fora dele.
+_Evite_: estrutura de pastas (sugere algo que cada um decide)
+
+**Adoção**:
+Trazer para o **layout** os artefatos que outro processo ou outro agente deixou fora do lugar, com um mapa aprovado pelo usuário (`/sdd:iniciar --adotar`, `sdd-adotar`): renomeia para o padrão, nunca apaga, e põe cada feature em andamento numa **transição**.
+_Evite_: importação
+
+**Transição**:
+A situação de uma feature adotada (`adocao=transicao`) até o usuário aprovar o `transicao.md`, que mostra como ela era no outro processo e como fica no SDD. A aprovação registra os artefatos convertidos e leva a feature à **fase de destino** (a fase em que ela estava no outro processo: `especificacao`, `plano`, `tarefas` ou `red`), para continuar de onde parou. Depois disso, ela fica **regularizada** (`adocao=regularizada`) e segue o fluxo como qualquer outra.
+_Evite_: migração
+
+**Tarefa `[O]`**:
+Tarefa feita fora do plugin, antes da adoção, sem gate. Não se refaz; os testes dos critérios dela vêm na fase red e devem passar de início.
+_Evite_: tarefa concluída (essa é a `[x]`, feita no plugin)
+
+**Conventional Commits**:
+O formato da mensagem de commit, `tipo(NNN): T-XXX descrição` (o escopo é o número da feature, e a tarefa vem no começo da descrição). Uma mudança incompatível leva `!` depois do escopo ou o rodapé `BREAKING CHANGE:`. O tipo (`feat`, `fix`, `perf`, `docs`, `chore`...) e o `!` decidem a próxima **versão** e o `CHANGELOG.md`.
+_Evite_: mensagem livre ("ajustes", "wip")
+
+**Git Flow**:
+O modelo de branches do plugin, com os mesmos nomes em todo projeto: `main` (produção, tag `vX.Y.Z`), `develop` (integração), `feature/NNN-slug`, `release/X.Y.Z` e `hotfix/X.Y.Z`. As branches são criadas e juntadas pelo `sdd-gitflow`, nos momentos do ciclo.
+_Evite_: `master`, `development`, `feat/`, `bugfix/` (nomes fora do padrão)
+
 **Feature**:
 Uma unidade de mudança, com pasta própria `specs/NNN-slug/` e um **nível de rigor**.
 _Evite_: história, épico, ticket
@@ -104,7 +132,7 @@ _Evite_: ciclo, iteração
 A visão de todas as **features** por coluna (especificação, planejamento, implementação, revisão, pronta, homologação), com a **release** em andamento e os **incidentes** abertos, mostrada pelo `/sdd:status`.
 
 **Pendência**:
-Algo que espera uma decisão humana: **incidente** aberto, **release** esperando **aceite** ou **go**, **aprovação**, **revisão de segurança** devida, dúvida na spec, **delta spec** ou ADR proposto, **consolidação** pendente, item a triar, item da sprint sem spec. Listado pelo `/sdd:pendencias`.
+Algo que espera uma decisão humana: **incidente** aberto, **release** esperando **aceite** ou **go**, **aprovação**, **revisão de segurança** devida, dúvida na spec, **delta spec** ou ADR proposto, **consolidação** pendente, item a triar, item da sprint sem spec, **transição** a aprovar, artefato fora do padrão, problema de Git Flow. Listado pelo `/sdd:pendencias`.
 
 **Feature ativa**:
 A feature em que a pessoa está trabalhando agora, apontada em `.sdd/estado`. Cada pessoa tem a sua.
@@ -117,7 +145,7 @@ _Evite_: concluída, entregue (a entrega é a **release**)
 A **fase** de uma **feature** que não vai mais ser feita. Fica no histórico, com o motivo, e sai do **quadro**. Pode ser **reaberta**.
 
 **Reabertura**:
-Volta de uma feature **pronta**, em **homologação** ou **cancelada** para `especificacao` ou `green`, com motivo. Invalida as **aprovações** dos artefatos da fase de reabertura em diante.
+Volta de uma feature **pronta** ou **cancelada** para `especificacao` ou `green` (a cancelada, sempre `especificacao`), com motivo. Uma feature em **homologação** só volta pela reprovação na release (`sdd-release reprovar`), e sempre para o `green`. Invalida as **aprovações** dos artefatos da fase de reabertura em diante.
 
 **Área sensível**:
 Um caminho do código (glob em `areas_sensiveis`, no `.sdd/config.yml`) cuja alteração torna a **revisão de segurança** obrigatória, mesmo no nível 1.

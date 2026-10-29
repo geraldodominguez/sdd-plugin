@@ -1,12 +1,27 @@
 # Pipeline SDD para GitLab CI. Gerado a partir do template do plugin SDD
 # (/sdd:pipeline). Ajuste a imagem, a instalação da stack e os comandos.
 #
-# Estágios: verificar e seguranca (todo push e MR), homologacao (push na main),
-# producao (tag vX.Y.Z, só se a release tiver o go registrado).
+# Git Flow: features entram em develop por MR; release/X.Y.Z e hotfix/X.Y.Z
+# vão para homologação; a tag vX.Y.Z (criada em main pelo sdd-gitflow
+# finalizar, depois do go) vai para produção.
+#
+# Estágios: verificar e seguranca (todo push e MR; o sdd-verificar recusa MR
+# fora do fluxo, como feature/* direto para main), homologacao (push em
+# release/* e hotfix/*), producao (tag vX.Y.Z, só se a release tiver o go).
+# Pipelines de branch, de tag e de merge request (sem este bloco, o GitLab não
+# roda os jobs nos merge requests, e o sdd-verificar não confere o fluxo deles).
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+
 stages: [verificar, implantar]
 
 variables:
-  SDD_VERSAO: v0.1.0   # versão fixa do plugin SDD usada no CI
+  SDD_VERSAO: {{versão do plugin SDD instalado, ex.: v1.0.0}}   # fixa, para o CI não mudar sozinho
 
 default:
   image: {{imagem da stack, ex.: node:22}}
@@ -31,7 +46,7 @@ seguranca:
 homologacao:
   stage: implantar
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH =~ /^(release|hotfix)\//'
   environment: homologacao
   script:
     - {{comando_deploy_homologacao}}

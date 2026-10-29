@@ -11,8 +11,9 @@ REVISÃO        seguranca -> [decisão] -> auditar -> [decisão]  ==> feature PR
 ENTREGA        release: preparar (testes de sistema, roteiro, notas)
                -> homologar -> [aceite do negócio] -> plano de implantação
                -> [go/no-go] -> implantar -> verificar -> concluir  ==> PRODUÇÃO
-DEVOPS         pipeline: verificar e seguranca em todo push; homologação na main;
-               produção na tag vX.Y.Z, só com o go registrado
+DEVOPS         pipeline: verificar e seguranca em todo push; homologação no
+               push de release/ e hotfix/; produção na tag vX.Y.Z, só com o
+               go registrado
 MANUTENÇÃO     incidente -> mitigar -> hotfix (red, green, spec retroativa)
                -> release de hotfix -> resolver -> post-mortem -> backlog
 ```
@@ -35,7 +36,8 @@ MANUTENÇÃO     incidente -> mitigar -> hotfix (red, green, spec retroativa)
 | `pronta` | `homologacao` | `sdd-release homologar` | testes de sistema aprovados |
 | `homologacao` | `producao` | `sdd-release concluir` | aceite e go registrados |
 | `homologacao` | `green` | `sdd-release reprovar` | reprovada no aceite |
-| `pronta`, `homologacao`, `cancelada` | `especificacao` ou `green` | `sdd-estado reabrir --motivo` | invalida aprovações da fase em diante |
+| `pronta`, `cancelada` | `especificacao` ou `green` (a cancelada, sempre `especificacao`) | `sdd-estado reabrir --motivo` | invalida aprovações da fase em diante |
+| `homologacao` | `green` | `sdd-release reprovar` | as demais features da release voltam a `pronta` |
 | qualquer, menos `homologacao` e `producao` | `cancelada` | `sdd-estado cancelar --motivo` | |
 | `producao` | | | não se reabre: feature nova ou incidente |
 

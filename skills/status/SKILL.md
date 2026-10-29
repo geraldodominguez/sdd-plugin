@@ -3,7 +3,7 @@ name: status
 description: A situação do projeto num quadro. Mostra a sprint atual, as features em cada coluna (especificação, planejamento, implementação, revisão, pronta, homologação), a release em andamento, os incidentes abertos, o topo do backlog e quanto está esperando por você, e diz qual comando rodar em seguida.
 argument-hint: "[NNN-slug para o detalhe de uma feature]"
 disable-model-invocation: true
-allowed-tools: Bash(sdd-status *), Bash(sdd-status), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-sprint *), Bash(sdd-pendencias *), Bash(sdd-release *), Bash(sdd-incidente *), Bash(sdd-sistema *)
+allowed-tools: Bash(sdd-gitflow *), Bash(sdd-status *), Bash(sdd-status), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-sprint *), Bash(sdd-pendencias *), Bash(sdd-release *), Bash(sdd-incidente *), Bash(sdd-sistema *)
 ---
 
 # /sdd:status

@@ -23,11 +23,26 @@ E mantém você no controle: cada aprovação fica registrada com o hash do que 
 aprovado, um quadro mostra a situação de todas as features e releases, e uma
 caixa de entrada lista o que espera a sua decisão.
 
-É pequeno de propósito: vinte skills, seis subagents, dois hooks e onze
+E usa o mesmo **Git Flow** em todo projeto: `main`, `develop`,
+`feature/NNN-slug`, `release/X.Y.Z` e `hotfix/X.Y.Z`, com as branches criadas,
+juntadas e marcadas com a tag `vX.Y.Z` nos momentos certos do ciclo. Nenhum
+agente inventa outro nome. Ver [Git Flow](docs/referencia/git-flow.md).
+As versões seguem o SemVer e são **calculadas pelos commits** (Conventional
+Commits), com o `CHANGELOG.md` no formato Keep a Changelog. Ver
+[versionamento](docs/referencia/versionamento.md).
+
+É pequeno de propósito: vinte skills, seis subagents, dois hooks e treze
 utilitários em bash. Tudo em markdown legível. Adapte à vontade.
 
-> **Primeira vez?** Leia o [guia do desenvolvedor](docs/referencia/guia-do-desenvolvedor.md)
-> (do zero ao primeiro deploy, com os comandos de cada etapa) e depois o
+> **Primeira vez?** Escolha o guia passo a passo da sua situação:
+>
+> | Você tem | Leia |
+> |---|---|
+> | um repositório novo | [começar um projeto novo](docs/referencia/projeto-novo.md) |
+> | um projeto em andamento, com ou sem specs e tarefas de outros agentes | [adotar o SDD num projeto em andamento](docs/referencia/projeto-em-andamento.md) |
+>
+> Depois, o [guia do desenvolvedor](docs/referencia/guia-do-desenvolvedor.md)
+> (o dia a dia, com os comandos de cada etapa) e o
 > [ciclo de vida](docs/referencia/ciclo-de-vida.md) (o mapa do processo
 > inteiro: etapas, gates, quem decide o quê e onde fica cada coisa).
 
@@ -67,7 +82,8 @@ Uma vez por repositório. Ele:
 
 - cria `.sdd/` (configuração, backlog, sprints, templates), `specs/`, `sistema/` e `docs/adr/`;
 - lê o seu código e rascunha a **constituição**, as regras que valem para todas as features (arquitetura, testes, segurança, ambientes, operação);
-- injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md`.
+- injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md`;
+- num projeto que não nasceu com o plugin, lê as specs, planos, tarefas e ADRs que outros processos e agentes deixaram (em `docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`, `.specify/`...) e, com a sua aprovação do mapa, os renomeia e converte para o padrão. Cada feature em andamento entra numa **transição** que mostra como era e como fica, com as tarefas feitas fora do plugin marcadas `[O]`; aprovada a transição, o plugin continua de onde o outro processo parou. Ver [projetos existentes](docs/referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
 
 Depois, revise a constituição e preencha no `.sdd/config.yml` o que o plugin não
 adivinha: `areas_sensiveis` (caminhos que exigem revisão de segurança) e os
@@ -83,6 +99,7 @@ comandos de teste, varredura de segurança e deploy. Para o CI, rode
 | features prontas para ir a produção | `/sdd:release preparar` |
 | algo quebrado em produção | `/sdd:incidente abrir` |
 | um sistema que já existe e quer documentar uma parte | `/sdd:sistema mapear` |
+| specs e tarefas espalhadas por outros agentes | `/sdd:iniciar --adotar` |
 
 Perdeu o fio? `/sdd:status` mostra o quadro, `/sdd:pendencias` mostra o que
 espera você, e `/sdd:ajuda` diz qual comando serve para a sua situação.
@@ -277,7 +294,8 @@ flowchart LR
     H --> AC{"aceite do<br/>negócio"}
     AC -->|reprovado| V["feature volta<br/>ao green"]
     AC --> GO{"go/no-go"}
-    GO --> PI["pipeline<br/>pode-implantar"]
+    GO --> FI["sdd-gitflow finalizar<br/>main e tag vX.Y.Z"]
+    FI --> PI["pipeline<br/>pode-implantar"]
     PI --> PR((produção))
     PR --> I["/sdd:incidente"]
     I --> HF["hotfix<br/>red, green, spec retroativa"]
@@ -316,9 +334,9 @@ artefatos que ela produz estão em [exemplos/](exemplos/).
 | Começo da sprint | `/sdd:sprint planejar`, depois `/sdd:especificar B-NNN` para cada item |
 | Trabalhando numa feature | o comando que o `/sdd:status` recomenda; no fim de cada fase, `/sdd:aprovar` |
 | Voltando a uma feature | `/sdd:retomar` |
-| A feature ficou pronta | `/sdd:sistema consolidar` |
+| A feature ficou pronta | o `/sdd:aprovar` consolida na spec do sistema e integra em `develop` (`/sdd:sistema consolidar` só para uma pendente) |
 | Hora de entregar | `/sdd:release preparar`, `homologar`, `aceitar`, `implantar`, `concluir` |
-| Quebrou em produção | `/sdd:incidente abrir`, `hotfix`, `encerrar` |
+| Quebrou em produção | `/sdd:incidente abrir`, `mitigar`, `hotfix`, `resolver`, `post-mortem` |
 | Fim da sprint | `/sdd:sprint encerrar` |
 | Não sei o que fazer | `/sdd:ajuda` |
 
@@ -337,7 +355,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 - **[ajuda](skills/ajuda/SKILL.md)**: Qual comando ou fluxo serve para a sua situação. Um roteador sobre os comandos do plugin.
 - **[status](skills/status/SKILL.md)**: O quadro do projeto: sprint, features por coluna, backlog e o que espera você, com o próximo comando.
-- **[pendencias](skills/pendencias/SKILL.md)**: A caixa de entrada: aprovações, dúvidas, ADRs, delta specs, backlog a triar e itens da sprint sem spec.
+- **[pendencias](skills/pendencias/SKILL.md)**: A caixa de entrada: incidentes, releases, aprovações (inclusive transições), dúvidas, ADRs, delta specs, backlog a triar, itens da sprint sem spec, artefatos fora do padrão e problemas de Git Flow.
 - **[retomar](skills/retomar/SKILL.md)**: O que aconteceu numa feature desde a última vez e qual é o próximo passo.
 - **[backlog](skills/backlog/SKILL.md)**: Ideias e pedidos ainda sem spec: listar, adicionar, priorizar, descartar.
 - **[sprint](skills/sprint/SKILL.md)**: Planejar, acompanhar e encerrar sprints.
@@ -376,11 +394,15 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Hooks e utilitários
 
-- **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`.
-- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear` e `sdd-verificar`, as transições de fase e onde o estado e o histórico moram.
+- **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`, os artefatos novos fora do lugar do padrão, e o que o `guarda-commits` confere nos commits (Git Flow e Conventional Commits).
+- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-adotar` e `sdd-gitflow`, as transições de fase e onde o estado e o histórico moram.
 
 ### Guias
 
+- [Começar um projeto novo, passo a passo](docs/referencia/projeto-novo.md)
+- [Adotar o SDD num projeto em andamento, passo a passo](docs/referencia/projeto-em-andamento.md)
+- [Git Flow: as branches de cada momento do ciclo](docs/referencia/git-flow.md)
+- [Versionamento: SemVer, Conventional Commits e o CHANGELOG](docs/referencia/versionamento.md)
 - [Guia do desenvolvedor: do zero ao primeiro deploy](docs/referencia/guia-do-desenvolvedor.md)
 - [Ciclo de vida: o processo inteiro, etapa por etapa](docs/referencia/ciclo-de-vida.md)
 - [Guia de acompanhamento: a rotina do humano](docs/referencia/acompanhamento.md)
@@ -401,10 +423,25 @@ specs/NNN-slug/          uma feature: spec, plano, contratos, tarefas, seguranç
 sistema/<capacidade>.md  o que o sistema faz hoje (spec viva)
 releases/<versão>/       uma release: testes, homologação, implantação, notas, estado, histórico
 incidentes/INC-NNN.md    um incidente, com linha do tempo e post-mortem
-docs/adr/                decisões de arquitetura
+docs/adr/NNNN-slug.md    decisões de arquitetura
+docs/arquitetura/        documentos e diagramas de arquitetura, como referência
+docs/legado/             o que veio de outro processo e não entra no fluxo
 ```
 
-Tudo é markdown ou texto, versionado no git, legível sem o plugin.
+E as branches, sempre com estes nomes:
+
+```
+main                     produção; só recebe merge de release/ e hotfix/, com a tag vX.Y.Z
+develop                  integração; recebe as features prontas
+feature/NNN-slug         uma por feature, com o id da pasta em specs/
+release/X.Y.Z            uma por release, de develop para main
+hotfix/X.Y.Z             uma por hotfix, de main para main e develop
+```
+
+Tudo é markdown ou texto, versionado no git, legível sem o plugin. Esse layout
+é um contrato: o hook bloqueia criar um artefato fora dele, para que cada
+agente não invente a própria estrutura, e o `/sdd:iniciar --adotar` traz de
+volta o que escapou.
 
 ## Licença
 

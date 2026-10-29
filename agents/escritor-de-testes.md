@@ -33,6 +33,17 @@ conhece, e não precisa conhecer, a implementação futura.
    comportamento**. Erro de import de módulo que o plano manda criar é aceitável.
    Erro de sintaxe ou de configuração do teste não é: corrija.
 
+## Feature adotada
+
+Se recebeu tarefas `[O]` (feitas fora do plugin, antes da adoção) e a tabela
+"Testes que já existiam" do `transicao.md`:
+
+- acrescente a marca `sdd:NNN:CA-XXX` aos testes listados, sem mudar mais nada neles;
+- escreva os testes que faltam para os CAs dessas tarefas, como para qualquer CA;
+- esses testes devem **passar**: o comportamento já existe. Se algum falhar,
+  não ajuste o teste para passar. Relate qual CA falhou e por quê: é o
+  trabalho de fora que não cumpre a spec, e a decisão é do usuário.
+
 ## Hotfix
 
 Se a feature é um hotfix (a spec ainda está por preencher e você recebeu um

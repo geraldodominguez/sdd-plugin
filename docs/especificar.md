@@ -24,6 +24,12 @@ testes), diz que não precisa de spec.
 
 O [`/sdd:iniciar`](iniciar.md) rodado no repositório.
 
+## A branch da feature
+
+Com o Git Flow ativo (o padrão), ela cria a branch `feature/NNN-slug` a partir
+de `develop`, com o mesmo id da pasta `specs/NNN-slug/`, e muda para ela. Toda
+a feature, da spec ao código, é commitada ali. Ver [Git Flow](referencia/git-flow.md).
+
 ## Capacidade e segurança
 
 Antes de escrever, ela decide duas coisas com você:

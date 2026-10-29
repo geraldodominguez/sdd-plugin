@@ -1,7 +1,7 @@
 {
   "name": "sdd",
   "displayName": "SDD: Specification-Driven Development",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Specification-Driven Development do pedido à manutenção: spec versionada como fonte de verdade, rigor proporcional ao risco, gates aprovados e registrados, revisão de segurança e auditoria independentes, spec viva do sistema, releases com homologação e go/no-go, incidentes com hotfix e post-mortem, e um quadro que mantém o humano no controle.",
   "author": {
     "name": "Geraldo Dominguez (OUTCODE)"

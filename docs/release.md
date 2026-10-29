@@ -49,15 +49,33 @@ medidos. **Homologação** é a validação de quem usa: o roteiro vem dos crit�
 de aceitação, reescritos sem termos técnicos. **Go/no-go** é uma pergunta
 explícita, respondida depois de ler o plano de implantação e o rollback.
 
+## As branches
+
+| Momento | No git (Git Flow) |
+|---|---|
+| `preparar` | `release/X.Y.Z` nasce de `develop`; o push dela vai para homologação |
+| correção pedida na homologação | commit em `release/X.Y.Z` |
+| go no `implantar` | `sdd-gitflow finalizar X.Y.Z`: merge em `main`, tag `vX.Y.Z`, merge de volta em `develop`. O push da tag dispara o deploy de produção |
+| release de hotfix | a branch é a `hotfix/X.Y.Z` do incidente, com a mesma versão |
+
+Com `integracao: pr`, a release vai para `main` por pull request, e o
+`sdd-gitflow finalizar X.Y.Z --apos-pr` faz a tag e o `develop`. Ver
+[Git Flow](referencia/git-flow.md).
+
 ## A versão
 
-| Mudança na release | Versão |
-|---|---|
-| quebra um contrato público (API, evento, schema consumido por outros) | major |
-| traz capacidade ou comportamento novo | minor |
-| só correções | patch |
+SemVer, calculado pelos commits (Conventional Commits) desde a última release
+em produção. O `sdd-release analisar` mostra a sugestão e o motivo; você decide.
 
-`sdd-release proxima <tipo>` calcula a partir da última release em produção.
+| Os commits da release têm | Versão |
+|---|---|
+| `!` ou `BREAKING CHANGE:` (quebra um contrato público) | major (antes da 1.0.0, minor) |
+| `feat` (comportamento novo) | minor |
+| só `fix`, `perf` ou manutenção | patch |
+
+Antes do go, o `sdd-release changelog X.Y.Z --escrever` grava a seção da versão
+no `CHANGELOG.md` (formato Keep a Changelog). Para um release candidate,
+`sdd-release proxima --pre rc`. Detalhes em [versionamento](referencia/versionamento.md).
 
 ## Perguntas frequentes
 

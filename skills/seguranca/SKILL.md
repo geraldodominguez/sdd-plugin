@@ -1,7 +1,7 @@
 ---
 name: seguranca
 description: Revisão de segurança independente da feature ativa. Um subagent com contexto limpo modela as ameaças, roda as varreduras (dependências, segredos, análise estática), confere a LGPD e grava seguranca.md; a decisão (aprovar, aceitar o risco ou corrigir) é sua.
-argument-hint: "[ref git base, por exemplo main]"
+argument-hint: "[ref git base, por exemplo develop]"
 disable-model-invocation: true
 allowed-tools: Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(git diff *), Bash(git log *), Bash(git merge-base *), Read, Glob, Grep
 ---
@@ -30,7 +30,7 @@ contexto.
    Rode `sdd-estado definir fase=seguranca`.
 
 2. **Defina a base da comparação.** Use `$ARGUMENTS`, se veio. Senão,
-   `git merge-base HEAD main` (ou `master`). Sem resultado, pergunte.
+   `git merge-base HEAD develop` com o Git Flow ativo (a feature nasceu de `develop`; contra `main`, o diff traria as features de `develop` ainda não lançadas), ou `git merge-base HEAD main` com `gitflow: desligado`. Sem resultado, pergunte.
 
 3. **Chame a ferramenta Agent com o subagent `revisor-de-seguranca`**,
    passando **apenas**:

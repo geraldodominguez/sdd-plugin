@@ -5,4 +5,5 @@ seguranca=obrigatoria
 capacidade=autenticacao
 release=0.1.0
 fase=producao
+branch=feature/001-redefinicao-de-senha
 atualizado=2026-11-04T15:12:40Z
