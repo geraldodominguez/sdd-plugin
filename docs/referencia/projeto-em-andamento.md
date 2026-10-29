@@ -433,7 +433,7 @@ O que a aprovação registrou no `historico.md` da feature:
 ```
 - ... | aprovacao | spec.md | hash=fc76fa2181b4 | decisao: transicao | por: Ana (tech lead)
 - ... | aprovacao | tarefas.md | hash=c4f8c4e8ab91 | decisao: transicao | por: Ana (tech lead)
-- ... | aprovacao | transicao.md | hash=d19f70bb82d6 | decisao: transicao | por: Ana (tech lead)
+- ... | aprovacao | transicao.md | hash=6e805d5df57d | decisao: transicao | por: Ana (tech lead)
 - ... | fase | especificacao para red (transição aprovada) | por: Ana (tech lead)
 ```
 

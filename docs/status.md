@@ -30,7 +30,7 @@ Git Flow: em feature/005-exportar-csv
 
 Sprint 2026-S44 (ativa) · 2026-10-26 a 2026-11-06 · faltam 4 dias
 Objetivo: clientes recuperam o acesso sozinhos
-Progresso: 1/3 itens entregues · 11/19 tarefas
+Progresso: 0/3 itens concluídos · 6/6 tarefas
 
 QUADRO   ▶ feature ativa   ★ na sprint atual
 Especificação
@@ -50,14 +50,24 @@ Produção: 14 feature(s) · Cancelada: 1
 
 RELEASE
   Release 1.2.0 (homologacao, normal) · objetivo: autoatendimento de senha
-  próximo: executar o roteiro e 'sdd-release aceitar 1.2.0 --por "Nome"'
+    001-redefinicao-de-senha           homologacao
+    documentos:
+      ✓ testes.md
+      ✓ homologacao.md
+      · implantacao.md (a preencher)
+      · notas.md (a preencher)
+    próximo: executar o roteiro e 'sdd-release aceitar 1.2.0 --por "Nome"'
 
 INCIDENTES ABERTOS: 1
   INC-003  S3  mitigado   Exportação lenta para relatórios grandes
 
-BACKLOG: 5 item(ns) aberto(s)
+BACKLOG: 7 item(ns) aberto(s)
   B-014  alta   n2  Login com conta Google
-  ...
+  B-015  alta   n1  Exportar pedidos em PDF
+  B-016  media  n1  Tema escuro
+  B-017  media  n?  Notificação por e-mail
+  B-018  baixa  n1  Busca por cliente
+  ... (/sdd:backlog para ver todos)
 
 ESPERANDO VOCÊ: 6 item(ns) (/sdd:pendencias)
 ```

@@ -327,17 +327,17 @@ determinística. Ver [proteção por hooks](protecao-por-hooks.md).
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
 | "spec.md não está aprovado ou mudou depois da aprovação" | alguém editou a spec depois de aprovar | `git diff` para ver a mudança; aprove de novo ou reverta |
-| "teste alterado depois da aprovação" | um teste da feature mudou depois da fase red | se foi intencional, volte à spec, corrija o critério e reaprove os testes |
+| "testes não está aprovado ou mudou depois da aprovação" | um teste da feature mudou depois da fase red | se foi intencional, volte à spec, corrija o critério e reaprove os testes |
 | o hook bloqueou um arquivo que não é teste | `globs_de_teste` amplo demais | ajuste no `.sdd/config.yml` |
 | `sdd-rastrear` diz que um CA não tem teste | marca sem o número da feature | use `sdd:004:CA-003`, não `sdd:CA-003` |
-| "a feature X está em pronta" ao tentar mudar a fase | ela já saiu da construção | `sdd-estado reabrir --motivo` |
+| "a feature X está em 'pronta'" ao tentar mudar a fase | ela já saiu da construção | `sdd-estado reabrir --motivo` |
 | o CI falha em `sdd-verificar` | aprovação invalidada ou lacuna | rode `sdd-verificar` localmente e siga a lista |
 | `sdd-*: command not found` | plugin fora da sessão | `/reload-plugins`; no Windows, confirme o Git Bash |
 | "a mensagem ... não segue o Conventional Commits" | commit como "ajustes" ou "wip" | reescreva: `tipo(NNN): T-XXX descrição` (ver [versionamento](versionamento.md)) |
 | commit bloqueado em `develop` | há uma feature ativa em construção ou revisão, e o commit dela vai na branch dela | `sdd-gitflow esperada` diz a branch; `sdd-gitflow feature NNN-slug` muda para ela |
 | commit bloqueado em `main` | `main` só recebe merge de release | mude para `develop` ou para a branch da feature |
 | o repositório tem `master` (o padrão do `git init`) | o nome fora do padrão | `sdd-gitflow renomear master main` (o `/sdd:iniciar` propõe isso) |
-| "há alteração pendente em código" ao trocar de branch | o `sdd-gitflow` leva só os arquivos do SDD | faça o commit (ou `git stash`) do código antes |
+| "há alterações não commitadas em código" ao trocar de branch | o `sdd-gitflow` leva só os arquivos do SDD | faça o commit (ou `git stash`) do código antes |
 | conflito no `.sdd/historico.md` num merge | repositório sem o `.gitattributes` do SDD | rode `/sdd:iniciar` de novo (sem `--forcar`); ele acrescenta o merge por união e não mexe no config nem na constituição |
 
 Mais em [FAQ e projetos existentes](projetos-existentes.md).

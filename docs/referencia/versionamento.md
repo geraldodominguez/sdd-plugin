@@ -86,6 +86,7 @@ SDD bloqueou o commit: a mensagem "ajustes" não segue o Conventional Commits.
 Formato: tipo(escopo): descrição. Tipos: feat (funcionalidade, sobe o minor), fix (correção, sobe o patch), perf, docs, chore, refactor, test, build, ci, style, revert.
 Mudança incompatível: tipo(escopo)!: descrição, ou o rodapé BREAKING CHANGE: (sobe o major).
 O escopo é o número da feature. Exemplo: feat(004): T-002 valida token expirado.
+Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir.
 ```
 
 Mensagens `Merge ...` e `Revert ...` (as que o git gera) e commits feitos pelo

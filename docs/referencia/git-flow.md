@@ -101,7 +101,8 @@ O mesmo ciclo, como fica no `git log --graph` de um projeto real (a
 |\
 | *   (tag: v0.1.1, main) release: hotfix/0.1.1 em main
 | |\
-| | * (hotfix/0.1.1) fix(002): T-001 invalida o link após o uso
+| | * (hotfix/0.1.1) docs(release): changelog 0.1.1
+| | * fix(002): T-001 invalida o link após o uso
 | |/
 * | docs(002): INC-001 hotfix aberto
 * | docs: INC-001 aberto e mitigado
