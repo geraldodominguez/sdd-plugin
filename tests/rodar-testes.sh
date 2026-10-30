@@ -7,6 +7,10 @@ set -uo pipefail
 PLUGIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="$PLUGIN/bin:$PATH"
 unset CLAUDE_PROJECT_DIR CLAUDE_PLUGIN_ROOT
+# As variáveis do CI (GitHub Actions, GitLab) descrevem o repositório do plugin,
+# não os projetos de teste: o sdd-verificar as leria como o pull request em curso.
+unset GITHUB_HEAD_REF GITHUB_BASE_REF GITHUB_REF_NAME GITHUB_REF_TYPE \
+  CI_MERGE_REQUEST_SOURCE_BRANCH_NAME CI_MERGE_REQUEST_TARGET_BRANCH_NAME CI_COMMIT_BRANCH CI_COMMIT_TAG
 
 # Os resultados vão para um arquivo, porque muitas asserções rodam em subshell
 # (cd "$X" && ...) e uma variável incrementada lá dentro se perderia.
@@ -783,9 +787,11 @@ out="$(cd "$G" && sdd-gitflow integrar $GF 2>&1)"; code=$?
 (cd "$G" && assert_exit 1 "finalizar recusa sem o go" sdd-gitflow finalizar 0.1.0)
 GR="$G/releases/0.1.0"
 subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "$GR/testes.md" "$GR/homologacao.md"
-(cd "$G" && sdd-release homologar 0.1.0 >/dev/null)
+(cd "$G" && assert_exit 0 "homologar a release do Git Flow" sdd-release homologar 0.1.0)
 subst 's/| pendente |/| aprovado |/' "$GR/homologacao.md"; subst 's/{{[^}]*}}/ok/g' "$GR/implantacao.md" "$GR/notas.md"
-(cd "$G" && sdd-release aceitar 0.1.0 --por "Bia" >/dev/null && sdd-release autorizar 0.1.0 >/dev/null && git add -A && git commit -qm "chore(release): go")
+(cd "$G" && assert_exit 0 "aceitar a release do Git Flow" sdd-release aceitar 0.1.0 --por "Bia")
+(cd "$G" && assert_exit 0 "autorizar a release do Git Flow" sdd-release autorizar 0.1.0)
+(cd "$G" && git add -A && git commit -qm "chore(release): go")
 out="$(cd "$G" && sdd-pendencias)"
 echo "$out" | grep -q 'a release 0.1.0 tem o go e ainda não foi para main' && ok "pendências cobram a ida para main" || fail "pendência finalizar" "$out"
 (cd "$G" && assert_exit 0 "finalizar com o go" sdd-gitflow finalizar 0.1.0)
@@ -989,6 +995,30 @@ W10="$TMP/cenario-revertida"; mkdir -p "$W10"
   && printf 'fase=producao\ntipo=normal\natualizado=x\n' > releases/0.1.0/estado && GT add -A && GT commit -qm "chore: x" && git tag v0.1.0 \
   && GT commit -q --allow-empty -m "feat: y" && git tag v0.2.0)
 [ "$(cd "$W10" && sdd-release proxima patch)" = "0.2.1" ] && ok "a tag mais nova é a base, mesmo com a release dela revertida" || fail "base revertida" "$(cd "$W10" && sdd-release proxima patch 2>&1)"
+
+echo "compatibilidade com o bash 3.2 (macOS)"
+if command -v python3 >/dev/null 2>&1; then
+  out="$(python3 "$PLUGIN/tests/bash32.py" "$PLUGIN"/bin/* "$PLUGIN"/lib/*.sh "$PLUGIN"/scripts/*.sh 2>&1)" \
+    && ok "nenhuma construção que o bash 3.2 não entende" || fail "construção incompatível com o bash 3.2" "$out"
+else
+  ok "python3 ausente: conferência do bash 3.2 pulada"
+fi
+# sdd-estado usar só aponta a feature; avisa quando a branch dela não existe.
+U2="$TMP/cenario-usar"; mkdir -p "$U2"
+(cd "$U2" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && sdd-gitflow iniciar >/dev/null 2>&1 && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Carrinho" >/dev/null)
+FU="$(cd "$U2/specs" && ls -d ./*-carrinho | sed 's#^\./##')"
+out="$(cd "$U2" && sdd-estado usar "$FU" 2>&1)"
+printf '%s' "$out" | grep -q "ainda não existe. Para criá-la: sdd-gitflow feature $FU" && ok "usar avisa que a branch da feature não existe" || fail "aviso do usar" "$out"
+(cd "$U2" && sdd-gitflow feature "$FU" >/dev/null 2>&1)
+out="$(cd "$U2" && sdd-estado usar "$FU" 2>&1)"
+printf '%s' "$out" | grep -q '^Aviso' && fail "usar não avisa na branch certa" "$out" || ok "usar não avisa na branch certa"
+
+# Finais de linha (CRLF do Windows com core.autocrlf) não invalidam a aprovação.
+subst 's/$/\r/' "$W6/specs/001-cupom/spec.md"
+(cd "$W6" && sdd-estado aprovar spec.md --sem-avancar >/dev/null 2>&1)
+subst 's/\r$//' "$W6/specs/001-cupom/spec.md"
+(cd "$W6" && assert_exit 0 "CRLF para LF não invalida a aprovação da spec" sdd-estado aprovado spec.md 001-cupom)
 
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"

@@ -8,7 +8,8 @@
 #   sdd-estado nova "título" [--nivel N] [--origem B-NNN|INC-NNN] [--tipo hotfix]
 #                  [--capacidade nome] [--seguranca obrigatoria|dispensada]
 #                                              cria specs/NNN-slug/ e ativa a feature
-#   sdd-estado usar <NNN-slug>                 ativa uma feature existente
+#   sdd-estado usar <NNN-slug>                 ativa uma feature existente (só o ponteiro: não
+#                                              troca de branch; avisa se a branch dela é outra)
 #   sdd-estado aprovar [artefato] [--decisao D] [--sem-avancar] [--nota "texto"]
 #                                              registra a aprovação humana e avança a fase;
 #                                              numa feature adotada em transição, aprova a
@@ -293,6 +294,21 @@ case "$cmd" in
     existe_feature "$id"
     sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$id"
     "$0" ver
+    # O "usar" só aponta a feature ativa; ele não troca de branch. Com o Git
+    # Flow, avise quando a branch atual não é a da feature.
+    if sdd_gitflow_ativo "$RAIZ"; then
+      fase_u="$(sdd_feature_ler "$RAIZ" "$id" fase)"
+      if ! sdd_fase_protegida "$fase_u"; then
+        b_u="$(sdd_branch_da_feature "$RAIZ" "$id")"; atual_u="$(sdd_branch_atual "$RAIZ")"
+        if [ -n "$atual_u" ] && [ "$atual_u" != "$b_u" ]; then
+          if git -C "$RAIZ" show-ref --verify --quiet "refs/heads/$b_u"; then
+            echo "Aviso: a feature $id é feita em $b_u, e você está em $atual_u. Para ir até ela: sdd-gitflow feature $id" >&2
+          else
+            echo "Aviso: a branch da feature $id ($b_u) ainda não existe. Para criá-la: sdd-gitflow feature $id" >&2
+          fi
+        fi
+      fi
+    fi
     ;;
 
   encerrar)
