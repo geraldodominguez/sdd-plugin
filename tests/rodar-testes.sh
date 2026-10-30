@@ -787,9 +787,11 @@ out="$(cd "$G" && sdd-gitflow integrar $GF 2>&1)"; code=$?
 (cd "$G" && assert_exit 1 "finalizar recusa sem o go" sdd-gitflow finalizar 0.1.0)
 GR="$G/releases/0.1.0"
 subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "$GR/testes.md" "$GR/homologacao.md"
-(cd "$G" && sdd-release homologar 0.1.0 >/dev/null)
+(cd "$G" && assert_exit 0 "homologar a release do Git Flow" sdd-release homologar 0.1.0)
 subst 's/| pendente |/| aprovado |/' "$GR/homologacao.md"; subst 's/{{[^}]*}}/ok/g' "$GR/implantacao.md" "$GR/notas.md"
-(cd "$G" && sdd-release aceitar 0.1.0 --por "Bia" >/dev/null && sdd-release autorizar 0.1.0 >/dev/null && git add -A && git commit -qm "chore(release): go")
+(cd "$G" && assert_exit 0 "aceitar a release do Git Flow" sdd-release aceitar 0.1.0 --por "Bia")
+(cd "$G" && assert_exit 0 "autorizar a release do Git Flow" sdd-release autorizar 0.1.0)
+(cd "$G" && git add -A && git commit -qm "chore(release): go")
 out="$(cd "$G" && sdd-pendencias)"
 echo "$out" | grep -q 'a release 0.1.0 tem o go e ainda não foi para main' && ok "pendências cobram a ida para main" || fail "pendência finalizar" "$out"
 (cd "$G" && assert_exit 0 "finalizar com o go" sdd-gitflow finalizar 0.1.0)
