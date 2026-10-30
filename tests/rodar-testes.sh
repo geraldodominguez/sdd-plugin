@@ -990,6 +990,24 @@ W10="$TMP/cenario-revertida"; mkdir -p "$W10"
   && GT commit -q --allow-empty -m "feat: y" && git tag v0.2.0)
 [ "$(cd "$W10" && sdd-release proxima patch)" = "0.2.1" ] && ok "a tag mais nova é a base, mesmo com a release dela revertida" || fail "base revertida" "$(cd "$W10" && sdd-release proxima patch 2>&1)"
 
+echo "compatibilidade com o bash 3.2 (macOS)"
+if command -v python3 >/dev/null 2>&1; then
+  out="$(python3 "$PLUGIN/tests/bash32.py" "$PLUGIN"/bin/* "$PLUGIN"/lib/*.sh "$PLUGIN"/scripts/*.sh 2>&1)" \
+    && ok "nenhuma construção que o bash 3.2 não entende" || fail "construção incompatível com o bash 3.2" "$out"
+else
+  ok "python3 ausente: conferência do bash 3.2 pulada"
+fi
+# sdd-estado usar só aponta a feature; avisa quando a branch dela não existe.
+U2="$TMP/cenario-usar"; mkdir -p "$U2"
+(cd "$U2" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
+  && sdd-gitflow iniciar >/dev/null 2>&1 && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Carrinho" >/dev/null)
+FU="$(cd "$U2/specs" && ls -d ./*-carrinho | sed 's#^\./##')"
+out="$(cd "$U2" && sdd-estado usar "$FU" 2>&1)"
+printf '%s' "$out" | grep -q "ainda não existe. Para criá-la: sdd-gitflow feature $FU" && ok "usar avisa que a branch da feature não existe" || fail "aviso do usar" "$out"
+(cd "$U2" && sdd-gitflow feature "$FU" >/dev/null 2>&1)
+out="$(cd "$U2" && sdd-estado usar "$FU" 2>&1)"
+printf '%s' "$out" | grep -q '^Aviso' && fail "usar não avisa na branch certa" "$out" || ok "usar não avisa na branch certa"
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"

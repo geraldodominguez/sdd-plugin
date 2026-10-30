@@ -72,16 +72,25 @@ $(printf '%s\n' "$sujos" | sed 's/^/  /')"
 # do sistema, releases, incidentes, docs, CLAUDE.md, AGENTS.md, .gitattributes)
 # vão junto para a branch nova, e são commitadas lá. Alteração em código não:
 # ela é de outro trabalho e não pode vazar.
-exige_codigo_limpo() {
-  local sujos specs sist rel inc
+# so_codigo: lê caminhos (um por linha) e imprime só os que não são do SDD.
+# Fica numa função própria, fora de um $( ), porque o bash 3.2 do macOS não
+# entende um "case" com padrões sem "(" dentro de uma substituição de comando:
+# o ")" do padrão fecha o $( ), e o script quebra com erro de sintaxe.
+so_codigo() {
+  local f specs sist rel inc
   specs="$(sdd_pasta_specs "$RAIZ")"; sist="$(sdd_pasta_sistema "$RAIZ")"
   rel="$(sdd_pasta_releases "$RAIZ")"; inc="$(sdd_pasta_incidentes "$RAIZ")"
-  sujos="$(pendentes | while IFS= read -r f; do
+  while IFS= read -r f; do
     case "$f" in
       .sdd/*|"$specs"/*|"$sist"/*|"$rel"/*|"$inc"/*|docs/*|CLAUDE.md|AGENTS.md|.gitattributes|CHANGELOG.md) continue ;;
     esac
     printf '%s\n' "$f"
-  done)"
+  done
+}
+
+exige_codigo_limpo() {
+  local sujos
+  sujos="$(pendentes | so_codigo)"
   [ -z "$sujos" ] || erro "há alterações não commitadas em código. Faça o commit (ou o stash) antes de trocar de branch:
 $(printf '%s\n' "$sujos" | sed 's/^/  /')"
 }
