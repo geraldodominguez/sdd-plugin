@@ -7,6 +7,10 @@ set -uo pipefail
 PLUGIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="$PLUGIN/bin:$PATH"
 unset CLAUDE_PROJECT_DIR CLAUDE_PLUGIN_ROOT
+# As variáveis do CI (GitHub Actions, GitLab) descrevem o repositório do plugin,
+# não os projetos de teste: o sdd-verificar as leria como o pull request em curso.
+unset GITHUB_HEAD_REF GITHUB_BASE_REF GITHUB_REF_NAME GITHUB_REF_TYPE \
+  CI_MERGE_REQUEST_SOURCE_BRANCH_NAME CI_MERGE_REQUEST_TARGET_BRANCH_NAME CI_COMMIT_BRANCH CI_COMMIT_TAG
 
 # Os resultados vão para um arquivo, porque muitas asserções rodam em subshell
 # (cd "$X" && ...) e uma variável incrementada lá dentro se perderia.
