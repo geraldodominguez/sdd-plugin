@@ -231,7 +231,11 @@ sdd_registrar() {
 # ---------------------------------------------------------------------------
 
 # sdd_hash_stdin: 12 primeiros caracteres do sha256 da entrada.
-sdd_hash_stdin() {
+# Os finais de linha não entram no hash: no Windows, com core.autocrlf, o git
+# troca LF por CRLF ao trocar de branch, e o artefato não mudou.
+sdd_hash_stdin() { tr -d '\r' | sdd_hash_bytes; }
+
+sdd_hash_bytes() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum | cut -c1-12
   elif command -v shasum >/dev/null 2>&1; then shasum -a 256 | cut -c1-12
   elif command -v python3 >/dev/null 2>&1; then python3 -c 'import hashlib,sys;print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:12])'

@@ -1014,6 +1014,12 @@ printf '%s' "$out" | grep -q "ainda não existe. Para criá-la: sdd-gitflow feat
 out="$(cd "$U2" && sdd-estado usar "$FU" 2>&1)"
 printf '%s' "$out" | grep -q '^Aviso' && fail "usar não avisa na branch certa" "$out" || ok "usar não avisa na branch certa"
 
+# Finais de linha (CRLF do Windows com core.autocrlf) não invalidam a aprovação.
+subst 's/$/\r/' "$W6/specs/001-cupom/spec.md"
+(cd "$W6" && sdd-estado aprovar spec.md --sem-avancar >/dev/null 2>&1)
+subst 's/\r$//' "$W6/specs/001-cupom/spec.md"
+(cd "$W6" && assert_exit 0 "CRLF para LF não invalida a aprovação da spec" sdd-estado aprovado spec.md 001-cupom)
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"

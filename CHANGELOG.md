@@ -6,6 +6,22 @@ configuração) sempre sobem a versão maior.
 
 ## Não lançado
 
+## 1.0.2 - 2026-10-30
+
+Correções do uso real no macOS e no Windows. Nenhum formato rastreável mudou.
+
+### Correções
+
+- **`sdd-gitflow` quebrava no macOS** com erro de sintaxe: um `case` dentro de uma substituição de comando `$( )`, que o bash 3.2 (o `/bin/bash` do macOS) não entende. Além de falhar, ele imprimia um trecho do próprio código como se fosse a lista de alterações pendentes. O filtro foi para uma função.
+- **Aprovações invalidadas no Windows:** com o `core.autocrlf` do git, trocar de branch troca LF por CRLF nos arquivos, e o hash do artefato mudava sem ninguém ter mexido nele (a spec aparecia como alterada depois da aprovação, e a release não ia para homologação). Os finais de linha não entram mais no hash; aprovações feitas no Linux e no macOS continuam valendo.
+- O `sdd-estado usar` só aponta a feature ativa e não troca de branch. Agora ele avisa quando a branch da feature ainda não existe, ou quando você está em outra, com o comando para ir até ela.
+
+### Qualidade
+
+- Novo `tests/bash32.py`, rodado pelo `rodar-testes.sh`: acha construções que o bash 3.2 não entende (como o `case` dentro de `$( )`) e recursos do bash 4.
+- O CI roda os testes no macOS também com o `/bin/bash` 3.2 (o bash do runner é o do Homebrew), e anota no resumo de cada job os testes que falham.
+- Os testes ignoram as variáveis do CI (`GITHUB_HEAD_REF`, `GITHUB_BASE_REF` e as do GitLab), que o `sdd-verificar` dos projetos de teste lia como se fossem deles. O CI estava vermelho no Linux, no macOS e no Windows desde a 1.0.0 por isso e pelos dois erros acima.
+
 ## 1.0.1 - 2026-10-29
 
 Correções achadas numa auditoria que percorreu cada cenário das skills

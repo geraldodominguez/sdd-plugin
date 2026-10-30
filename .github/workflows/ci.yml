@@ -47,7 +47,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/bash32" && ln -sf /bin/bash "$RUNNER_TEMP/bash32/bash"
           export PATH="$RUNNER_TEMP/bash32:$PATH"
-          bash --version | head -1
+          echo "::notice title=Bash dos utilitários::$(bash --version | head -1)"
           set +e -o pipefail
           /bin/bash tests/rodar-testes.sh 2>&1 | tee "$RUNNER_TEMP/testes32.log"
           r=$?
