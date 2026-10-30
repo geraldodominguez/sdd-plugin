@@ -26,14 +26,19 @@ jobs:
           set -o pipefail
           tests/rodar-testes.sh 2>&1 | tee "$RUNNER_TEMP/testes.log"
           r=$?
-          grep -a '✗' "$RUNNER_TEMP/testes.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^ *✗ */::error title=Teste falhou::/' | head -40 || true
+          if [ "$r" -ne 0 ]; then
+            grep -a '✗' "$RUNNER_TEMP/testes.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^ *✗ */::error title=Teste falhou::/' | head -40 || true
+            tail -n 15 "$RUNNER_TEMP/testes.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^/::error title=Fim da saída::/' || true
+          fi
           exit $r
       - name: Simulação do ciclo de vida
         run: |
           set -o pipefail
           tests/simular-ciclo.sh 2>&1 | tee "$RUNNER_TEMP/ciclo.log"
           r=$?
-          grep -a -E '✗|rror|sintaxe' "$RUNNER_TEMP/ciclo.log" | sed 's/^/::error title=Simulação::/' | head -40 || true
+          if [ "$r" -ne 0 ]; then
+            tail -n 25 "$RUNNER_TEMP/ciclo.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^/::error title=Simulação::/' || true
+          fi
           exit $r
       # O bash do PATH no runner do macOS é o do Homebrew (5.x). O que o usuário
       # tem é o /bin/bash 3.2: os utilitários rodam com ele aqui.
@@ -46,7 +51,10 @@ jobs:
           set -o pipefail
           /bin/bash tests/rodar-testes.sh 2>&1 | tee "$RUNNER_TEMP/testes32.log"
           r=$?
-          grep -a '✗' "$RUNNER_TEMP/testes32.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^ *✗ */::error title=Teste falhou no bash 3.2::/' | head -40 || true
+          if [ "$r" -ne 0 ]; then
+            grep -a '✗' "$RUNNER_TEMP/testes32.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^ *✗ */::error title=Teste falhou no bash 3.2::/' | head -40 || true
+            tail -n 15 "$RUNNER_TEMP/testes32.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^/::error title=Fim da saída (bash 3.2)::/' || true
+          fi
           exit $r
 
   prosa:
