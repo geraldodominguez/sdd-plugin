@@ -27,7 +27,7 @@ jobs:
           tests/rodar-testes.sh 2>&1 | tee "$RUNNER_TEMP/testes.log"
           r=$?
           if [ "$r" -ne 0 ]; then
-            grep -a '✗' "$RUNNER_TEMP/testes.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^ *✗ */::error title=Teste falhou::/' | head -40 || true
+            grep -a -A4 '✗' "$RUNNER_TEMP/testes.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^ *✗ */::error title=Teste falhou::/; s/^(?!::error)(.+)$/::warning title=Detalhe::$1/' | head -60 || true
             tail -n 15 "$RUNNER_TEMP/testes.log" | perl -pe 's/\e\[[0-9;]*m//g; s/^/::error title=Fim da saída::/' || true
           fi
           exit $r
