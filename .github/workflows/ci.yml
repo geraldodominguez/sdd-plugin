@@ -23,7 +23,7 @@ jobs:
       # Cada falha vira uma anotação no resumo do job, legível sem abrir o log.
       - name: Utilitários e hooks
         run: |
-          set -o pipefail
+          set +e -o pipefail
           tests/rodar-testes.sh 2>&1 | tee "$RUNNER_TEMP/testes.log"
           r=$?
           if [ "$r" -ne 0 ]; then
@@ -33,7 +33,7 @@ jobs:
           exit $r
       - name: Simulação do ciclo de vida
         run: |
-          set -o pipefail
+          set +e -o pipefail
           tests/simular-ciclo.sh 2>&1 | tee "$RUNNER_TEMP/ciclo.log"
           r=$?
           if [ "$r" -ne 0 ]; then
@@ -48,7 +48,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/bash32" && ln -sf /bin/bash "$RUNNER_TEMP/bash32/bash"
           export PATH="$RUNNER_TEMP/bash32:$PATH"
           bash --version | head -1
-          set -o pipefail
+          set +e -o pipefail
           /bin/bash tests/rodar-testes.sh 2>&1 | tee "$RUNNER_TEMP/testes32.log"
           r=$?
           if [ "$r" -ne 0 ]; then
