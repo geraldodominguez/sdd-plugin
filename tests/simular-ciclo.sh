@@ -30,7 +30,7 @@ etapa() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 espera() { # espera <descrição> <valor obtido> <valor esperado>
   if [ "$2" = "$3" ]; then printf '   ✓ %s: %s\n' "$1" "$2"; else printf '   ✗ %s: obtido "%s", esperado "%s"\n' "$1" "$2" "$3"; FALHOU=1; fi
 }
-fase() { grep -E '^fase=' "specs/$1/estado" | tail -1 | cut -d= -f2; }
+fase() { grep -E '^fase=' "sdd/specs/$1/estado" | tail -1 | cut -d= -f2; }
 branch() { git rev-parse --abbrev-ref HEAD; }
 subst() { local e="$1" f; shift; for f in "$@"; do sed "$e" "$f" > "$f.tmp" && mv "$f.tmp" "$f"; done; }
 FALHOU=0
@@ -38,11 +38,11 @@ FALHOU=0
 etapa "0. Preparar o repositório (/sdd:iniciar, Git Flow)"
 git commit -q --allow-empty -m "chore: início"
 sdd-iniciar >/dev/null
-subst 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' .sdd/config.yml
+subst 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' sdd/config.yml
 sdd-gitflow iniciar >/dev/null
 espera "branch de trabalho" "$(branch)" develop
 git add -A && git commit -qm "chore: sdd iniciado"
-echo "   .sdd/, specs/, sistema/ e docs/adr/ criados; área sensível: src/auth/**; main e develop no padrão"
+echo "   sdd/, sdd/specs/, sdd/sistema/ e sdd/adr/ criados; área sensível: src/auth/**; main e develop no padrão"
 
 etapa "1. Análise: backlog, sprint, spec (/sdd:backlog, /sdd:sprint, /sdd:especificar)"
 sdd-backlog adicionar "Redefinição de senha por e-mail" --prioridade alta --nivel 2 --origem "cliente ACME" >/dev/null
@@ -53,7 +53,7 @@ sdd-estado nova "Redefinição de senha" --nivel 2 --origem B-001 --capacidade a
 F=001-redefinicao-de-senha
 sdd-gitflow feature "$F" >/dev/null
 espera "branch da feature" "$(branch)" "feature/$F"
-cat > "specs/$F/spec.md" <<'EOF'
+cat > "sdd/specs/$F/spec.md" <<'EOF'
 # Spec 001-redefinicao-de-senha: Redefinição de senha
 - **RF-001**: QUANDO o usuário pedir, O SISTEMA DEVE enviar um link de uso único.
 - **RF-002**: SE o link tiver mais de 30 minutos, ENTÃO O SISTEMA DEVE recusá-lo.
@@ -65,11 +65,11 @@ sdd-estado aprovar >/dev/null
 espera "fase depois da spec (nível 2)" "$(fase $F)" plano
 
 etapa "2. Desenho: plano e contratos, tarefas (/sdd:planejar, /sdd:tarefas)"
-mkdir -p "specs/$F/contratos"
-printf '# Plano\nameaças, implantação e rollback, observabilidade\n' > "specs/$F/plano.md"
-printf 'interface ResetTokenRepository {}\n' > "specs/$F/contratos/dominio.md"
+mkdir -p "sdd/specs/$F/contratos"
+printf '# Plano\nameaças, implantação e rollback, observabilidade\n' > "sdd/specs/$F/plano.md"
+printf 'interface ResetTokenRepository {}\n' > "sdd/specs/$F/contratos/dominio.md"
 sdd-estado aprovar >/dev/null
-cat > "specs/$F/tarefas.md" <<'EOF'
+cat > "sdd/specs/$F/tarefas.md" <<'EOF'
 - [ ] T-001 gerar token de uso único (atende: RF-001, CA-001; depende de: nada)
 - [ ] T-002 recusar token expirado (atende: RF-002, CA-002; depende de: T-001)
 EOF
@@ -81,26 +81,26 @@ printf '// sdd:001:CA-001\nit("envia link de uso único")\n// sdd:001:CA-002\nit
 sdd-estado aprovar >/dev/null
 espera "fase depois dos testes" "$(fase $F)" green
 echo "x" > src/auth/reset.js
-subst 's/- \[ \]/- [x]/' "specs/$F/tarefas.md"
+subst 's/- \[ \]/- [x]/' "sdd/specs/$F/tarefas.md"
 sdd-estado sensivel >/dev/null
-espera "revisão de segurança" "$(grep '^seguranca=' "specs/$F/estado" | cut -d= -f2)" obrigatoria
+espera "revisão de segurança" "$(grep '^seguranca=' "sdd/specs/$F/estado" | cut -d= -f2)" obrigatoria
 sdd-rastrear "$F" --silencioso && echo "   ✓ rastreabilidade sem lacunas"
 
 etapa "4. Segurança e auditoria (/sdd:seguranca, /sdd:auditar)"
 sdd-estado definir fase=seguranca >/dev/null
-printf '# Revisão de segurança\nVeredito: aprovada\n' > "specs/$F/seguranca.md"
+printf '# Revisão de segurança\nVeredito: aprovada\n' > "sdd/specs/$F/seguranca.md"
 echo "   [humano decide: aprovar]"
 sdd-estado aprovar --decisao aprovar >/dev/null
 espera "fase depois da segurança (nível 2)" "$(fase $F)" auditoria
-printf '# Auditoria\nVeredito: aprovada\n' > "specs/$F/auditoria.md"
+printf '# Auditoria\nVeredito: aprovada\n' > "sdd/specs/$F/auditoria.md"
 sdd-estado aprovar --decisao aprovar >/dev/null
 espera "fase depois da auditoria" "$(fase $F)" pronta
 
 etapa "5. Spec do sistema (/sdd:sistema consolidar)"
 sdd-sistema nova autenticacao "Autenticação" >/dev/null
-printf -- '- QUANDO o usuário pedir a redefinição, O SISTEMA DEVE enviar um link de uso único. (origem: 001/RF-001)\n- SE o link tiver mais de 30 minutos, ENTÃO O SISTEMA DEVE recusá-lo. (origem: 001/RF-002)\n' >> sistema/autenticacao.md
+printf -- '- QUANDO o usuário pedir a redefinição, O SISTEMA DEVE enviar um link de uso único. (origem: 001/RF-001)\n- SE o link tiver mais de 30 minutos, ENTÃO O SISTEMA DEVE recusá-lo. (origem: 001/RF-002)\n' >> sdd/sistema/autenticacao.md
 sdd-sistema consolidar "$F" >/dev/null
-sdd-sistema consolidada "$F" && echo "   ✓ sistema/autenticacao.md descreve o comportamento vigente"
+sdd-sistema consolidada "$F" && echo "   ✓ sdd/sistema/autenticacao.md descreve o comportamento vigente"
 git add -A && git commit -qm "feat(001): T-001 T-002 redefinição de senha"
 echo "   [humano autoriza a integração]"
 sdd-gitflow integrar "$F" --apagar >/dev/null
@@ -113,7 +113,7 @@ sdd-gitflow release "$V" >/dev/null
 espera "branch da release" "$(branch)" "release/$V"
 sdd-release nova "$V" --objetivo "Autoatendimento de senha" >/dev/null
 sdd-release incluir "$V" "$F" >/dev/null
-R="releases/$V"
+R="sdd/releases/$V"
 echo "   [testador-de-sistema preenche testes.md; agente escreve o roteiro de homologação]"
 subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "$R/testes.md"
 subst 's/{{[^}]*}}/ok/g' "$R/homologacao.md"
@@ -121,7 +121,7 @@ sdd-release homologar "$V" >/dev/null
 espera "fase da feature" "$(fase $F)" homologacao
 echo "   [Bia reprova um passo: a feature volta ao green e é corrigida na própria release]"
 sdd-release reprovar "$V" "$F" --motivo "o e-mail sai sem o nome da loja" >/dev/null
-espera "branch da feature reprovada" "$(grep '^branch=' "specs/$F/estado" | tail -1 | cut -d= -f2)" "release/$V"
+espera "branch da feature reprovada" "$(grep '^branch=' "sdd/specs/$F/estado" | tail -1 | cut -d= -f2)" "release/$V"
 sdd-estado usar "$F" >/dev/null
 espera "branch esperada para a correção" "$(sdd-gitflow esperada)" "release/$V"
 if sdd-gitflow integrar "$F" >/dev/null 2>&1; then echo "   ✗ integrar deveria recusar a feature corrigida na release"; exit 1; fi
@@ -164,25 +164,25 @@ git add -A && git commit -qm "docs: INC-001 aberto e mitigado"
 sdd-incidente hotfix INC-001 "Invalidar link após o uso" --capacidade autenticacao >/dev/null
 H=002-invalidar-link-apos-o-uso
 espera "hotfix nasce na fase" "$(fase $H)" red
-git add -A ':!specs/' && git commit -qm "docs(002): INC-001 hotfix aberto"
+git add -A ':!sdd/specs/' && git commit -qm "docs(002): INC-001 hotfix aberto"
 sdd-gitflow feature "$H" >/dev/null
 VH="$(branch)"; VH="${VH#hotfix/}"
 espera "branch do hotfix (a partir de main)" "$(branch)" "hotfix/$VH"
 printf '// sdd:002:CA-001\nit("recusa o link na segunda vez")\n' > tests/hotfix.test.js
 sdd-estado aprovar >/dev/null
 sdd-estado aprovar >/dev/null 2>&1 && echo "   ✗ entregou sem spec retroativa" || echo "   ✓ entrega recusada sem a spec retroativa"
-printf '# Spec\n- **RF-001**: O SISTEMA DEVE recusar link já usado.\n- **CA-001** (valida RF-001)\n' > "specs/$H/spec.md"
+printf '# Spec\n- **RF-001**: O SISTEMA DEVE recusar link já usado.\n- **CA-001** (valida RF-001)\n' > "sdd/specs/$H/spec.md"
 sdd-estado aprovar spec.md >/dev/null
 echo "x" >> src/auth/reset.js; sdd-estado sensivel >/dev/null
-sdd-estado definir fase=seguranca >/dev/null; printf '# Revisão\naprovada\n' > "specs/$H/seguranca.md"
+sdd-estado definir fase=seguranca >/dev/null; printf '# Revisão\naprovada\n' > "sdd/specs/$H/seguranca.md"
 sdd-estado aprovar --decisao aprovar >/dev/null
 espera "fase do hotfix" "$(fase $H)" pronta
-printf -- '- O SISTEMA DEVE recusar link já usado. (origem: 002/RF-001)\n' >> sistema/autenticacao.md
+printf -- '- O SISTEMA DEVE recusar link já usado. (origem: 002/RF-001)\n' >> sdd/sistema/autenticacao.md
 sdd-sistema consolidar "$H" >/dev/null
 sdd-release nova "$VH" --hotfix --objetivo "Correção do INC-001" >/dev/null && sdd-release incluir "$VH" "$H" >/dev/null
-subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "releases/$VH/testes.md" "releases/$VH/homologacao.md"
+subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "sdd/releases/$VH/testes.md" "sdd/releases/$VH/homologacao.md"
 sdd-release homologar "$VH" >/dev/null
-subst 's/| pendente |/| aprovado |/' "releases/$VH/homologacao.md"; subst 's/{{[^}]*}}/ok/g' "releases/$VH/implantacao.md" "releases/$VH/notas.md"
+subst 's/| pendente |/| aprovado |/' "sdd/releases/$VH/homologacao.md"; subst 's/{{[^}]*}}/ok/g' "sdd/releases/$VH/implantacao.md" "sdd/releases/$VH/notas.md"
 sdd-release aceitar "$VH" --por "Bia (homologação expressa)" >/dev/null && sdd-release autorizar "$VH" >/dev/null
 git add -A && git commit -qm "fix(002): T-001 invalida o link após o uso"
 sdd-release changelog "$VH" --escrever >/dev/null && git add -A && git commit -qm "docs(release): changelog $VH"
@@ -191,17 +191,17 @@ espera "tag do hotfix em main" "$(git describe --tags --exact-match main 2>/dev/
 sdd-release concluir "$VH" --verificacao "link usado é recusado" >/dev/null
 espera "hotfix em produção na" "$(fase $H)/$VH" "producao/$VH"
 sdd-incidente situacao INC-001 resolvido --nota "release $VH" >/dev/null
-awk '/^## Post-mortem/ { d = 1 } d { gsub(/\{\{[^}]*\}\}/, "ok") } { print }' incidentes/INC-001.md > i.tmp && mv i.tmp incidentes/INC-001.md
-subst 's/^| 1 | ok | ok | ok |$/| 1 | teste de uso único na regressão | preventiva | B-003 |/' incidentes/INC-001.md
+awk '/^## Post-mortem/ { d = 1 } d { gsub(/\{\{[^}]*\}\}/, "ok") } { print }' sdd/incidentes/INC-001.md > i.tmp && mv i.tmp sdd/incidentes/INC-001.md
+subst 's/^| 1 | ok | ok | ok |$/| 1 | teste de uso único na regressão | preventiva | B-003 |/' sdd/incidentes/INC-001.md
 sdd-incidente encerrar INC-001 >/dev/null
-espera "incidente" "$(grep '^| Situação |' incidentes/INC-001.md | sed 's/| Situação | \(.*\) |/\1/')" encerrado
+espera "incidente" "$(grep '^| Situação |' sdd/incidentes/INC-001.md | sed 's/| Situação | \(.*\) |/\1/')" encerrado
 git add -A && git commit -qm "chore: INC-001 encerrado"
 
 etapa "9. Fim da sprint e o quadro (/sdd:sprint encerrar, /sdd:status)"
 sdd-sprint encerrar S1 >/dev/null
 git add -A && git commit -qm "chore: sprint S1 encerrada"
 sdd-gitflow conferir >/dev/null && echo "   ✓ sdd-gitflow conferir: tudo no padrão ($(git branch --format='%(refname:short)' | tr '\n' ' '))"
-grep -q 'Entregue: 1 de 1 itens' .sdd/sprints/S1.md && echo "   ✓ sprint S1: 1 de 1 itens entregues"
+grep -q 'Entregue: 1 de 1 itens' sdd/sprints/S1.md && echo "   ✓ sprint S1: 1 de 1 itens entregues"
 echo
 sdd-status | sed 's/^/   /'
 
@@ -211,22 +211,22 @@ printf '# Exportar pedidos\nO usuário exporta os pedidos em CSV e em PDF.\n' > 
 printf -- '- [x] exportar CSV\n- [ ] exportar PDF\n' > docs/specs/exportar/tasks.md
 git add -A && git commit -qm "docs: specs de outro agente"
 espera "artefatos fora do padrão" "$(sdd-adotar contar)" 2
-printf 'docs/specs/exportar/requirements.md -> feature:exportar-pedidos/spec.md\ndocs/specs/exportar/tasks.md -> feature:exportar-pedidos/tarefas.md\n' > .sdd/adocao-mapa.txt
-sdd-adotar aplicar .sdd/adocao-mapa.txt >/dev/null && rm .sdd/adocao-mapa.txt
+printf 'docs/specs/exportar/requirements.md -> feature:exportar-pedidos/spec.md\ndocs/specs/exportar/tasks.md -> feature:exportar-pedidos/tarefas.md\n' > sdd/adocao-mapa.txt
+sdd-adotar aplicar sdd/adocao-mapa.txt >/dev/null && rm sdd/adocao-mapa.txt
 git add -A && git commit -qm "chore: adoção, arquivos no padrão"
-X=""; for d in specs/*-exportar-pedidos; do X="${d#specs/}"; done; NX="${X%%-*}"
-espera "situação da $X" "$(grep -E '^adocao=' "specs/$X/estado" | cut -d= -f2)" transicao
-printf '# Spec\n- **RF-001**: O SISTEMA DEVE exportar os pedidos em CSV.\n- **RF-002**: O SISTEMA DEVE exportar os pedidos em PDF.\n- **CA-001** (valida RF-001)\n- **CA-002** (valida RF-002)\n' > "specs/$X/spec.md"
-printf -- '- [O] T-001 exportar CSV (atende: RF-001, CA-001; depende de: nada)\n- [ ] T-002 exportar PDF (atende: RF-002, CA-002; depende de: nada)\n' > "specs/$X/tarefas.md"
-awk '{ s = s $0 "\n" } END { while (match(s, /\{\{[^}]*\}\}/)) s = substr(s, 1, RSTART - 1) "ok" substr(s, RSTART + RLENGTH); printf "%s", s }' "specs/$X/transicao.md" > t.tmp && mv t.tmp "specs/$X/transicao.md"
-subst 's/^| Fase de destino | .* |$/| Fase de destino | red |/' "specs/$X/transicao.md"
+X=""; for d in sdd/specs/*-exportar-pedidos; do X="${d#sdd/specs/}"; done; NX="${X%%-*}"
+espera "situação da $X" "$(grep -E '^adocao=' "sdd/specs/$X/estado" | cut -d= -f2)" transicao
+printf '# Spec\n- **RF-001**: O SISTEMA DEVE exportar os pedidos em CSV.\n- **RF-002**: O SISTEMA DEVE exportar os pedidos em PDF.\n- **CA-001** (valida RF-001)\n- **CA-002** (valida RF-002)\n' > "sdd/specs/$X/spec.md"
+printf -- '- [O] T-001 exportar CSV (atende: RF-001, CA-001; depende de: nada)\n- [ ] T-002 exportar PDF (atende: RF-002, CA-002; depende de: nada)\n' > "sdd/specs/$X/tarefas.md"
+awk '{ s = s $0 "\n" } END { while (match(s, /\{\{[^}]*\}\}/)) s = substr(s, 1, RSTART - 1) "ok" substr(s, RSTART + RLENGTH); printf "%s", s }' "sdd/specs/$X/transicao.md" > t.tmp && mv t.tmp "sdd/specs/$X/transicao.md"
+subst 's/^| Fase de destino | .* |$/| Fase de destino | red |/' "sdd/specs/$X/transicao.md"
 sdd-estado usar "$X" >/dev/null && sdd-gitflow feature "$X" >/dev/null
 espera "branch da feature adotada" "$(branch)" "feature/$X"
 sdd-estado aprovar >/dev/null
 espera "transição aprovada, segue de" "$(fase "$X")" red
 printf "// sdd:%s:CA-001\nit('CSV')\n// sdd:%s:CA-002\nit('PDF')\n" "$NX" "$NX" > tests/exportar.test.js
 sdd-estado aprovar >/dev/null
-subst 's/^- \[ \] T-002/- [x] T-002/' "specs/$X/tarefas.md"
+subst 's/^- \[ \] T-002/- [x] T-002/' "sdd/specs/$X/tarefas.md"
 sdd-estado aprovar >/dev/null
 espera "feature adotada" "$(fase "$X")" pronta
 echo "   T-001 ficou [O] (feita fora do plugin); T-002 foi feita no plugin [x]"

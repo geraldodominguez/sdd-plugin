@@ -30,7 +30,7 @@ tag não implanta nada.
 1. **Descubra a plataforma.** `git remote -v`, `.github/`, `.gitlab-ci.yml`.
    Na dúvida, pergunte.
 2. **Leia a constituição** (stack, seção "Ambientes e entrega", segurança) e o
-   `.sdd/config.yml`. Para cada comando vazio (`comando_lint`, `comando_teste`,
+   `sdd/config.yml`. Para cada comando vazio (`comando_lint`, `comando_teste`,
    `comando_seguranca`, `comando_deploy_*`, `comando_verificacao_producao`),
    proponha um valor a partir da stack e confirme. Grave no config.
 3. **Parta do template** da plataforma (`sdd-estado template pipeline/github-actions.yml`
@@ -72,4 +72,4 @@ divergentes do config, segredos expostos no arquivo, gatilhos fora do Git Flow
 
 ## Pronto quando
 
-- O pipeline tem os quatro estágios, o `.sdd/config.yml` tem os comandos, e o usuário sabe o que configurar na plataforma.
+- O pipeline tem os quatro estágios, o `sdd/config.yml` tem os comandos, e o usuário sabe o que configurar na plataforma.

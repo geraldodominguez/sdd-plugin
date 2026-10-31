@@ -45,7 +45,7 @@ sdd_kv_ler_t() { grep -E "^$2=" "$1" | tail -1 | cut -d= -f2-; }
 sdd_md_campo_t() { grep -E "^\| $2 \|" "$1" | head -1 | sed -E "s/^\| $2 \| (.*) \|$/\1/"; }
 # subst <expressão sed> <arquivos...>: edita no lugar sem depender de sed -i.
 subst() { local e="$1" f; shift; for f in "$@"; do sed "$e" "$f" > "$f.tmp" && mv "$f.tmp" "$f"; done; }
-sdd_feature_ler_t() { grep -E "^$3=" "$1/specs/$2/estado" | tail -1 | cut -d= -f2-; }
+sdd_feature_ler_t() { grep -E "^$3=" "$1/sdd/specs/$2/estado" | tail -1 | cut -d= -f2-; }
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -53,16 +53,16 @@ P="$TMP/projeto"
 mkdir -p "$P/src" "$P/tests"
 
 echo "sdd-iniciar"
-(cd "$P" && assert_exit 0 "inicializa projeto novo" sdd-iniciar)
-[ -f "$P/.sdd/config.yml" ] && ok "cria .sdd/config.yml" || fail "cria .sdd/config.yml"
-[ -f "$P/.sdd/constituicao.md" ] && ok "cria constituição" || fail "cria constituição"
-[ -f "$P/.sdd/templates/spec.md" ] && ok "copia templates" || fail "copia templates"
-[ ! -f "$P/.sdd/templates/bloco-agentes.md" ] && ok "não copia agents-block para templates" || fail "não copia agents-block"
+(cd "$P" && assert_exit 0 "inicializa projeto novo" sdd-iniciar --sem-git)
+[ -f "$P/sdd/config.yml" ] && ok "cria sdd/config.yml" || fail "cria sdd/config.yml"
+[ -f "$P/sdd/constituicao.md" ] && ok "cria constituição" || fail "cria constituição"
+[ -f "$P/sdd/templates/spec.md" ] && ok "copia templates" || fail "copia templates"
+[ ! -f "$P/sdd/templates/bloco-agentes.md" ] && ok "não copia agents-block para templates" || fail "não copia agents-block"
 grep -q '<!-- sdd:inicio -->' "$P/CLAUDE.md" && ok "injeta bloco no CLAUDE.md" || fail "injeta bloco no CLAUDE.md"
 grep -q '<!-- sdd:inicio -->' "$P/AGENTS.md" && ok "injeta bloco no AGENTS.md" || fail "injeta bloco no AGENTS.md"
 printf '# Meu projeto\n\nTexto do usuário.\n' > "$P/CLAUDE.md.user"
 cat "$P/CLAUDE.md.user" "$P/CLAUDE.md" > "$P/CLAUDE.md.tmp" && mv "$P/CLAUDE.md.tmp" "$P/CLAUDE.md"
-(cd "$P" && sdd-iniciar >/dev/null 2>&1)
+(cd "$P" && sdd-iniciar --sem-git >/dev/null 2>&1)
 n="$(grep -c '<!-- sdd:inicio -->' "$P/CLAUDE.md")"
 [ "$n" = "1" ] && ok "reexecução é idempotente (um único bloco)" || fail "reexecução idempotente" "blocos: $n"
 grep -q 'Texto do usuário.' "$P/CLAUDE.md" && ok "preserva conteúdo do usuário no CLAUDE.md" || fail "preserva conteúdo do usuário"
@@ -71,15 +71,15 @@ grep -q 'Texto do usuário.' "$P/CLAUDE.md" && ok "preserva conteúdo do usuári
 # Atualização de um projeto que já usa o SDD (sem --forcar).
 U="$TMP/atualizacao"; mkdir -p "$U"
 (cd "$U" && sdd-iniciar --protecao estrita >/dev/null 2>&1)
-subst '/^gitflow:/d; /^commits:/d' "$U/.sdd/config.yml"
-printf 'customizado\n' >> "$U/.sdd/templates/tarefas.md"
-printf 'Regra do time.\n' >> "$U/.sdd/constituicao.md"
+subst '/^gitflow:/d; /^commits:/d' "$U/sdd/config.yml"
+printf 'customizado\n' >> "$U/sdd/templates/tarefas.md"
+printf 'Regra do time.\n' >> "$U/sdd/constituicao.md"
 saida="$(cd "$U" && sdd-iniciar 2>&1)"
-grep -q 'Regra do time.' "$U/.sdd/constituicao.md" && ok "atualização preserva a constituição" || fail "atualização preserva a constituição"
-grep -q '^protecao: estrita' "$U/.sdd/config.yml" && ok "atualização preserva o config" || fail "atualização preserva o config"
-grep -q 'customizado' "$U/.sdd/templates/tarefas.md" && ok "atualização preserva template customizado" || fail "template customizado"
-printf '%s' "$saida" | grep -q '~ .sdd/templates/tarefas.md' && ok "atualização lista o template diferente do plugin" || fail "lista template diferente" "$saida"
-printf '%s' "$saida" | grep -q '~ .sdd/constituicao.md' && fail "constituição não entra nos diferentes" || ok "constituição não entra nos diferentes"
+grep -q 'Regra do time.' "$U/sdd/constituicao.md" && ok "atualização preserva a constituição" || fail "atualização preserva a constituição"
+grep -q '^protecao: estrita' "$U/sdd/config.yml" && ok "atualização preserva o config" || fail "atualização preserva o config"
+grep -q 'customizado' "$U/sdd/templates/tarefas.md" && ok "atualização preserva template customizado" || fail "template customizado"
+printf '%s' "$saida" | grep -q '~ sdd/templates/tarefas.md' && ok "atualização lista o template diferente do plugin" || fail "lista template diferente" "$saida"
+printf '%s' "$saida" | grep -q '~ sdd/constituicao.md' && fail "constituição não entra nos diferentes" || ok "constituição não entra nos diferentes"
 printf '%s' "$saida" | grep -q '? gitflow: ativo' && printf '%s' "$saida" | grep -q '? commits: convencional' \
   && ok "atualização lista as chaves novas do config com o padrão" || fail "lista chaves novas" "$saida"
 printf '%s' "$saida" | grep -q 'Projeto atualizado' && ok "atualização diz que a constituição e o config não mudaram" || fail "mensagem de atualização" "$saida"
@@ -90,22 +90,22 @@ case "$tp" in "$U"/*) fail "template --plugin aponta para o plugin" "$tp" ;; */s
 
 Q3="$TMP/outro-plugin"; mkdir -p "$Q3"
 (cd "$Q3" && CLAUDE_PLUGIN_ROOT=/caminho/de/outro/plugin sdd-iniciar >/dev/null 2>&1)
-[ -f "$Q3/.sdd/constituicao.md" ] && ok "ignora CLAUDE_PLUGIN_ROOT de outro plugin" || fail "CLAUDE_PLUGIN_ROOT de outro plugin"
+[ -f "$Q3/sdd/constituicao.md" ] && ok "ignora CLAUDE_PLUGIN_ROOT de outro plugin" || fail "CLAUDE_PLUGIN_ROOT de outro plugin"
 
 echo "sdd-estado"
 (cd "$P" && assert_exit 0 "cria feature nível 2" sdd-estado nova "Redefinição de senha" --nivel 2)
 F="$(cd "$P" && sdd-estado ver feature)"
 [ "$F" = "001-redefinicao-de-senha" ] && ok "slug com acentos removidos ($F)" || fail "slug" "obtido: $F"
 [ "$(cd "$P" && sdd-estado ver fase)" = "especificacao" ] && ok "fase inicial = especificacao" || fail "fase inicial"
-grep -q 'Spec 001-redefinicao-de-senha: Redefinição de senha' "$P/specs/$F/spec.md" && ok "spec preenchida com id e título" || fail "spec preenchida"
+grep -q 'Spec 001-redefinicao-de-senha: Redefinição de senha' "$P/sdd/specs/$F/spec.md" && ok "spec preenchida com id e título" || fail "spec preenchida"
 (cd "$P" && assert_exit 1 "rejeita fase inválida" sdd-estado definir fase=codar)
 (cd "$P" && assert_exit 1 "rejeita nível inválido" sdd-estado definir nivel=7)
 (cd "$P" && assert_exit 0 "muda fase válida" sdd-estado definir fase=clarificacao)
-[ "$(cd "$P" && sdd-estado caminho tarefas.md)" = "specs/$F/tarefas.md" ] && ok "path da feature" || fail "path da feature"
-(cd "$P/src" && [ "$(sdd-estado ver feature)" = "$F" ]) && ok "encontra .sdd/ a partir de subpasta" || fail "encontra .sdd a partir de subpasta"
+[ "$(cd "$P" && sdd-estado caminho tarefas.md)" = "sdd/specs/$F/tarefas.md" ] && ok "path da feature" || fail "path da feature"
+(cd "$P/src" && [ "$(sdd-estado ver feature)" = "$F" ]) && ok "encontra sdd/ a partir de subpasta" || fail "encontra sdd a partir de subpasta"
 
 echo "sdd-rastrear"
-cat > "$P/specs/$F/spec.md" <<'EOF'
+cat > "$P/sdd/specs/$F/spec.md" <<'EOF'
 # Spec
 - **RF-001**: QUANDO pedir, O SISTEMA DEVE enviar link.
 - **RF-002**: SE expirado, ENTÃO O SISTEMA DEVE recusar.
@@ -114,7 +114,7 @@ cat > "$P/specs/$F/spec.md" <<'EOF'
 - **CA-002** (valida RF-002)
 EOF
 (cd "$P" && assert_exit 3 "aponta lacuna sem tarefas.md" sdd-rastrear --silencioso)
-cat > "$P/specs/$F/tarefas.md" <<'EOF'
+cat > "$P/sdd/specs/$F/tarefas.md" <<'EOF'
 - [ ] T-001 gera token (atende: RF-001, CA-001; depende de: nada)
 - [ ] T-002 valida expiração (atende: RF-002, CA-002; depende de: T-001)
 EOF
@@ -126,7 +126,7 @@ out="$(cd "$P" && sdd-rastrear 2>&1)"
 echo "$out" | grep -q 'CA-002 não tem teste' && ok "detecta CA sem teste" || fail "detecta CA sem teste" "$out"
 echo "$out" | grep -q 'CA-001 não tem teste' && fail "CA-001 tem teste e não deveria ser apontado" || ok "reconhece CA com teste marcado"
 rm -f "$P/tests/parcial.test.ts"
-cat >> "$P/specs/$F/tarefas.md" <<'EOF'
+cat >> "$P/sdd/specs/$F/tarefas.md" <<'EOF'
 - [ ] T-003 mede latência (atende: RNF-001; depende de: T-002)
 - [ ] T-004 tarefa solta sem referência
 - [ ] T-005 fantasma (atende: RF-009)
@@ -134,7 +134,7 @@ EOF
 out="$(cd "$P" && sdd-rastrear 2>&1)"
 echo "$out" | grep -q 'T-004 não referencia' && ok "detecta tarefa sem referência" || fail "tarefa sem referência" "$out"
 echo "$out" | grep -q 'cita RF-009, que não existe' && ok "detecta ID inexistente" || fail "ID inexistente" "$out"
-sed -i.bak '/T-004/d; /T-005/d' "$P/specs/$F/tarefas.md" && rm -f "$P/specs/$F/tarefas.md.bak"
+sed -i.bak '/T-004/d; /T-005/d' "$P/sdd/specs/$F/tarefas.md" && rm -f "$P/sdd/specs/$F/tarefas.md.bak"
 cat > "$P/tests/reset.test.ts" <<'EOF'
 // sdd:001:CA-001
 it('envia link', () => {})
@@ -153,21 +153,21 @@ for parser in jq python grep; do
   export SDD_JSON_PARSER="$parser"
   echo "guarda-edicoes (leitor: $parser)"
 
-  sed -i.bak 's/^protecao: .*/protecao: leve/' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's/^protecao: .*/protecao: leve/' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
   (cd "$P" && sdd-estado definir fase=green >/dev/null)
   assert_exit 2 "leve/green: bloqueia teste" guard_edit "$P" "$P/tests/reset.test.ts"
   assert_exit 2 "leve/green: bloqueia *.spec.ts fora de tests/" guard_edit "$P" "$P/src/auth/token.spec.ts"
   assert_exit 0 "leve/green: permite código" guard_edit "$P" "$P/src/auth/token.ts"
-  assert_exit 0 "leve/green: permite spec.md da feature" guard_edit "$P" "$P/specs/$F/spec.md"
+  assert_exit 0 "leve/green: permite spec.md da feature" guard_edit "$P" "$P/sdd/specs/$F/spec.md"
   assert_exit 0 "leve/green: permite arquivo fora do projeto" guard_edit "$P" "/tmp/outra-coisa/tests/x.test.ts"
   (cd "$P" && sdd-estado definir fase=red >/dev/null)
   assert_exit 0 "leve/red: permite código (só a estrita restringe)" guard_edit "$P" "$P/src/auth/token.ts"
 
-  sed -i.bak 's/^protecao: .*/protecao: estrita/' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's/^protecao: .*/protecao: estrita/' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
   (cd "$P" && sdd-estado definir fase=especificacao >/dev/null)
   assert_exit 2 "estrita/spec: bloqueia código" guard_edit "$P" "$P/src/auth/token.ts"
-  assert_exit 0 "estrita/spec: permite spec" guard_edit "$P" "$P/specs/$F/spec.md"
-  assert_exit 0 "estrita/spec: permite .sdd/" guard_edit "$P" "$P/.sdd/constituicao.md"
+  assert_exit 0 "estrita/spec: permite spec" guard_edit "$P" "$P/sdd/specs/$F/spec.md"
+  assert_exit 0 "estrita/spec: permite sdd/" guard_edit "$P" "$P/sdd/constituicao.md"
   (cd "$P" && sdd-estado definir fase=red >/dev/null)
   assert_exit 0 "estrita/red: permite teste" guard_edit "$P" "$P/tests/reset.test.ts"
   assert_exit 2 "estrita/red: bloqueia código" guard_edit "$P" "$P/src/auth/token.ts"
@@ -176,33 +176,33 @@ for parser in jq python grep; do
   assert_exit 0 "estrita/green: permite código" guard_edit "$P" "src/auth/token.ts"
   (cd "$P" && sdd-estado definir fase=auditoria >/dev/null)
   assert_exit 2 "estrita/audit: bloqueia código" guard_edit "$P" "$P/src/auth/token.ts"
-  assert_exit 0 "estrita/auditoria: permite auditoria.md" guard_edit "$P" "$P/specs/$F/auditoria.md"
-  sed -i.bak 's/^fase=.*/fase=pronta/' "$P/specs/$F/estado"; rm -f "$P/specs/$F/estado.bak"
+  assert_exit 0 "estrita/auditoria: permite auditoria.md" guard_edit "$P" "$P/sdd/specs/$F/auditoria.md"
+  sed -i.bak 's/^fase=.*/fase=pronta/' "$P/sdd/specs/$F/estado"; rm -f "$P/sdd/specs/$F/estado.bak"
   assert_exit 0 "estrita/pronta: a fase não restringe mais nada" guard_edit "$P" "$P/tests/reset.test.ts"
   (cd "$P" && assert_exit 1 "definir fase recusa sair de pronta" sdd-estado definir fase=green)
-  sed -i.bak 's/^fase=.*/fase=seguranca/' "$P/specs/$F/estado"; rm -f "$P/specs/$F/estado.bak"
+  sed -i.bak 's/^fase=.*/fase=seguranca/' "$P/sdd/specs/$F/estado"; rm -f "$P/sdd/specs/$F/estado.bak"
   assert_exit 2 "estrita/seguranca: bloqueia código" guard_edit "$P" "$P/src/auth/token.ts"
-  sed -i.bak 's/^protecao: .*/protecao: leve/' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's/^protecao: .*/protecao: leve/' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
   assert_exit 2 "leve/seguranca: testes continuam congelados" guard_edit "$P" "$P/tests/reset.test.ts"
   assert_exit 0 "leve/seguranca: código liberado" guard_edit "$P" "$P/src/auth/token.ts"
-  sed -i.bak 's/^protecao: .*/protecao: estrita/' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's/^protecao: .*/protecao: estrita/' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
 
-  sed -i.bak 's#^globs_de_contrato:.*#globs_de_contrato: src/domain/contracts/**#' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's#^globs_de_contrato:.*#globs_de_contrato: src/domain/contracts/**#' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
   (cd "$P" && sdd-estado definir fase=plano >/dev/null)
   assert_exit 0 "estrita/plan: permite globs_de_contrato" guard_edit "$P" "$P/src/domain/contracts/user.ts"
   assert_exit 2 "estrita/plan: bloqueia outro código" guard_edit "$P" "$P/src/domain/user.ts"
   (cd "$P" && sdd-estado definir fase=green >/dev/null)
   assert_exit 2 "estrita/green: contratos congelados" guard_edit "$P" "$P/src/domain/contracts/user.ts"
-  sed -i.bak 's#^globs_de_contrato:.*#globs_de_contrato:#' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's#^globs_de_contrato:.*#globs_de_contrato:#' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
 
-  sed -i.bak 's/^protecao: .*/protecao: desligada/' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's/^protecao: .*/protecao: desligada/' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
   assert_exit 0 "desligada: nada é bloqueado" guard_edit "$P" "$P/tests/reset.test.ts"
-  sed -i.bak 's/^protecao: .*/protecao: leve/' "$P/.sdd/config.yml"; rm -f "$P/.sdd/config.yml.bak"
+  sed -i.bak 's/^protecao: .*/protecao: leve/' "$P/sdd/config.yml"; rm -f "$P/sdd/config.yml.bak"
 
   WIN_P="C:\\\\Users\\\\dev\\\\proj"
   printf '{"cwd":"%s","tool_name":"Edit","tool_input":{"file_path":"%s\\\\tests\\\\a.test.ts"}}' "$WIN_P" "$WIN_P" \
     | "$PLUGIN/scripts/guarda-edicoes.sh" >/dev/null 2>&1
-  [ $? -eq 0 ] && ok "caminho Windows sem .sdd/: permite" || fail "caminho Windows sem .sdd"
+  [ $? -eq 0 ] && ok "caminho Windows sem sdd/: permite" || fail "caminho Windows sem sdd"
 
   echo "guarda-commits (leitor: $parser)"
   (cd "$P" && sdd-estado definir fase=green >/dev/null)
@@ -226,17 +226,17 @@ done
 
 echo "estado por feature e histórico"
 Q2="$TMP/fluxo"; mkdir -p "$Q2/tests"
-(cd "$Q2" && git init -q && git config user.name "Pessoa Teste" && git config user.email t@t.t && sdd-iniciar >/dev/null)
-[ -f "$Q2/.sdd/backlog.md" ] && ok "sdd-iniciar cria backlog.md" || fail "sdd-iniciar cria backlog.md"
-[ -d "$Q2/.sdd/sprints" ] && ok "sdd-iniciar cria sprints/" || fail "sdd-iniciar cria sprints/"
-grep -qx 'estado' "$Q2/.sdd/.gitignore" && ok "ponteiros pessoais ficam fora do git" || fail ".sdd/.gitignore"
+(cd "$Q2" && git init -q && git config user.name "Pessoa Teste" && git config user.email t@t.t && sdd-iniciar --sem-git >/dev/null)
+[ -f "$Q2/sdd/backlog.md" ] && ok "sdd-iniciar cria backlog.md" || fail "sdd-iniciar cria backlog.md"
+[ -d "$Q2/sdd/sprints" ] && ok "sdd-iniciar cria sprints/" || fail "sdd-iniciar cria sprints/"
+grep -qx '/estado' "$Q2/sdd/.gitignore" && ok "ponteiros pessoais ficam fora do git" || fail "sdd/.gitignore"
 (cd "$Q2" && sdd-estado nova "Primeira" --nivel 1 >/dev/null && sdd-estado nova "Segunda" --nivel 2 >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver feature)" = "002-segunda" ] && ok "nova ativa a feature criada" || fail "nova ativa a feature"
 (cd "$Q2" && sdd-estado usar 001-primeira >/dev/null && sdd-estado definir fase=tarefas >/dev/null)
 [ "$(sdd_feature_ler_t "$Q2" 002-segunda fase)" = "especificacao" ] && ok "cada feature guarda a própria fase" || fail "fase por feature"
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "tarefas" ] && ok "ver fase lê a feature ativa" || fail "ver fase"
-grep -q '| fase | especificacao para tarefas |' "$Q2/specs/001-primeira/historico.md" && ok "troca de fase vai para o histórico" || fail "histórico de fase"
-grep -q '| criada | nível 1, normal: Primeira | por: Pessoa Teste' "$Q2/specs/001-primeira/historico.md" && ok "histórico registra autor pelo git" || fail "autor no histórico"
+grep -q '| fase | especificacao para tarefas |' "$Q2/sdd/specs/001-primeira/historico.md" && ok "troca de fase vai para o histórico" || fail "histórico de fase"
+grep -q '| criada | nível 1, normal: Primeira | por: Pessoa Teste' "$Q2/sdd/specs/001-primeira/historico.md" && ok "histórico registra autor pelo git" || fail "autor no histórico"
 n="$(cd "$Q2" && sdd-estado listar | wc -l | tr -d ' ')"
 [ "$n" = "2" ] && ok "listar mostra todas as features" || fail "listar" "linhas: $n"
 out="$(cd "$Q2" && sdd-estado historico 001-primeira --desde 2999-01-01)"
@@ -250,18 +250,18 @@ echo "aprovação e ciclo da feature"
 (cd "$Q2" && sdd-estado aprovar >/dev/null)
 (cd "$Q2" && assert_exit 0 "spec aprovada: saída 0" sdd-estado aprovado spec.md)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "plano" ] && ok "nível 2: spec aprovada leva ao plano" || fail "próxima fase n2"
-echo "mudou" >> "$Q2/specs/002-segunda/spec.md"
+echo "mudou" >> "$Q2/sdd/specs/002-segunda/spec.md"
 (cd "$Q2" && assert_exit 4 "spec alterada depois de aprovada: saída 4" sdd-estado aprovado spec.md)
 (cd "$Q2" && sdd-estado aprovar spec.md --sem-avancar >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "plano" ] && ok "--sem-avancar reaprova sem mudar a fase" || fail "sem-avancar"
 (cd "$Q2" && assert_exit 1 "aprovar plano inexistente falha" sdd-estado aprovar)
-mkdir -p "$Q2/specs/002-segunda/contratos"; echo "plano" > "$Q2/specs/002-segunda/plano.md"; echo "type A" > "$Q2/specs/002-segunda/contratos/a.ts"
+mkdir -p "$Q2/sdd/specs/002-segunda/contratos"; echo "plano" > "$Q2/sdd/specs/002-segunda/plano.md"; echo "type A" > "$Q2/sdd/specs/002-segunda/contratos/a.ts"
 (cd "$Q2" && sdd-estado aprovar >/dev/null)
-echo "type B" > "$Q2/specs/002-segunda/contratos/a.ts"
+echo "type B" > "$Q2/sdd/specs/002-segunda/contratos/a.ts"
 (cd "$Q2" && assert_exit 4 "mudar um contrato invalida a aprovação do plano" sdd-estado aprovado plano.md)
-echo "type A" > "$Q2/specs/002-segunda/contratos/a.ts"
+echo "type A" > "$Q2/sdd/specs/002-segunda/contratos/a.ts"
 (cd "$Q2" && assert_exit 0 "desfazer a mudança restaura a aprovação" sdd-estado aprovado plano.md)
-printf -- '- [x] T-001 a (atende: CA-001; depende de: nada)\n' > "$Q2/specs/002-segunda/tarefas.md"
+printf -- '- [x] T-001 a (atende: CA-001; depende de: nada)\n' > "$Q2/sdd/specs/002-segunda/tarefas.md"
 (cd "$Q2" && sdd-estado aprovar >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "red" ] && ok "tarefas aprovadas levam ao red" || fail "tarefas para red"
 (cd "$Q2" && assert_exit 1 "aprovar testes sem testes marcados falha" sdd-estado aprovar)
@@ -276,19 +276,19 @@ printf 'it("a") // sdd:002:CA-001\n// sdd:009:CA-001\nit("outra feature")\n' > "
 (cd "$Q2" && assert_exit 0 "voltar ao conteúdo aprovado restaura" sdd-estado aprovado testes)
 (cd "$Q2" && assert_exit 1 "nível 2 não entrega no green" sdd-estado aprovar)
 (cd "$Q2" && assert_exit 1 "definir fase=pronta é recusado" sdd-estado definir fase=pronta)
-(cd "$Q2" && sdd-estado definir fase=seguranca >/dev/null); echo "seg" > "$Q2/specs/002-segunda/seguranca.md"
+(cd "$Q2" && sdd-estado definir fase=seguranca >/dev/null); echo "seg" > "$Q2/sdd/specs/002-segunda/seguranca.md"
 (cd "$Q2" && assert_exit 1 "segurança exige --decisao" sdd-estado aprovar)
 (cd "$Q2" && sdd-estado aprovar --decisao corrigir >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "green" ] && ok "segurança: corrigir volta ao green" || fail "segurança corrigir"
 (cd "$Q2" && assert_exit 5 "corrigir não conta como aprovação da revisão" sdd-estado aprovado seguranca.md)
 (cd "$Q2" && sdd-estado definir fase=seguranca >/dev/null && sdd-estado aprovar --decisao aceitar-risco --nota "PO aceita" >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "auditoria" ] && ok "nível 2: segurança aprovada leva à auditoria" || fail "segurança para auditoria"
-echo "aud" > "$Q2/specs/002-segunda/auditoria.md"
+echo "aud" > "$Q2/sdd/specs/002-segunda/auditoria.md"
 (cd "$Q2" && assert_exit 1 "auditoria exige --decisao" sdd-estado aprovar)
 (cd "$Q2" && sdd-estado aprovar --decisao corrigir >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "green" ] && ok "auditoria: corrigir volta ao green" || fail "auditoria corrigir"
 (cd "$Q2" && sdd-estado definir fase=auditoria >/dev/null)
-echo "mudança tardia" >> "$Q2/specs/002-segunda/spec.md"
+echo "mudança tardia" >> "$Q2/sdd/specs/002-segunda/spec.md"
 (cd "$Q2" && assert_exit 1 "não fica pronta com spec alterada depois da aprovação" sdd-estado aprovar --decisao aprovar)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "auditoria" ] && ok "a fase não avança quando falta aprovação" || fail "fase não avança"
 (cd "$Q2" && sdd-estado aprovar spec.md --sem-avancar >/dev/null && sdd-estado aprovar --decisao delta >/dev/null)
@@ -299,7 +299,7 @@ echo "mudança tardia" >> "$Q2/specs/002-segunda/spec.md"
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "green" ] && ok "reabrir na fase green" || fail "reabrir green"
 (cd "$Q2" && assert_exit 5 "reabrir invalida a aprovação da segurança" sdd-estado aprovado seguranca.md)
 (cd "$Q2" && assert_exit 0 "reabrir no green mantém a spec aprovada" sdd-estado aprovado spec.md)
-grep -q '| reabertura | fase=green | motivo: ajuste' "$Q2/specs/002-segunda/historico.md" && ok "reabertura vai para o histórico" || fail "histórico de reabertura"
+grep -q '| reabertura | fase=green | motivo: ajuste' "$Q2/sdd/specs/002-segunda/historico.md" && ok "reabertura vai para o histórico" || fail "histórico de reabertura"
 (cd "$Q2" && sdd-estado definir fase=seguranca >/dev/null && sdd-estado aprovar --decisao aprovar >/dev/null && sdd-estado aprovar --decisao aprovar >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "pronta" ] && ok "volta a ficar pronta depois de revisada de novo" || fail "pronta de novo"
 
@@ -309,12 +309,12 @@ echo "nível 1: entrega e área sensível"
 (cd "$Q2" && sdd-estado aprovar spec.md --sem-avancar >/dev/null)
 printf 'it("p") // sdd:001:CA-001\n' > "$Q2/tests/prim.test.js"
 (cd "$Q2" && sdd-estado aprovar testes --sem-avancar >/dev/null)
-sed -i.bak 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' "$Q2/.sdd/config.yml"; rm -f "$Q2/.sdd/config.yml.bak"
+sed -i.bak 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' "$Q2/sdd/config.yml"; rm -f "$Q2/sdd/config.yml.bak"
 mkdir -p "$Q2/src/auth"; echo "x" > "$Q2/src/auth/login.js"
 (cd "$Q2" && assert_exit 0 "sensivel detecta área sensível alterada" sdd-estado sensivel)
 [ "$(sdd_feature_ler_t "$Q2" 001-primeira seguranca)" = "obrigatoria" ] && ok "área sensível torna a segurança obrigatória" || fail "sensível obrigatória"
 (cd "$Q2" && assert_exit 1 "entrega recusada com segurança obrigatória" sdd-estado aprovar)
-(cd "$Q2" && sdd-estado definir fase=seguranca >/dev/null); echo "seg" > "$Q2/specs/001-primeira/seguranca.md"
+(cd "$Q2" && sdd-estado definir fase=seguranca >/dev/null); echo "seg" > "$Q2/sdd/specs/001-primeira/seguranca.md"
 (cd "$Q2" && sdd-estado aprovar --decisao aprovar >/dev/null)
 [ "$(cd "$Q2" && sdd-estado ver fase)" = "pronta" ] && ok "nível 1: segurança aprovada leva a pronta" || fail "n1 segurança para pronta"
 (cd "$Q2" && sdd-estado nova "Terceira" --nivel 1 >/dev/null)
@@ -330,23 +330,23 @@ echo "backlog"
 (cd "$Q2" && sdd-backlog adicionar "Item baixo" --prioridade baixa --nivel 1 >/dev/null && sdd-backlog adicionar "Item alto (urgente)" --prioridade alta --nivel 2 --origem "cliente; X" >/dev/null && sdd-backlog adicionar "Sem nível" >/dev/null)
 primeiro="$(cd "$Q2" && sdd-backlog listar | head -1 | cut -c1-5)"
 [ "$primeiro" = "B-002" ] && ok "listar ordena por prioridade" || fail "ordem do backlog" "$primeiro"
-grep -q 'B-002 Item alto urgente (prioridade: alta; nivel: 2; origem: cliente X;' "$Q2/.sdd/backlog.md" && ok "parênteses e ponto e vírgula não quebram o formato" || fail "sanitização"
+grep -q 'B-002 Item alto urgente (prioridade: alta; nivel: 2; origem: cliente X;' "$Q2/sdd/backlog.md" && ok "parênteses e ponto e vírgula não quebram o formato" || fail "sanitização"
 (cd "$Q2" && sdd-backlog prioridade B-001 alta >/dev/null)
-grep -q 'B-001 Item baixo (prioridade: alta' "$Q2/.sdd/backlog.md" && ok "muda prioridade" || fail "prioridade"
+grep -q 'B-001 Item baixo (prioridade: alta' "$Q2/sdd/backlog.md" && ok "muda prioridade" || fail "prioridade"
 (cd "$Q2" && assert_exit 1 "rejeita prioridade inválida" sdd-backlog prioridade B-001 urgente)
 (cd "$Q2" && assert_exit 1 "rejeita item inexistente" sdd-backlog ver B-099)
 (cd "$Q2" && sdd-estado nova "Do backlog" --nivel 2 --origem B-002 >/dev/null)
-grep -q '^- \[x\] B-002 .*feature: 004-do-backlog)' "$Q2/.sdd/backlog.md" && ok "nova --origem promove o item" || fail "promover"
-grep -q '| Origem | B-002 |' "$Q2/specs/004-do-backlog/spec.md" && ok "spec registra a origem" || fail "origem na spec"
+grep -q '^- \[x\] B-002 .*feature: 004-do-backlog)' "$Q2/sdd/backlog.md" && ok "nova --origem promove o item" || fail "promover"
+grep -q '| Origem | B-002 |' "$Q2/sdd/specs/004-do-backlog/spec.md" && ok "spec registra a origem" || fail "origem na spec"
 (cd "$Q2" && sdd-backlog descartar B-003 "fora da estratégia" >/dev/null)
-grep -q '^- \[-\] B-003 .*descartado: fora da estratégia)' "$Q2/.sdd/backlog.md" && ok "descarta com motivo" || fail "descartar"
+grep -q '^- \[-\] B-003 .*descartado: fora da estratégia)' "$Q2/sdd/backlog.md" && ok "descarta com motivo" || fail "descartar"
 [ "$(cd "$Q2" && sdd-backlog contar)" = "1" ] && ok "contar só os abertos" || fail "contar"
-grep -q '| backlog | B-002 promovido a 004-do-backlog' "$Q2/.sdd/historico.md" && ok "eventos de backlog vão para o histórico do projeto" || fail "histórico do projeto"
+grep -q '| backlog | B-002 promovido a 004-do-backlog' "$Q2/sdd/historico.md" && ok "eventos de backlog vão para o histórico do projeto" || fail "histórico do projeto"
 
 echo "sprint"
 (cd "$Q2" && sdd-sprint nova 2026-S50 --objetivo "Objetivo / com barra & e" --inicio 2026-12-07 --dias 14 >/dev/null)
-grep -q '| Fim | 2026-12-20 |' "$Q2/.sdd/sprints/2026-S50.md" && ok "calcula o fim pela duração" || fail "data de fim"
-grep -q '| Objetivo | Objetivo / com barra & e |' "$Q2/.sdd/sprints/2026-S50.md" && ok "objetivo com caracteres especiais" || fail "objetivo"
+grep -q '| Fim | 2026-12-20 |' "$Q2/sdd/sprints/2026-S50.md" && ok "calcula o fim pela duração" || fail "data de fim"
+grep -q '| Objetivo | Objetivo / com barra & e |' "$Q2/sdd/sprints/2026-S50.md" && ok "objetivo com caracteres especiais" || fail "objetivo"
 (cd "$Q2" && sdd-sprint incluir 2026-S50 004-do-backlog B-001 >/dev/null)
 [ "$(cd "$Q2" && sdd-sprint itens 2026-S50 | tr '\n' ' ')" = "004-do-backlog B-001 " ] && ok "inclui itens" || fail "incluir"
 (cd "$Q2" && assert_exit 1 "rejeita item inexistente na sprint" sdd-sprint incluir 2026-S50 999-nada)
@@ -360,26 +360,26 @@ echo "$out" | grep -q 'B-001 .*no backlog, ainda sem spec' && ok "ver aponta ite
 (cd "$Q2" && sdd-sprint remover 2026-S50 B-001 >/dev/null)
 [ "$(cd "$Q2" && sdd-sprint itens 2026-S50)" = "004-do-backlog" ] && ok "remove item" || fail "remover"
 (cd "$Q2" && sdd-sprint encerrar 2026-S50 >/dev/null)
-grep -q 'Entregue: 0 de 1 itens' "$Q2/.sdd/sprints/2026-S50.md" && ok "encerrar grava o resultado" || fail "resultado"
+grep -q 'Entregue: 0 de 1 itens' "$Q2/sdd/sprints/2026-S50.md" && ok "encerrar grava o resultado" || fail "resultado"
 [ -z "$(cd "$Q2" && sdd-estado ver sprint)" ] && ok "encerrar limpa a sprint atual" || fail "limpa sprint"
 
 echo "histórico e estado protegidos"
-assert_exit 2 "hook bloqueia edição do histórico" guard_edit "$Q2" "$Q2/specs/001-primeira/historico.md"
-assert_exit 2 "hook bloqueia edição do estado da feature" guard_edit "$Q2" "$Q2/specs/001-primeira/estado"
-assert_exit 2 "hook bloqueia edição do histórico do projeto" guard_edit "$Q2" "$Q2/.sdd/historico.md"
-assert_exit 0 "hook permite editar a spec" guard_edit "$Q2" "$Q2/specs/001-primeira/spec.md"
-sed -i.bak 's/^protecao: .*/protecao: desligada/' "$Q2/.sdd/config.yml"; rm -f "$Q2/.sdd/config.yml.bak"
-assert_exit 0 "proteção desligada libera o histórico" guard_edit "$Q2" "$Q2/specs/001-primeira/historico.md"
-sed -i.bak 's/^protecao: .*/protecao: leve/' "$Q2/.sdd/config.yml"; rm -f "$Q2/.sdd/config.yml.bak"
+assert_exit 2 "hook bloqueia edição do histórico" guard_edit "$Q2" "$Q2/sdd/specs/001-primeira/historico.md"
+assert_exit 2 "hook bloqueia edição do estado da feature" guard_edit "$Q2" "$Q2/sdd/specs/001-primeira/estado"
+assert_exit 2 "hook bloqueia edição do histórico do projeto" guard_edit "$Q2" "$Q2/sdd/historico.md"
+assert_exit 0 "hook permite editar a spec" guard_edit "$Q2" "$Q2/sdd/specs/001-primeira/spec.md"
+sed -i.bak 's/^protecao: .*/protecao: desligada/' "$Q2/sdd/config.yml"; rm -f "$Q2/sdd/config.yml.bak"
+assert_exit 0 "proteção desligada libera o histórico" guard_edit "$Q2" "$Q2/sdd/specs/001-primeira/historico.md"
+sed -i.bak 's/^protecao: .*/protecao: leve/' "$Q2/sdd/config.yml"; rm -f "$Q2/sdd/config.yml.bak"
 
 echo "pendências e quadro"
 (cd "$Q2" && sdd-sprint nova 2026-S51 --objetivo "Próxima" --inicio 2026-12-21 --fim 2027-01-03 >/dev/null && sdd-sprint incluir 2026-S51 B-001 >/dev/null && sdd-sprint iniciar 2026-S51 >/dev/null)
 out="$(cd "$Q2" && sdd-pendencias)"
 echo "$out" | grep -q '004-do-backlog: spec.md espera aprovação' && ok "pendência de aprovação" || fail "pendência de aprovação" "$out"
 echo "$out" | grep -q 'B-001 está na sprint 2026-S51 e ainda não tem spec' && ok "pendência de sprint sem spec" || fail "sprint sem spec" "$out"
-mkdir -p "$Q2/docs/adr"; printf '# ADR-0001: algo\n\n| Campo | Valor |\n|---|---|\n| Situação | proposta |\n' > "$Q2/docs/adr/0001-algo.md"
+mkdir -p "$Q2/sdd/adr"; printf '# ADR-0001: algo\n\n| Campo | Valor |\n|---|---|\n| Situação | proposta |\n' > "$Q2/sdd/adr/0001-algo.md"
 out="$(cd "$Q2" && sdd-pendencias)"
-echo "$out" | grep -q 'docs/adr/0001-algo.md: ADR-0001: algo' && ok "pendência de ADR proposto" || fail "ADR proposto" "$out"
+echo "$out" | grep -q 'sdd/adr/0001-algo.md: ADR-0001: algo' && ok "pendência de ADR proposto" || fail "ADR proposto" "$out"
 n="$(cd "$Q2" && sdd-pendencias --contar)"
 [ "$n" -ge 3 ] && ok "contar pendências ($n)" || fail "contar pendências" "$n"
 out="$(cd "$Q2" && sdd-status)"
@@ -394,14 +394,14 @@ echo "$out" | grep -q 'spec do sistema: NÃO consolidada' && ok "detalhe aponta 
 
 echo "spec do sistema"
 Q4="$TMP/ciclo"; mkdir -p "$Q4/tests"
-(cd "$Q4" && git init -q && git config user.name "Dev Teste" && git config user.email d@d.d && sdd-iniciar >/dev/null)
-[ -f "$Q4/sistema/README.md" ] && ok "sdd-iniciar cria sistema/" || fail "sistema/"
-[ -f "$Q4/.sdd/templates/release/homologacao.md" ] && ok "sdd-iniciar copia os templates da release" || fail "templates da release"
+(cd "$Q4" && git init -q && git config user.name "Dev Teste" && git config user.email d@d.d && sdd-iniciar --sem-git >/dev/null)
+[ -f "$Q4/sdd/sistema/README.md" ] && ok "sdd-iniciar cria sdd/sistema/" || fail "sdd/sistema/"
+[ -f "$Q4/sdd/templates/release/homologacao.md" ] && ok "sdd-iniciar copia os templates da release" || fail "templates da release"
 (cd "$Q4" && sdd-estado nova "Cadastro de clientes" --nivel 1 --capacidade clientes >/dev/null)
-grep -q '| Capacidade | clientes |' "$Q4/specs/001-cadastro-de-clientes/spec.md" && ok "a spec registra a capacidade" || fail "capacidade na spec"
-printf '# Spec\n- **RF-001**: cadastra\n- **CA-001** (valida RF-001)\n' > "$Q4/specs/001-cadastro-de-clientes/spec.md"
+grep -q '| Capacidade | clientes |' "$Q4/sdd/specs/001-cadastro-de-clientes/spec.md" && ok "a spec registra a capacidade" || fail "capacidade na spec"
+printf '# Spec\n- **RF-001**: cadastra\n- **CA-001** (valida RF-001)\n' > "$Q4/sdd/specs/001-cadastro-de-clientes/spec.md"
 (cd "$Q4" && sdd-estado aprovar >/dev/null)
-printf -- '- [x] T-001 cadastra (atende: RF-001, CA-001; depende de: nada)\n' > "$Q4/specs/001-cadastro-de-clientes/tarefas.md"
+printf -- '- [x] T-001 cadastra (atende: RF-001, CA-001; depende de: nada)\n' > "$Q4/sdd/specs/001-cadastro-de-clientes/tarefas.md"
 (cd "$Q4" && sdd-estado aprovar >/dev/null)
 printf 'it("cadastra") // sdd:001:CA-001\n' > "$Q4/tests/cli.test.js"
 (cd "$Q4" && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null)
@@ -409,11 +409,11 @@ printf 'it("cadastra") // sdd:001:CA-001\n' > "$Q4/tests/cli.test.js"
 (cd "$Q4" && assert_exit 1 "consolidar exige a capacidade criada" sdd-sistema consolidar 001-cadastro-de-clientes)
 (cd "$Q4" && sdd-sistema nova clientes "Clientes" >/dev/null)
 (cd "$Q4" && assert_exit 1 "consolidar exige a capacidade citando a feature" sdd-sistema consolidar 001-cadastro-de-clientes)
-printf -- '- QUANDO o cliente se cadastra, O SISTEMA DEVE guardar o CPF. (origem: 001/RF-001)\n' >> "$Q4/sistema/clientes.md"
+printf -- '- QUANDO o cliente se cadastra, O SISTEMA DEVE guardar o CPF. (origem: 001/RF-001)\n' >> "$Q4/sdd/sistema/clientes.md"
 (cd "$Q4" && assert_exit 0 "consolida a feature" sdd-sistema consolidar 001-cadastro-de-clientes)
-grep -q '| Última feature | 001-cadastro-de-clientes |' "$Q4/sistema/clientes.md" && ok "a capacidade registra a última feature" || fail "última feature"
-grep -qE '^\| [0-9-]+ \| 001 \|' "$Q4/sistema/clientes.md" && ok "a capacidade ganha a linha de histórico" || fail "histórico da capacidade"
-grep -qE '^\| [0-9-]+ \| 001 \| [^S]' "$Q4/sistema/clientes.md" && ok "a linha de histórico traz o título sem o prefixo Spec" || fail "título na consolidação" "$(tail -2 "$Q4/sistema/clientes.md")"
+grep -q '| Última feature | 001-cadastro-de-clientes |' "$Q4/sdd/sistema/clientes.md" && ok "a capacidade registra a última feature" || fail "última feature"
+grep -qE '^\| [0-9-]+ \| 001 \|' "$Q4/sdd/sistema/clientes.md" && ok "a capacidade ganha a linha de histórico" || fail "histórico da capacidade"
+grep -qE '^\| [0-9-]+ \| 001 \| [^S]' "$Q4/sdd/sistema/clientes.md" && ok "a linha de histórico traz o título sem o prefixo Spec" || fail "título na consolidação" "$(tail -2 "$Q4/sdd/sistema/clientes.md")"
 (cd "$Q4" && assert_exit 0 "consolidada responde 0" sdd-sistema consolidada 001-cadastro-de-clientes)
 [ -z "$(cd "$Q4" && sdd-sistema pendentes)" ] && ok "nada pendente de consolidação" || fail "pendentes"
 (cd "$Q4" && assert_exit 1 "nome de capacidade inválido" sdd-sistema nova "Clientes VIP" "x")
@@ -422,7 +422,7 @@ echo "release"
 [ "$(cd "$Q4" && sdd-release proxima)" = "0.1.0" ] && ok "primeira versão sugerida" || fail "proxima"
 (cd "$Q4" && assert_exit 1 "versão precisa ser SemVer" sdd-release nova 1.0)
 (cd "$Q4" && sdd-release nova 1.0.0 --objetivo "Primeira entrega" >/dev/null)
-R="$Q4/releases/1.0.0"
+R="$Q4/sdd/releases/1.0.0"
 [ "$(sdd_kv_ler_t "$R/estado" fase)" = "preparacao" ] && ok "release nasce em preparação" || fail "preparacao"
 (cd "$Q4" && sdd-estado nova "Em construção" --nivel 1 >/dev/null)
 (cd "$Q4" && assert_exit 1 "só entram features prontas" sdd-release incluir 1.0.0 002-em-construcao)
@@ -452,15 +452,15 @@ subst 's/{{[^}]*}}/x/g' "$R/implantacao.md" "$R/notas.md"
 (cd "$Q4" && sdd-estado usar 001-cadastro-de-clientes >/dev/null)
 (cd "$Q4" && assert_exit 1 "feature em produção não se reabre" sdd-estado reabrir --motivo "x")
 (cd "$Q4" && assert_exit 1 "feature em produção não se cancela" sdd-estado cancelar --motivo "x")
-assert_exit 2 "hook protege o histórico da release" guard_edit "$Q4" "$Q4/releases/1.0.0/historico.md"
-assert_exit 2 "hook protege o estado da release" guard_edit "$Q4" "$Q4/releases/1.0.0/estado"
+assert_exit 2 "hook protege o histórico da release" guard_edit "$Q4" "$Q4/sdd/releases/1.0.0/historico.md"
+assert_exit 2 "hook protege o estado da release" guard_edit "$Q4" "$Q4/sdd/releases/1.0.0/estado"
 (cd "$Q4" && sdd-estado usar 002-em-construcao >/dev/null)
-printf '# Spec\n- **RF-001**: x\n- **CA-001** (valida RF-001)\n' > "$Q4/specs/002-em-construcao/spec.md"
-printf -- '- [x] T-001 x (atende: RF-001, CA-001; depende de: nada)\n' > "$Q4/specs/002-em-construcao/tarefas.md"
+printf '# Spec\n- **RF-001**: x\n- **CA-001** (valida RF-001)\n' > "$Q4/sdd/specs/002-em-construcao/spec.md"
+printf -- '- [x] T-001 x (atende: RF-001, CA-001; depende de: nada)\n' > "$Q4/sdd/specs/002-em-construcao/tarefas.md"
 printf 'it("x") // sdd:002:CA-001\n' > "$Q4/tests/x.test.js"
 (cd "$Q4" && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null)
 (cd "$Q4" && sdd-release nova 1.1.0 >/dev/null && sdd-release incluir 1.1.0 002-em-construcao >/dev/null)
-R2="$Q4/releases/1.1.0"
+R2="$Q4/sdd/releases/1.1.0"
 subst 's/{{[^}]*}}/x/g; s/| Resultado | x |/| Resultado | aprovado |/' "$R2/testes.md" "$R2/homologacao.md"
 (cd "$Q4" && sdd-release homologar 1.1.0 >/dev/null)
 (cd "$Q4" && assert_exit 1 "reabrir recusa feature em homologação (o caminho é o reprovar)" sdd-estado reabrir 002-em-construcao --motivo "x")
@@ -481,9 +481,9 @@ subst 's/{{[^}]*}}/x/g' "$R2/implantacao.md" "$R2/notas.md"
 echo "incidente e hotfix"
 (cd "$Q4" && assert_exit 1 "incidente exige severidade válida" sdd-incidente abrir "x" --severidade S9)
 (cd "$Q4" && sdd-incidente abrir "CPF duplicado aceito" --severidade S2 --feature 001-cadastro-de-clientes --release 1.0.0 >/dev/null)
-I="$Q4/incidentes/INC-001.md"
+I="$Q4/sdd/incidentes/INC-001.md"
 [ "$(sdd_md_campo_t "$I" Situação)" = "aberto" ] && ok "incidente aberto" || fail "incidente aberto"
-grep -q '| incidente | INC-001 (S2)' "$Q4/specs/001-cadastro-de-clientes/historico.md" && ok "incidente aparece no histórico da feature" || fail "incidente na feature"
+grep -q '| incidente | INC-001 (S2)' "$Q4/sdd/specs/001-cadastro-de-clientes/historico.md" && ok "incidente aparece no histórico da feature" || fail "incidente na feature"
 (cd "$Q4" && sdd-incidente situacao INC-001 mitigado --nota "validação manual" >/dev/null)
 grep -qE '^- [0-9TZ:-]+ mitigado: validação manual$' "$I" && ok "linha do tempo recebe o evento" || fail "linha do tempo" "$(sed -n '/Linha do tempo/,/Mitigação/p' "$I")"
 (cd "$Q4" && assert_exit 1 "hotfix só nasce de incidente" sdd-estado nova "x" --tipo hotfix --origem B-001)
@@ -498,7 +498,7 @@ printf 'it("recusa duplicado") // sdd:003:CA-001\n' > "$Q4/tests/hotfix.test.js"
 (cd "$Q4" && assert_exit 1 "hotfix não entrega sem spec retroativa" sdd-estado aprovar)
 out="$(cd "$Q4" && sdd-pendencias)"
 echo "$out" | grep -q "$H: spec.md espera aprovação" && ok "pendências cobram a spec retroativa" || fail "spec retroativa pendente" "$out"
-printf '# Spec\n- **RF-001**: recusa CPF duplicado\n- **CA-001** (valida RF-001)\n' > "$Q4/specs/$H/spec.md"
+printf '# Spec\n- **RF-001**: recusa CPF duplicado\n- **CA-001** (valida RF-001)\n' > "$Q4/sdd/specs/$H/spec.md"
 (cd "$Q4" && sdd-estado aprovar spec.md >/dev/null && sdd-estado aprovar >/dev/null)
 [ "$(sdd_feature_ler_t "$Q4" $H fase)" = "pronta" ] && ok "hotfix com spec retroativa fica pronto" || fail "hotfix pronto"
 (cd "$Q4" && assert_exit 1 "encerrar exige incidente resolvido" sdd-incidente encerrar INC-001)
@@ -512,18 +512,18 @@ n="$(cd "$Q4" && sdd-incidente listar --abertos | grep -c '^INC-' || true)"
 
 echo "verificação para o CI"
 (cd "$Q4" && sdd-sistema consolidar 002-em-construcao --sem-mudanca --nota "teste" >/dev/null)
-printf -- '- O SISTEMA DEVE recusar CPF duplicado. (origem: 003/RF-001)\n' >> "$Q4/sistema/clientes.md"
+printf -- '- O SISTEMA DEVE recusar CPF duplicado. (origem: 003/RF-001)\n' >> "$Q4/sdd/sistema/clientes.md"
 (cd "$Q4" && sdd-sistema consolidar $H >/dev/null)
 out="$(cd "$Q4" && sdd-verificar 2>&1)"; code=$?
 [ "$code" -eq 0 ] && ok "verificar: projeto em dia passa" || fail "verificar em dia" "$out"
-echo "mudou depois" >> "$Q4/specs/$H/spec.md"
+echo "mudou depois" >> "$Q4/sdd/specs/$H/spec.md"
 out="$(cd "$Q4" && sdd-verificar 2>&1)"; code=$?
 [ "$code" -eq 3 ] && echo "$out" | grep -q "$H (pronta): spec.md" && ok "verificar: spec alterada numa feature pronta falha" || fail "verificar spec alterada" "$out"
-subst '$d' "$Q4/specs/$H/spec.md"
+subst '$d' "$Q4/sdd/specs/$H/spec.md"
 (cd "$Q4" && sdd-estado nova "Sem consolidar" --nivel 1 >/dev/null)
 F5="$(cd "$Q4" && sdd-estado ver feature)"
-printf '# Spec\n- **RF-001**: y\n- **CA-001** (valida RF-001)\n' > "$Q4/specs/$F5/spec.md"
-printf -- '- [x] T-001 y (atende: RF-001, CA-001; depende de: nada)\n' > "$Q4/specs/$F5/tarefas.md"
+printf '# Spec\n- **RF-001**: y\n- **CA-001** (valida RF-001)\n' > "$Q4/sdd/specs/$F5/spec.md"
+printf -- '- [x] T-001 y (atende: RF-001, CA-001; depende de: nada)\n' > "$Q4/sdd/specs/$F5/tarefas.md"
 printf 'it("y") // sdd:004:CA-001\n' > "$Q4/tests/y.test.js"
 (cd "$Q4" && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null)
 out="$(cd "$Q4" && sdd-verificar 2>&1)"; code=$?
@@ -538,10 +538,10 @@ echo "$out" | grep -q 'Produção: 1 feature' && ok "quadro conta produção" ||
 echo "layout: classificador"
 tipo_de() { (. "$PLUGIN/lib/sdd-comum.sh"; sdd_fora_do_layout "$TMP/nenhum" "$1" || echo nada); }
 for par in "docs/specs/login.md:spec" "PRD.md:spec" "TODO.md:tarefas" "tasks.md:tarefas" \
-           "docs/decisions/usar-pg.md:adr" "docs/adr/usar-pg.md:adr" ".kiro/specs/x/design.md:plano" \
+           "docs/decisions/usar-pg.md:adr" "sdd/adr/usar-pg.md:adr" ".kiro/specs/x/design.md:plano" \
            "ROADMAP.md:backlog" "CONVENTIONS.md:constituicao" "docs/architecture.md:arquitetura" \
-           "README.md:nada" "src/a.spec.ts:nada" "docs/guia.md:nada" "docs/adr/0001-usar-pg.md:nada" \
-           "docs/legado/x/spec.md:nada" "node_modules/x/TODO.md:nada" "docs/adr/0001-Usar_PG.md:adr"; do
+           "README.md:nada" "src/a.spec.ts:nada" "docs/guia.md:nada" "sdd/adr/0001-usar-pg.md:nada" \
+           "sdd/legado/x/spec.md:nada" "node_modules/x/TODO.md:nada" "sdd/adr/0001-Usar_PG.md:adr"; do
   c="${par%%:*}"; e="${par#*:}"; o="$(tipo_de "$c")"
   [ "$o" = "$e" ] && ok "classifica $c como $e" || fail "classifica $c" "esperado $e, obtido $o"
 done
@@ -558,11 +558,11 @@ printf -- '- [ ] exportar csv\n' > "$L/TODO.md"
 printf 'Veja docs/specs/login/requirements.md\n' > "$L/README.md"
 printf 'x\n' > "$L/src/app.ts"
 (cd "$L" && git init -q && git config user.name Teste && git config user.email t@t && git add -A && git commit -qm inicio)
-[ "$(cd "$L" && sdd-adotar contar)" = "6" ] && ok "inventário encontra os 6 artefatos antes do .sdd/" || fail "inventário antes do .sdd" "$(cd "$L" && sdd-adotar inventario)"
+[ "$(cd "$L" && sdd-adotar contar)" = "6" ] && ok "inventário encontra os 6 artefatos antes do sdd/" || fail "inventário antes do sdd" "$(cd "$L" && sdd-adotar inventario)"
 out="$(cd "$L" && sdd-adotar inventario)"
 echo "$out" | grep -q 'não foi preparado pelo SDD' && ok "inventário avisa que o projeto não nasceu com o plugin" || fail "aviso de projeto alheio"
 printf 'TODO.md -> legado:TODO.md\n' > "$TMP/mapa-cedo.txt"
-(cd "$L" && assert_exit 1 "aplicar exige .sdd/" sdd-adotar aplicar "$TMP/mapa-cedo.txt")
+(cd "$L" && assert_exit 1 "aplicar exige sdd/" sdd-adotar aplicar "$TMP/mapa-cedo.txt")
 (cd "$L" && sdd-iniciar >/dev/null)
 M="$TMP/mapa.txt"
 printf 'docs/specs/login/nao-existe.md -> feature:login/spec.md\nTODO.md -> legado:TODO.md\n' > "$M"
@@ -572,7 +572,7 @@ printf 'TODO.md -> src/TODO.md\n' > "$M"
 (cd "$L" && assert_exit 1 "destino fora do padrão é recusado" sdd-adotar aplicar "$M")
 printf 'TODO.md -> feature:x/qualquer.md\n' > "$M"
 (cd "$L" && assert_exit 1 "arquivo de feature inválido é recusado" sdd-adotar aplicar "$M")
-printf 'TODO.md -> specs/050-inventada/spec.md\n' > "$M"
+printf 'TODO.md -> sdd/specs/050-inventada/spec.md\n' > "$M"
 (cd "$L" && assert_exit 1 "feature nova só pelo atalho feature:" sdd-adotar aplicar "$M")
 printf 'TODO.md -> legado:a.md\nREADME.md -> legado:a.md\n' > "$M"
 (cd "$L" && assert_exit 1 "destino repetido é recusado" sdd-adotar aplicar "$M")
@@ -587,50 +587,50 @@ docs/decisions/usar-postgres.md -> adr:Usar Postgres
 TODO.md -> legado:TODO.md
 MAPA
 out="$(cd "$L" && sdd-adotar aplicar "$M" --simular)"
-echo "$out" | grep -q 'specs/001-login-com-e-mail/tarefas.md' && echo "$out" | grep -q 'specs/002-pagamento/plano.md' \
+echo "$out" | grep -q 'sdd/specs/001-login-com-e-mail/tarefas.md' && echo "$out" | grep -q 'sdd/specs/002-pagamento/plano.md' \
   && ok "simulação numera as features e junta pelo slug" || fail "simulação numera" "$out"
-echo "$out" | grep -q 'docs/adr/0001-usar-postgres.md' && ok "simulação numera o ADR" || fail "simulação ADR" "$out"
-[ -f "$L/TODO.md" ] && [ ! -d "$L/specs/001-login-com-e-mail" ] && ok "simulação não move nada" || fail "simulação moveu"
+echo "$out" | grep -q 'sdd/adr/0001-usar-postgres.md' && ok "simulação numera o ADR" || fail "simulação ADR" "$out"
+[ -f "$L/TODO.md" ] && [ ! -d "$L/sdd/specs/001-login-com-e-mail" ] && ok "simulação não move nada" || fail "simulação moveu"
 out="$(cd "$L" && sdd-adotar aplicar "$M")"; code=$?
 [ "$code" -eq 0 ] && ok "aplica o mapa aprovado" || fail "aplica" "$out"
-[ -f "$L/specs/001-login-com-e-mail/spec.md" ] && grep -q 'requisitos do login' "$L/specs/001-login-com-e-mail/spec.md" \
+[ -f "$L/sdd/specs/001-login-com-e-mail/spec.md" ] && grep -q 'requisitos do login' "$L/sdd/specs/001-login-com-e-mail/spec.md" \
   && ok "a spec chega com o conteúdo original" || fail "spec movida"
 [ "$(sdd_feature_ler_t "$L" 001-login-com-e-mail fase)" = "especificacao" ] && ok "feature adotada nasce na especificacao" || fail "fase da adotada"
-grep -q '| criada | .*adotada' "$L/specs/001-login-com-e-mail/historico.md" && grep -q '| adocao | docs/specs/login/tasks.md -> tarefas.md' "$L/specs/001-login-com-e-mail/historico.md" \
+grep -q '| criada | .*adotada' "$L/sdd/specs/001-login-com-e-mail/historico.md" && grep -q '| adocao | docs/specs/login/tasks.md -> tarefas.md' "$L/sdd/specs/001-login-com-e-mail/historico.md" \
   && ok "histórico da feature registra a adoção" || fail "histórico da adotada"
-grep -q '| adocao | TODO.md -> docs/legado/TODO.md' "$L/.sdd/historico.md" && ok "histórico do projeto registra cada movimento" || fail "histórico do projeto"
-grep -q '`.kiro/specs/pagamento/design.md` | `specs/002-pagamento/plano.md`' "$L/.sdd/adocao.md" && ok "relatório em .sdd/adocao.md" || fail "relatório"
-(cd "$L" && git status --short | grep -q '^R  TODO.md -> docs/legado/TODO.md') && ok "usa git mv (o histórico do arquivo segue)" || fail "git mv" "$(cd "$L" && git status --short)"
+grep -q '| adocao | TODO.md -> sdd/legado/TODO.md' "$L/sdd/historico.md" && ok "histórico do projeto registra cada movimento" || fail "histórico do projeto"
+grep -q '`.kiro/specs/pagamento/design.md` | `sdd/specs/002-pagamento/plano.md`' "$L/sdd/adocao.md" && ok "relatório em sdd/adocao.md" || fail "relatório"
+(cd "$L" && git status --short | grep -q '^R  TODO.md -> sdd/legado/TODO.md') && ok "usa git mv (o histórico do arquivo segue)" || fail "git mv" "$(cd "$L" && git status --short)"
 [ ! -d "$L/.kiro" ] && [ ! -d "$L/docs/specs" ] && [ ! -d "$L/docs/decisions" ] && ok "remove as pastas que ficaram vazias" || fail "pastas vazias"
 echo "$out" | grep -q 'README.md cita docs/specs/login/requirements.md' && ok "aponta links para o caminho antigo" || fail "links antigos" "$out"
-echo "$out" | grep -qE '! (CLAUDE\.md|AGENTS\.md|\.sdd/[^ ]*|[^ ]*transicao\.md) cita' && fail "links: falso positivo" "$out" || ok "links: ignora o bloco do SDD, a transição e o .sdd/"
+echo "$out" | grep -qE '! (CLAUDE\.md|AGENTS\.md|\sdd/[^ ]*|[^ ]*transicao\.md) cita' && fail "links: falso positivo" "$out" || ok "links: ignora o bloco do SDD, a transição e o sdd/"
 [ "$(cd "$L" && sdd-adotar contar)" = "0" ] && ok "depois da adoção, nada fora do padrão" || fail "contar depois" "$(cd "$L" && sdd-adotar inventario)"
 out="$(cd "$L" && sdd-status)"
 echo "$out" | grep -q '001-login-com-e-mail' && ok "o quadro mostra as features adotadas" || fail "quadro com adotadas"
-printf 'README.md -> legado:README.md\n' > "$M"; printf 'x' > "$L/docs/legado/README.md"
+printf 'README.md -> legado:README.md\n' > "$M"; printf 'x' > "$L/sdd/legado/README.md"
 (cd "$L" && assert_exit 1 "não sobrescreve destino existente" sdd-adotar aplicar "$M")
 
 echo "layout: hook"
 assert_exit 2 "bloqueia criar spec em docs/specs/" guard_write "$L" "$L/docs/specs/nova.md"
 assert_exit 2 "bloqueia criar TODO.md na raiz" guard_write "$L" "$L/TODO.md"
 assert_exit 2 "bloqueia criar pasta tasks/" guard_write "$L" "$L/tasks/fazer.md"
-assert_exit 2 "bloqueia ADR sem numeração" guard_write "$L" "$L/docs/adr/usar-redis.md"
-assert_exit 0 "permite ADR numerado" guard_write "$L" "$L/docs/adr/0002-usar-redis.md"
-assert_exit 2 "bloqueia pasta de feature criada à mão" guard_write "$L" "$L/specs/009-feita-a-mao/spec.md"
-out="$(guard_write "$L" "$L/specs/009-feita-a-mao/spec.md" 2>&1)"
+assert_exit 2 "bloqueia ADR sem numeração" guard_write "$L" "$L/sdd/adr/usar-redis.md"
+assert_exit 0 "permite ADR numerado" guard_write "$L" "$L/sdd/adr/0002-usar-redis.md"
+assert_exit 2 "bloqueia pasta de feature criada à mão" guard_write "$L" "$L/sdd/specs/009-feita-a-mao/spec.md"
+out="$(guard_write "$L" "$L/sdd/specs/009-feita-a-mao/spec.md" 2>&1)"
 echo "$out" | grep -q 'sdd-estado nova' && ok "a mensagem ensina a criar a feature" || fail "mensagem da feature à mão" "$out"
-assert_exit 0 "permite arquivo novo numa feature que existe" guard_write "$L" "$L/specs/001-login-com-e-mail/contexto.md"
+assert_exit 0 "permite arquivo novo numa feature que existe" guard_write "$L" "$L/sdd/specs/001-login-com-e-mail/contexto.md"
 assert_exit 0 "permite código novo" guard_write "$L" "$L/src/novo.ts"
 assert_exit 0 "permite documento comum" guard_write "$L" "$L/docs/guia.md"
 printf 'x\n' > "$L/PLAN.md"
 assert_exit 0 "editar arquivo antigo fora do padrão continua livre" guard_edit "$L" "$L/PLAN.md"
 assert_exit 0 "reescrever arquivo que já existe continua livre" guard_write "$L" "$L/PLAN.md"
-assert_exit 2 "registro de adoção só pelo utilitário" guard_edit "$L" "$L/.sdd/adocao.md"
-subst 's#^excecoes_de_layout:.*#excecoes_de_layout: docs/manual/**#' "$L/.sdd/config.yml"
+assert_exit 2 "registro de adoção só pelo utilitário" guard_edit "$L" "$L/sdd/adocao.md"
+subst 's#^excecoes_de_layout:.*#excecoes_de_layout: docs/manual/**#' "$L/sdd/config.yml"
 assert_exit 0 "excecoes_de_layout libera o caminho" guard_write "$L" "$L/docs/manual/tasks.md"
-subst 's/^protecao: .*/protecao: desligada/' "$L/.sdd/config.yml"
+subst 's/^protecao: .*/protecao: desligada/' "$L/sdd/config.yml"
 assert_exit 0 "proteção desligada não bloqueia o layout" guard_write "$L" "$L/docs/specs/nova.md"
-subst 's/^protecao: .*/protecao: leve/' "$L/.sdd/config.yml"
+subst 's/^protecao: .*/protecao: leve/' "$L/sdd/config.yml"
 
 echo "layout: verificar e pendências"
 out="$(cd "$L" && sdd-verificar 2>&1)"; code=$?
@@ -645,11 +645,11 @@ echo "$out" | grep -q 'fora do lugar do padrão' && fail "aviso some depois da a
 
 echo "adoção: transição e tarefas [O]"
 A=001-login-com-e-mail
-TR="$L/specs/$A/transicao.md"
+TR="$L/sdd/specs/$A/transicao.md"
 [ "$(sdd_feature_ler_t "$L" $A adocao)" = "transicao" ] && ok "feature adotada nasce em transição" || fail "adocao=transicao"
 grep -q "^# Transição $A" "$TR" && ok "transicao.md vem do modelo" || fail "transicao.md do modelo"
 grep -qE '^\| `docs/specs/login/tasks.md` \| [0-9a-f]{12} \| `tarefas.md` \|$' "$TR" && ok "o como era traz o caminho original e o hash" || fail "como era" "$(grep '^| `' "$TR")"
-grep -qE '\| adocao \| docs/specs/login/tasks.md -> tarefas.md \| hash=[0-9a-f]{12}' "$L/specs/$A/historico.md" && ok "histórico guarda o hash do original" || fail "hash no histórico"
+grep -qE '\| adocao \| docs/specs/login/tasks.md -> tarefas.md \| hash=[0-9a-f]{12}' "$L/sdd/specs/$A/historico.md" && ok "histórico guarda o hash do original" || fail "hash no histórico"
 out="$(cd "$L" && sdd-pendencias)"
 echo "$out" | grep -q "$A veio de outro processo" && ok "pendências cobram a transição" || fail "pendência da transição" "$out"
 out="$(cd "$L" && sdd-status)"
@@ -659,23 +659,23 @@ echo "$out" | grep -q "$A .*em transição" && ok "o quadro mostra a transição
 (cd "$L" && assert_exit 1 "outro artefato não se aprova antes da transição" sdd-estado aprovar spec.md)
 (cd "$L" && assert_exit 1 "a fase não muda à mão durante a transição" sdd-estado definir fase=red)
 # A conversão: o agente reescreve no padrão e preenche o como vai ficar.
-printf '# Spec %s\n- **RF-001**: O SISTEMA DEVE autenticar por e-mail.\n- **RF-002**: O SISTEMA DEVE redefinir a senha.\n- **CA-001** (valida RF-001)\n- **CA-002** (valida RF-002)\n' "$A" > "$L/specs/$A/spec.md"
-printf -- '- [O] T-001 login por e-mail (atende: RF-001, CA-001; depende de: nada)\n- [ ] T-002 redefinir a senha (atende: RF-002, CA-002; depende de: T-001)\n' > "$L/specs/$A/tarefas.md"
+printf '# Spec %s\n- **RF-001**: O SISTEMA DEVE autenticar por e-mail.\n- **RF-002**: O SISTEMA DEVE redefinir a senha.\n- **CA-001** (valida RF-001)\n- **CA-002** (valida RF-002)\n' "$A" > "$L/sdd/specs/$A/spec.md"
+printf -- '- [O] T-001 login por e-mail (atende: RF-001, CA-001; depende de: nada)\n- [ ] T-002 redefinir a senha (atende: RF-002, CA-002; depende de: T-001)\n' > "$L/sdd/specs/$A/tarefas.md"
 awk '{ s = s $0 "\n" } END { while (match(s, /\{\{[^}]*\}\}/)) s = substr(s, 1, RSTART - 1) "x" substr(s, RSTART + RLENGTH); printf "%s", s }' "$TR" > "$TR.tmp" && mv "$TR.tmp" "$TR"
 subst 's/^| Fase de destino | .* |$/| Fase de destino | plano |/' "$TR"
 (cd "$L" && assert_exit 1 "destino plano no nível 1 é recusado" sdd-estado aprovar)
 subst 's/^| Fase de destino | .* |$/| Fase de destino | codar |/' "$TR"
 (cd "$L" && assert_exit 1 "destino inválido é recusado" sdd-estado aprovar)
 subst 's/^| Fase de destino | .* |$/| Fase de destino | red |/' "$TR"
-mv "$L/specs/$A/tarefas.md" "$TMP/tarefas.bak"
+mv "$L/sdd/specs/$A/tarefas.md" "$TMP/tarefas.bak"
 (cd "$L" && assert_exit 1 "destino red sem tarefas.md é recusado" sdd-estado aprovar)
-mv "$TMP/tarefas.bak" "$L/specs/$A/tarefas.md"
+mv "$TMP/tarefas.bak" "$L/sdd/specs/$A/tarefas.md"
 out="$(cd "$L" && sdd-estado aprovar 2>&1)"; code=$?
 [ "$code" -eq 0 ] && echo "$out" | grep -q 'segue no SDD a partir da fase red' && ok "aprovar a transição leva à fase de destino" || fail "aprova transição" "$out"
 echo "$out" | grep -q 'Tarefas feitas fora do plugin (\[O\]): 1' && ok "a aprovação conta as tarefas [O]" || fail "conta [O]" "$out"
 [ "$(sdd_feature_ler_t "$L" $A fase)" = "red" ] && [ "$(sdd_feature_ler_t "$L" $A adocao)" = "regularizada" ] && ok "feature regularizada, na fase red" || fail "regularizada red"
 for art in spec.md tarefas.md transicao.md; do
-  grep -qE "\| aprovacao \| $art \| hash=[0-9a-f]{12} \| decisao: transicao" "$L/specs/$A/historico.md" && ok "transição registra $art com hash" || fail "registro $art"
+  grep -qE "\| aprovacao \| $art \| hash=[0-9a-f]{12} \| decisao: transicao" "$L/sdd/specs/$A/historico.md" && ok "transição registra $art com hash" || fail "registro $art"
 done
 (cd "$L" && assert_exit 0 "spec convertida conta como aprovada" sdd-estado aprovado spec.md)
 (cd "$L" && assert_exit 0 "tarefas convertidas contam como aprovadas" sdd-estado aprovado tarefas.md)
@@ -688,10 +688,10 @@ printf '// sdd:001:CA-001\nit("entra com e-mail", () => {})\n// sdd:001:CA-002\n
 (cd "$L" && assert_exit 0 "rastrear lê as tarefas [O]" sdd-rastrear --silencioso)
 (cd "$L" && sdd-estado aprovar >/dev/null)
 [ "$(sdd_feature_ler_t "$L" $A fase)" = "green" ] && ok "testes aprovados: green" || fail "green da adotada"
-subst 's/^- \[ \] T-002/- [x] T-002/' "$L/specs/$A/tarefas.md"
+subst 's/^- \[ \] T-002/- [x] T-002/' "$L/sdd/specs/$A/tarefas.md"
 (cd "$L" && assert_exit 0 "entrega com [O] e [x]" sdd-estado aprovar)
 [ "$(sdd_feature_ler_t "$L" $A fase)" = "pronta" ] && ok "a feature adotada chega a pronta" || fail "adotada pronta"
-grep -q '^- \[O\] T-001' "$L/specs/$A/tarefas.md" && ok "a marca [O] fica como registro" || fail "marca [O] mantida"
+grep -q '^- \[O\] T-001' "$L/sdd/specs/$A/tarefas.md" && ok "a marca [O] fica como registro" || fail "marca [O] mantida"
 out="$(cd "$L" && sdd-verificar 2>&1)"
 echo "$out" | grep -q '002-pagamento: adotada de outro processo, ainda em transição' && ok "verificar avisa transição pendente" || fail "aviso transição" "$out"
 
@@ -722,12 +722,12 @@ out="$(cd "$G" && sdd-gitflow conferir 2>&1)"; code=$?
 (cd "$G" && sdd-gitflow renomear master main >/dev/null && sdd-gitflow renomear development develop >/dev/null)
 (cd "$G" && git branch -q -D feat-login)
 (cd "$G" && sdd-iniciar >/dev/null)
-grep -q '^specs/\*/historico.md merge=union$' "$G/.gitattributes" && ok "iniciar põe o merge por união dos históricos" || fail ".gitattributes"
+grep -q '^sdd/specs/\*/historico.md merge=union$' "$G/.gitattributes" && ok "iniciar põe o merge por união dos históricos" || fail ".gitattributes"
 (cd "$G" && sdd-iniciar >/dev/null)
 [ "$(grep -c '# sdd:inicio' "$G/.gitattributes")" = "1" ] && ok ".gitattributes não se duplica" || fail ".gitattributes duplicado"
 (cd "$G" && git switch -q main)
 out="$(cd "$G" && sdd-gitflow iniciar 2>&1)"
-[ "$(cd "$G" && git branch --show-current)" = "develop" ] && ok "iniciar com o .sdd/ novo: muda para develop" || fail "iniciar develop" "$out"
+[ "$(cd "$G" && git branch --show-current)" = "develop" ] && ok "iniciar com o sdd/ novo: muda para develop" || fail "iniciar develop" "$out"
 (cd "$G" && git add -A && git commit -qm "chore: sdd")
 (cd "$G" && assert_exit 0 "conferir: tudo no padrão" sdd-gitflow conferir)
 
@@ -750,9 +750,9 @@ printf 'y\n' >> "$G/src/a.js"
 (cd "$G" && git checkout -q -- src/a.js)
 (cd "$G" && sdd-estado definir capacidade=acesso >/dev/null)
 (cd "$G" && assert_exit 0 "feature: cria a branch a partir de develop, levando o que o SDD mudou" sdd-gitflow feature $GF)
-grep -q '^capacidade=acesso$' "$G/specs/$GF/estado" && ok "o estado alterado foi junto para a branch" || fail "estado levado"
+grep -q '^capacidade=acesso$' "$G/sdd/specs/$GF/estado" && ok "o estado alterado foi junto para a branch" || fail "estado levado"
 [ "$(cd "$G" && git branch --show-current)" = "feature/$GF" ] && ok "agora na branch da feature" || fail "branch da feature"
-[ -f "$G/specs/$GF/spec.md" ] && ok "a spec nova vai junto para a branch" || fail "spec na branch"
+[ -f "$G/sdd/specs/$GF/spec.md" ] && ok "a spec nova vai junto para a branch" || fail "spec na branch"
 assert_exit 0 "commit da feature na branch dela" guard_commit "$G" 'git commit -m "docs(001): spec"'
 (cd "$G" && git add -A && git commit -qm "docs(001): spec")
 out="$(cd "$G" && sdd-status)"
@@ -760,23 +760,23 @@ echo "$out" | grep -q "Git Flow: em feature/$GF" && ok "o quadro mostra a branch
 (cd "$G" && assert_exit 1 "integrar recusa feature que não está pronta" sdd-gitflow integrar $GF)
 assert_exit 0 "merge em andamento não é bloqueado" bash -c "cd '$G' && git switch -q develop && printf 'a\n' > m.txt && git add m.txt && git commit -qm m && git switch -q feature/$GF && printf 'b\n' > m.txt && git add m.txt && git commit -qm 'docs(001): m' && ! git merge -q develop >/dev/null 2>&1; $(printf '%q' "$PLUGIN/scripts/guarda-commits.sh") < <(printf '%s' '$(bash_json "$G" 'git commit -m "x"')')"
 (cd "$G" && git merge --abort && git reset -q --hard HEAD~1)
-subst 's/^gitflow: .*/gitflow: desligado/' "$G/.sdd/config.yml"
+subst 's/^gitflow: .*/gitflow: desligado/' "$G/sdd/config.yml"
 assert_exit 0 "gitflow desligado: nada é conferido" guard_commit "$G" 'git checkout -b qualquer-nome'
-subst 's/^gitflow: .*/gitflow: ativo/' "$G/.sdd/config.yml"
+subst 's/^gitflow: .*/gitflow: ativo/' "$G/sdd/config.yml"
 
 echo "git flow: integrar, release e finalizar"
-printf '# Spec\n- **RF-001**: entra\n- **CA-001** (valida RF-001)\n' > "$G/specs/$GF/spec.md"
-printf -- '- [x] T-001 entra (atende: RF-001, CA-001; depende de: nada)\n' > "$G/specs/$GF/tarefas.md"
+printf '# Spec\n- **RF-001**: entra\n- **CA-001** (valida RF-001)\n' > "$G/sdd/specs/$GF/spec.md"
+printf -- '- [x] T-001 entra (atende: RF-001, CA-001; depende de: nada)\n' > "$G/sdd/specs/$GF/tarefas.md"
 printf 'it("entra") // sdd:001:CA-001\n' > "$G/tests/login.test.js"
 (cd "$G" && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null && sdd-estado aprovar >/dev/null)
 [ "$(sdd_feature_ler_t "$G" $GF fase)" = "pronta" ] && ok "feature pronta na branch dela" || fail "pronta"
 (cd "$G" && git add -A && git commit -qm "feat(001): T-001 login")
 out="$(cd "$G" && sdd-pendencias)"
 echo "$out" | grep -q "$GF está pronta e feature/$GF ainda não foi integrada em develop" && ok "pendências cobram a integração" || fail "pendência integração" "$out"
-printf '\n' >> "$G/specs/$GF/spec.md"
+printf '\n' >> "$G/sdd/specs/$GF/spec.md"
 out="$(cd "$G" && sdd-gitflow integrar $GF 2>&1)"; code=$?
 [ "$code" -eq 1 ] && echo "$out" | grep -q 'Faça o commit antes' && ok "integrar exige tudo commitado" || fail "integrar sujo" "$out"
-(cd "$G" && git checkout -q -- "specs/$GF/spec.md")
+(cd "$G" && git checkout -q -- "sdd/specs/$GF/spec.md")
 (cd "$G" && assert_exit 0 "integrar a feature pronta" sdd-gitflow integrar $GF --apagar)
 (cd "$G" && git merge-base --is-ancestor HEAD develop && [ "$(git branch --show-current)" = "develop" ]) && ok "feature em develop, e de volta em develop" || fail "integrada"
 (cd "$G" && git show-ref --verify --quiet "refs/heads/feature/$GF") && fail "branch local apagada" || ok "--apagar remove a branch local"
@@ -785,7 +785,7 @@ out="$(cd "$G" && sdd-gitflow integrar $GF 2>&1)"; code=$?
 [ "$(cd "$G" && git branch --show-current)" = "release/0.1.0" ] && ok "agora em release/0.1.0" || fail "release branch"
 (cd "$G" && sdd-release nova 0.1.0 >/dev/null && sdd-release incluir 0.1.0 $GF >/dev/null && git add -A && git commit -qm "chore(release): 0.1.0")
 (cd "$G" && assert_exit 1 "finalizar recusa sem o go" sdd-gitflow finalizar 0.1.0)
-GR="$G/releases/0.1.0"
+GR="$G/sdd/releases/0.1.0"
 subst 's/{{[^}]*}}/ok/g; s/| Resultado | ok |/| Resultado | aprovado |/' "$GR/testes.md" "$GR/homologacao.md"
 (cd "$G" && assert_exit 0 "homologar a release do Git Flow" sdd-release homologar 0.1.0)
 subst 's/| pendente |/| aprovado |/' "$GR/homologacao.md"; subst 's/{{[^}]*}}/ok/g' "$GR/implantacao.md" "$GR/notas.md"
@@ -806,7 +806,7 @@ echo "git flow: hotfix"
 HF=002-corrigir-login
 [ "$(sdd_feature_ler_t "$G" $HF branch)" = "hotfix/0.1.1" ] && ok "o hotfix reserva hotfix/X.Y.Z (próxima patch)" || fail "branch do hotfix" "$(sdd_feature_ler_t "$G" $HF branch)"
 assert_exit 0 "registro do incidente em develop antes da branch do hotfix" guard_commit "$G" 'git commit -m "docs(002): INC-001 hotfix aberto"'
-(cd "$G" && git add -A ':!specs/' && git commit -qm "docs(002): INC-001 hotfix aberto")
+(cd "$G" && git add -A ':!sdd/specs/' && git commit -qm "docs(002): INC-001 hotfix aberto")
 (cd "$G" && assert_exit 0 "feature do hotfix cria a branch a partir de main" sdd-gitflow feature $HF)
 (cd "$G" && [ "$(git branch --show-current)" = "hotfix/0.1.1" ] && [ "$(git merge-base HEAD main)" = "$(git rev-parse main)" ]) && ok "hotfix/0.1.1 nasce de main" || fail "hotfix de main"
 assert_exit 2 "com a branch criada, develop volta a ser bloqueada" bash -c "cd '$G' && git switch -q develop && $(printf '%q' "$PLUGIN/scripts/guarda-commits.sh") < <(printf '%s' '$(bash_json "$G" 'git commit -m "fix(002): x"')'); r=\$?; git switch -q hotfix/0.1.1; exit \$r"
@@ -873,7 +873,7 @@ out="$(cd "$VT" && sdd-gitflow conferir 2>&1)"
 echo "$out" | grep -q 'nenhuma tag segue vX.Y.Z (há 1.4.2' && ok "conferir avisa de tags fora de vX.Y.Z" || fail "aviso tags" "$out"
 
 echo "versão: o hook confere a mensagem"
-subst 's/^gitflow: .*/gitflow: desligado/' "$VR/.sdd/config.yml"
+subst 's/^gitflow: .*/gitflow: desligado/' "$VR/sdd/config.yml"
 assert_exit 2 "commit fora do Conventional Commits bloqueado" guard_commit "$VR" 'git commit -m "ajustes"'
 out="$(guard_commit "$VR" 'git commit -m "ajustes"' 2>&1)"
 echo "$out" | grep -q 'feat (funcionalidade, sobe o minor)' && ok "a mensagem ensina os tipos" || fail "mensagem tipos" "$out"
@@ -884,9 +884,9 @@ assert_exit 0 "mensagem do editor não é conferida" guard_commit "$VR" 'git com
 printf 'ajustes\n' > "$VR/msg-ruim.txt"; printf '# comentário\nfix: corrige o login\n\ncorpo\n' > "$VR/msg-boa.txt"
 assert_exit 2 "mensagem de arquivo (-F) fora do padrão bloqueada" guard_commit "$VR" 'git commit -F msg-ruim.txt'
 assert_exit 0 "mensagem de arquivo (-F) convencional permitida" guard_commit "$VR" 'git commit -F msg-boa.txt'
-subst 's/^commits: .*/commits: livre/' "$VR/.sdd/config.yml"
+subst 's/^commits: .*/commits: livre/' "$VR/sdd/config.yml"
 assert_exit 0 "commits: livre não confere o formato" guard_commit "$VR" 'git commit -m "ajustes"'
-subst 's/^commits: .*/commits: convencional/' "$VR/.sdd/config.yml"
+subst 's/^commits: .*/commits: convencional/' "$VR/sdd/config.yml"
 
 echo "ajuda dos utilitários"
 for b in "$PLUGIN"/bin/*; do
@@ -902,21 +902,21 @@ GT() { git -c user.name=T -c user.email=t@t "$@"; }
 W="$TMP/cenario-iniciar"; mkdir -p "$W"
 (cd "$W" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && git switch -q -c feat-x && sdd-iniciar >/dev/null && sdd-gitflow iniciar >/dev/null 2>&1)
 [ "$(git -C "$W" rev-parse --abbrev-ref HEAD)" = "develop" ] && ok "gitflow iniciar troca para develop vindo de outra branch" || fail "gitflow iniciar troca de feat-x" "$(git -C "$W" rev-parse --abbrev-ref HEAD)"
-[ -d "$W/.sdd" ] && ok "a preparação vai junto para develop" || fail "preparação em develop"
+[ -d "$W/sdd" ] && ok "a preparação vai junto para develop" || fail "preparação em develop"
 # conferir num repositório sem commit mostra a branch inicial.
 W2="$TMP/cenario-vazio"; mkdir -p "$W2"
-(cd "$W2" && git init -q -b master && sdd-iniciar >/dev/null)
+(cd "$W2" && git init -q -b master && sdd-iniciar --sem-git >/dev/null)
 out="$(cd "$W2" && sdd-gitflow conferir 2>&1 || true)"
 printf '%s' "$out" | grep -q 'branch atual: master (sem nenhum commit ainda)' && ok "conferir sem commit mostra a branch inicial" || fail "conferir sem commit" "$out"
 # sdd-iniciar na atualização mostra o nível e a proteção do config.
 W3="$TMP/cenario-valores"; mkdir -p "$W3"
 (cd "$W3" && sdd-iniciar --nivel 2 --protecao estrita >/dev/null)
 out="$(cd "$W3" && sdd-iniciar 2>&1)"
-printf '%s' "$out" | grep -q 'nível padrão: 2 | proteção: estrita (do .sdd/config.yml, mantido)' && ok "atualização mostra os valores do config" || fail "valores do config na atualização" "$out"
+printf '%s' "$out" | grep -q 'nível padrão: 2 | proteção: estrita (do sdd/config.yml, mantido)' && ok "atualização mostra os valores do config" || fail "valores do config na atualização" "$out"
 # sensivel sem ref, sem Git Flow: conta os commits da feature.
 W4="$TMP/cenario-sensivel"; mkdir -p "$W4/src/auth"
 (cd "$W4" && git init -q -b master && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
-  && subst 's/^gitflow: .*/gitflow: desligado/; s#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' .sdd/config.yml \
+  && subst 's/^gitflow: .*/gitflow: desligado/; s#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' sdd/config.yml \
   && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Login" >/dev/null && GT add -A && GT commit -qm "docs(001): spec" \
   && printf 'x\n' > src/auth/a.js && GT add -A && GT commit -qm "feat(001): T-001 login")
 (cd "$W4" && assert_exit 0 "sensivel sem ref acha o commit sensível da feature (sem Git Flow)" sdd-estado sensivel)
@@ -924,16 +924,16 @@ W4="$TMP/cenario-sensivel"; mkdir -p "$W4/src/auth"
 # sensivel sem ref, com Git Flow: base no ponto em que a branch saiu de develop.
 W5="$TMP/cenario-sensivel-gf"; mkdir -p "$W5/src/auth"
 (cd "$W5" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
-  && subst 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' .sdd/config.yml && sdd-gitflow iniciar >/dev/null 2>&1 \
+  && subst 's#^areas_sensiveis:.*#areas_sensiveis: src/auth/**#' sdd/config.yml && sdd-gitflow iniciar >/dev/null 2>&1 \
   && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Login" >/dev/null && sdd-gitflow feature 001-login >/dev/null 2>&1 \
   && GT add -A && GT commit -qm "docs(001): spec" && printf 'x\n' > src/auth/a.js && GT add -A && GT commit -qm "feat(001): T-001 login")
 (cd "$W5" && assert_exit 0 "sensivel sem ref acha o commit sensível da feature (Git Flow)" sdd-estado sensivel)
 # Artefato aprovado que muda depois: status marca ✗ e pendências apontam.
 W6="$TMP/cenario-alterado"; mkdir -p "$W6"
-(cd "$W6" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml && sdd-estado nova "Cupom" >/dev/null \
-  && printf '# Spec\n\n- RF-001: o sistema DEVE aplicar o cupom.\n- CA-001: Dado x, Quando y, Então z.\n' > specs/001-cupom/spec.md \
-  && sdd-estado aprovar >/dev/null && printf '# Tarefas\n\n- [ ] T-001 aplica o cupom (atende: RF-001, CA-001; depende de: nenhuma)\n' > specs/001-cupom/tarefas.md \
-  && sdd-estado aprovar >/dev/null && printf 'mudou\n' >> specs/001-cupom/spec.md)
+(cd "$W6" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' sdd/config.yml && sdd-estado nova "Cupom" >/dev/null \
+  && printf '# Spec\n\n- RF-001: o sistema DEVE aplicar o cupom.\n- CA-001: Dado x, Quando y, Então z.\n' > sdd/specs/001-cupom/spec.md \
+  && sdd-estado aprovar >/dev/null && printf '# Tarefas\n\n- [ ] T-001 aplica o cupom (atende: RF-001, CA-001; depende de: nenhuma)\n' > sdd/specs/001-cupom/tarefas.md \
+  && sdd-estado aprovar >/dev/null && printf 'mudou\n' >> sdd/specs/001-cupom/spec.md)
 out="$(cd "$W6" && sdd-status 001-cupom 2>&1)"
 printf '%s' "$out" | grep -q '✗ spec.md (alterado depois da aprovação' && ok "status marca ✗ o artefato alterado depois de aprovado" || fail "status ✗" "$out"
 out="$(cd "$W6" && sdd-pendencias 2>&1)"
@@ -945,13 +945,13 @@ printf '%s' "$out" | grep -q 'spec.md foi alterado depois de aprovado (a feature
 (cd "$PLUGIN" && . lib/sdd-comum.sh && cd / && sdd_casa_glob "tests/novo.test.js" "tests/**") \
   && ok "glob casa arquivo novo com o cwd na raiz do disco" || fail "glob com cwd /"
 # Marcar [x] não invalida a aprovação do tarefas.md; mudar o texto, sim.
-subst 's/^- \[ \] T-001/- [x] T-001/' "$W6/specs/001-cupom/tarefas.md"
+subst 's/^- \[ \] T-001/- [x] T-001/' "$W6/sdd/specs/001-cupom/tarefas.md"
 (cd "$W6" && assert_exit 0 "marcar [x] não invalida a aprovação das tarefas" sdd-estado aprovado tarefas.md 001-cupom)
-printf -- '- [ ] T-002 outra (atende: RF-001; depende de: nenhuma)\n' >> "$W6/specs/001-cupom/tarefas.md"
+printf -- '- [ ] T-002 outra (atende: RF-001; depende de: nenhuma)\n' >> "$W6/sdd/specs/001-cupom/tarefas.md"
 (cd "$W6" && assert_exit 4 "acrescentar tarefa invalida a aprovação" sdd-estado aprovado tarefas.md 001-cupom)
 # Versões: o pré-lançamento vem antes da final e não vira referência.
 W7="$TMP/cenario-rc"; mkdir -p "$W7"
-(cd "$W7" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+(cd "$W7" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' sdd/config.yml \
   && sdd-release nova 1.0.0 --objetivo x >/dev/null && sdd-release nova 1.0.0-rc.1 --objetivo x >/dev/null)
 out="$(cd "$W7" && sdd-release listar 2>&1)"
 [ "$(printf '%s\n' "$out" | grep -oE '1\.0\.0(-rc\.1)?' | head -1)" = "1.0.0-rc.1" ] && ok "listar põe o rc antes da final" || fail "ordem SemVer" "$out"
@@ -965,15 +965,15 @@ out="$(cd "$W7" && sdd-release listar 2>&1)"
 (cd "$W5" && assert_exit 1 "finalizar recusa pré-lançamento" sdd-gitflow finalizar 1.0.0-rc.1)
 # A versão com o go (implantacao) já é a referência: o hotfix sai da seguinte.
 W8="$TMP/cenario-base"; mkdir -p "$W8"
-(cd "$W8" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
-  && sdd-release nova 0.4.0 --objetivo x >/dev/null && printf 'fase=implantacao\ntipo=normal\natualizado=x\n' > releases/0.4.0/estado)
+(cd "$W8" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' sdd/config.yml \
+  && sdd-release nova 0.4.0 --objetivo x >/dev/null && printf 'fase=implantacao\ntipo=normal\natualizado=x\n' > sdd/releases/0.4.0/estado)
 [ "$(cd "$W8" && sdd-release proxima patch)" = "0.4.1" ] && ok "release em implantação é a base da próxima versão" || fail "base com implantacao" "$(cd "$W8" && sdd-release proxima patch 2>&1)"
 # Feature reprovada numa release que já terminou: a correção ganha feature/ nova.
 (cd "$W5" && GT add -A && GT commit -qm "docs(001): seguranca" && GT switch -q develop && sdd-estado nova "Perfil" >/dev/null && GT add -A && GT commit -qm "docs: perfil")
-FP="$(cd "$W5/specs" && ls -d ./*-perfil | sed 's#^\./##')"
+FP="$(cd "$W5/sdd/specs" && ls -d ./*-perfil | sed 's#^\./##')"
 [ "${FP%%-*}" = "002" ] && ok "número da feature nova conta a feature que só existe na branch dela" || fail "número duplicado" "$FP"
-(cd "$W5" && mkdir -p releases/9.9.9 && : > releases/9.9.9/release.md && printf 'fase=producao\ntipo=normal\natualizado=x\n' > releases/9.9.9/estado \
-  && subst 's#^branch=.*#branch=release/9.9.9#' "specs/$FP/estado" && GT add -A && GT commit -qm "chore: x" && sdd-gitflow feature "$FP" >/dev/null 2>&1)
+(cd "$W5" && mkdir -p sdd/releases/9.9.9 && : > sdd/releases/9.9.9/release.md && printf 'fase=producao\ntipo=normal\natualizado=x\n' > sdd/releases/9.9.9/estado \
+  && subst 's#^branch=.*#branch=release/9.9.9#' "sdd/specs/$FP/estado" && GT add -A && GT commit -qm "chore: x" && sdd-gitflow feature "$FP" >/dev/null 2>&1)
 [ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/$FP" ] && [ "$(sdd_feature_ler_t "$W5" "$FP" branch)" = "feature/$FP" ] \
   && ok "feature de release terminada volta a feature/ nova" || fail "release terminada" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
 
@@ -984,15 +984,15 @@ RB="$TMP/remoto.git"; git init -q --bare "$RB"
 [ "$(git -C "$W5" rev-parse --abbrev-ref HEAD)" = "feature/$FP" ] && ok "gitflow feature cria a branch local a partir do remoto" || fail "feature só no remoto" "$(git -C "$W5" rev-parse --abbrev-ref HEAD)"
 # Versões: uma versão já usada não se repete; o rc.10 vem depois do rc.2.
 W9="$TMP/cenario-usadas"; mkdir -p "$W9"
-(cd "$W9" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml \
+(cd "$W9" && sdd-iniciar >/dev/null && subst 's/^gitflow: .*/gitflow: desligado/' sdd/config.yml \
   && for v in 0.1.0-rc.1 0.1.0-rc.10 0.1.0-rc.2 0.1.0; do sdd-release nova "$v" --objetivo x >/dev/null; done)
 [ "$(cd "$W9" && sdd-release listar | awk '{print $1}' | tr '\n' ' ')" = "0.1.0-rc.1 0.1.0-rc.2 0.1.0-rc.10 0.1.0 " ] && ok "listar ordena os identificadores numéricos do rc" || fail "ordem rc.10" "$(cd "$W9" && sdd-release listar)"
 [ "$(cd "$W9" && sdd-release proxima 2>/dev/null)" = "0.1.1" ] && ok "versão já usada (release cancelada) não é reproposta" || fail "versão usada" "$(cd "$W9" && sdd-release proxima 2>&1)"
 # Base: uma tag mais nova que a última em produção (versão revertida) vale.
 W10="$TMP/cenario-revertida"; mkdir -p "$W10"
 (cd "$W10" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
-  && subst 's/^gitflow: .*/gitflow: desligado/' .sdd/config.yml && sdd-release nova 0.1.0 --objetivo x >/dev/null \
-  && printf 'fase=producao\ntipo=normal\natualizado=x\n' > releases/0.1.0/estado && GT add -A && GT commit -qm "chore: x" && git tag v0.1.0 \
+  && subst 's/^gitflow: .*/gitflow: desligado/' sdd/config.yml && sdd-release nova 0.1.0 --objetivo x >/dev/null \
+  && printf 'fase=producao\ntipo=normal\natualizado=x\n' > sdd/releases/0.1.0/estado && GT add -A && GT commit -qm "chore: x" && git tag v0.1.0 \
   && GT commit -q --allow-empty -m "feat: y" && git tag v0.2.0)
 [ "$(cd "$W10" && sdd-release proxima patch)" = "0.2.1" ] && ok "a tag mais nova é a base, mesmo com a release dela revertida" || fail "base revertida" "$(cd "$W10" && sdd-release proxima patch 2>&1)"
 
@@ -1007,7 +1007,7 @@ fi
 U2="$TMP/cenario-usar"; mkdir -p "$U2"
 (cd "$U2" && git init -q -b main && GT commit -q --allow-empty -m "chore: início" && sdd-iniciar >/dev/null \
   && sdd-gitflow iniciar >/dev/null 2>&1 && GT add -A && GT commit -qm "chore: sdd" && sdd-estado nova "Carrinho" >/dev/null)
-FU="$(cd "$U2/specs" && ls -d ./*-carrinho | sed 's#^\./##')"
+FU="$(cd "$U2/sdd/specs" && ls -d ./*-carrinho | sed 's#^\./##')"
 out="$(cd "$U2" && sdd-estado usar "$FU" 2>&1)"
 printf '%s' "$out" | grep -q "ainda não existe. Para criá-la: sdd-gitflow feature $FU" && ok "usar avisa que a branch da feature não existe" || fail "aviso do usar" "$out"
 (cd "$U2" && sdd-gitflow feature "$FU" >/dev/null 2>&1)
@@ -1015,10 +1015,64 @@ out="$(cd "$U2" && sdd-estado usar "$FU" 2>&1)"
 printf '%s' "$out" | grep -q '^Aviso' && fail "usar não avisa na branch certa" "$out" || ok "usar não avisa na branch certa"
 
 # Finais de linha (CRLF do Windows com core.autocrlf) não invalidam a aprovação.
-subst 's/$/\r/' "$W6/specs/001-cupom/spec.md"
+subst 's/$/\r/' "$W6/sdd/specs/001-cupom/spec.md"
 (cd "$W6" && sdd-estado aprovar spec.md --sem-avancar >/dev/null 2>&1)
-subst 's/\r$//' "$W6/specs/001-cupom/spec.md"
+subst 's/\r$//' "$W6/sdd/specs/001-cupom/spec.md"
 (cd "$W6" && assert_exit 0 "CRLF para LF não invalida a aprovação da spec" sdd-estado aprovado spec.md 001-cupom)
+
+echo "layout sdd/, .claude/ e git (2.0)"
+N1="$TMP/projeto-vazio"; mkdir -p "$N1"
+out="$(cd "$N1" && sdd-iniciar 2>&1)"
+for d in sdd/specs sdd/sistema sdd/adr sdd/sprints sdd/templates/release; do
+  [ -d "$N1/$d" ] && ok "iniciar cria $d/" || fail "iniciar cria $d/" "$out"
+done
+[ ! -e "$N1/.sdd" ] && [ ! -e "$N1/specs" ] && [ ! -e "$N1/sistema" ] && [ ! -e "$N1/docs" ] && ok "nada do SDD fora de sdd/ (só .claude/ e arquivos de raiz)" || fail "nada fora de sdd/" "$(ls -A "$N1")"
+for d in agents skills commands rules; do
+  [ -d "$N1/.claude/$d" ] && ok "iniciar cria .claude/$d/" || fail ".claude/$d/"
+done
+grep -q '"Bash(sdd-status)"' "$N1/.claude/settings.json" && ok "settings.json traz as permissões de leitura" || fail "settings.json"
+if command -v jq >/dev/null 2>&1; then jq -e . "$N1/.claude/settings.json" >/dev/null 2>&1 && ok "settings.json é JSON válido" || fail "settings.json inválido"; fi
+[ "$(cd "$N1" && git branch --show-current)" = "main" ] && ok "iniciar cria o repositório na branch main" || fail "git init main"
+grep -qx '.claude/settings.local.json' "$N1/.gitignore" && ok "iniciar configura o .gitignore" || fail ".gitignore"
+printf '%s' "$out" | grep -q 'remoto' && ok "iniciar avisa que falta o remoto" || fail "aviso do remoto" "$out"
+(cd "$N1" && git check-ignore -q sdd/estado) && ok "sdd/estado fica fora do git" || fail "sdd/estado versionado"
+(cd "$N1" && sdd-estado nova "Teste do layout" >/dev/null 2>&1)
+(cd "$N1" && ! git check-ignore -q sdd/specs/001-teste-do-layout/estado) && ok "o estado da feature é versionado" || fail "estado da feature ignorado pelo git"
+
+N2="$TMP/sem-git"; mkdir -p "$N2"
+(cd "$N2" && sdd-iniciar --sem-git --sem-claude >/dev/null 2>&1)
+[ ! -d "$N2/.git" ] && [ ! -d "$N2/.claude" ] && [ -d "$N2/sdd" ] && ok "--sem-git e --sem-claude pulam essas partes" || fail "--sem-git/--sem-claude"
+
+N3="$TMP/sem-identidade"; mkdir -p "$N3"
+out="$(cd "$N3" && HOME="$TMP/sem-home" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null sdd-iniciar 2>&1)"
+printf '%s' "$out" | grep -q 'identidade do git' && [ -z "$(cd "$N3" && git log --oneline 2>/dev/null)" ] && ok "sem identidade, pergunta em vez de commitar" || fail "identidade do git" "$out"
+
+N4="$TMP/layout-antigo"; mkdir -p "$N4/.sdd"; touch "$N4/.sdd/config.yml"
+assert_exit 1 "iniciar recusa o layout antigo (.sdd/)" bash -c "cd '$N4' && sdd-iniciar --sem-git"
+N5="$TMP/sdd-alheia"; mkdir -p "$N5/sdd"; echo x > "$N5/sdd/outra-coisa.txt"
+assert_exit 1 "iniciar recusa uma sdd/ que não é do SDD" bash -c "cd '$N5' && sdd-iniciar --sem-git"
+
+echo "sdd-adotar estrutura"
+rm -rf "$N1/.claude/rules"
+out="$(cd "$N1" && sdd-adotar estrutura 2>&1)"
+[ -d "$N1/.claude/rules" ] && printf '%s' "$out" | grep -q '+ .claude/rules/' && ok "estrutura recria o que falta em .claude/" || fail "estrutura recria .claude/rules" "$out"
+printf '%s' "$out" | grep -q '= .claude/settings.json' && ok "estrutura confere o settings.json" || fail "estrutura settings.json" "$out"
+printf '{\n  "permissions": {"allow": []}\n}\n' > "$N1/.claude/settings.json"
+out="$(cd "$N1" && sdd-adotar estrutura 2>&1)"
+printf '%s' "$out" | grep -q '! .claude/settings.json: falta em permissions.allow' && grep -q '"allow": \[\]' "$N1/.claude/settings.json" && ok "estrutura aponta o settings.json fora do padrão sem alterá-lo" || fail "estrutura settings.json fora do padrão" "$out"
+printf '{ quebrado' > "$N1/.claude/settings.json"
+if command -v jq >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1; then
+  out="$(cd "$N1" && sdd-adotar estrutura 2>&1)"
+  printf '%s' "$out" | grep -q 'não é um JSON válido' && ok "estrutura acusa settings.json inválido" || fail "settings.json inválido" "$out"
+fi
+rm -rf "$N1/sdd/sprints"
+out="$(cd "$N1" && sdd-adotar estrutura 2>&1)"
+[ -d "$N1/sdd/sprints" ] && ok "estrutura recria pastas que faltam em sdd/" || fail "estrutura recria sdd/sprints" "$out"
+N6="$TMP/estrutura-vazia"; mkdir -p "$N6"
+out="$(cd "$N6" && sdd-adotar estrutura --so-verificar 2>&1)"
+[ ! -e "$N6/.claude" ] && [ ! -d "$N6/.git" ] && printf '%s' "$out" | grep -q '(falta)' && ok "--so-verificar não cria nada" || fail "--so-verificar" "$out"
+out="$(cd "$N6" && sdd-adotar estrutura 2>&1)"
+[ -d "$N6/.git" ] && [ -d "$N6/.claude/agents" ] && ok "estrutura cria .claude/ e o repositório git" || fail "estrutura cria git e .claude" "$out"
 
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"

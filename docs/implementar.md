@@ -18,7 +18,7 @@ depois das [tarefas](tarefas.md) aprovadas. Para rodar só uma tarefa ou um grup
 
 `tarefas.md` aprovado com `/sdd:aprovar`, a spec (e, no nível 2, o plano)
 aprovada e sem alteração depois disso, e um comando de testes conhecido
-(`comando_teste` no `.sdd/config.yml`; se estiver vazio, ela descobre e confirma
+(`comando_teste` no `sdd/config.yml`; se estiver vazio, ela descobre e confirma
 com você). Marcar tarefas como feitas não conta como alteração.
 
 ## Duas rodadas, com um gate no meio
@@ -34,7 +34,7 @@ primeira tarefa aberta.
 ## Depois da fase green
 
 No fim, o agente roda `sdd-estado sensivel`: se a feature tocou uma das
-`areas_sensiveis` do `.sdd/config.yml` (em qualquer commit dela, desde que ela
+`areas_sensiveis` do `sdd/config.yml` (em qualquer commit dela, desde que ela
 começou, ou em arquivo ainda não commitado), a revisão de segurança passa a ser
 obrigatória para esta feature.
 

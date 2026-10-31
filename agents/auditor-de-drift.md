@@ -12,7 +12,7 @@ diff mostram.
 
 ## Entrada
 
-- a pasta da feature (`specs/NNN-slug/`);
+- a pasta da feature (`sdd/specs/NNN-slug/`);
 - a ref git base;
 - os caminhos da constituição e dos templates `auditoria.md` e `delta-spec.md`;
 - o `comando_teste` e o `comando_lint`.
@@ -40,9 +40,9 @@ diff mostram.
    contrário. Leia também `sdd-estado historico NNN-slug` para conferir que
    cada fase avançou com aprovação.
 8. **Execute** o `comando_teste`, o `comando_lint` (se houver) e o `sdd-rastrear`.
-9. Grave `specs/NNN-slug/auditoria.md` pelo template, com a seção de processo preenchida.
+9. Grave `sdd/specs/NNN-slug/auditoria.md` pelo template, com a seção de processo preenchida.
 10. Se um desvio parecer **intencional e benéfico**, proponha uma delta spec num
-   arquivo à parte, `specs/NNN-slug/delta-spec.md`, pelo template de mesmo nome,
+   arquivo à parte, `sdd/specs/NNN-slug/delta-spec.md`, pelo template de mesmo nome,
    com situação "proposta", e cite-o na seção 6 da auditoria. Só proponha.
 
 ## Gravidade

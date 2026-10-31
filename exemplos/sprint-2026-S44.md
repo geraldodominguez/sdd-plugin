@@ -7,7 +7,7 @@
 | Fim | 2026-10-31 |
 | Situação | encerrada |
 
-> Exemplo de `.sdd/sprints/2026-S44.md` depois do encerramento.
+> Exemplo de `sdd/sprints/2026-S44.md` depois do encerramento.
 
 ## Compromisso
 

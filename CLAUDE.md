@@ -45,8 +45,8 @@ A linha de tarefa, a linha de item de backlog, a marca de teste
 fases da feature e as situações da release e do incidente, a linha do
 histórico, a origem na spec do sistema (`origem: NNN/RF-NNN`), a linha do
 roteiro de homologação, a estrutura do arquivo de sprint, de release e de
-incidente, e as chaves de `.sdd/config.yml`, `.sdd/estado`, `specs/NNN/estado`
-e `releases/<versão>/estado` são **contrato público**. Mudar qualquer um exige atualizar, juntos: `bin/`, `lib/`,
+incidente, e as chaves de `sdd/config.yml`, `sdd/estado`, `sdd/specs/NNN/estado`
+e `sdd/releases/<versão>/estado` são **contrato público**. Mudar qualquer um exige atualizar, juntos: `bin/`, `lib/`,
 `scripts/`, `tests/` (inclusive o `simular-ciclo.sh`), templates, skills,
 documentação (em especial `docs/referencia/ciclo-de-vida.md` e
 `docs/referencia/utilitarios.md`) e `CHANGELOG.md`. É uma

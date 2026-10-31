@@ -12,11 +12,11 @@ sem carregar o sistema inteiro.
 ## Entrada
 
 - o pedido de mudança;
-- o destino `specs/NNN-slug/contexto.md`.
+- o destino `sdd/specs/NNN-slug/contexto.md`.
 
 ## Processo
 
-1. Leia primeiro a spec do sistema em `sistema/` (as capacidades que o pedido
+1. Leia primeiro a spec do sistema em `sdd/sistema/` (as capacidades que o pedido
    parece tocar): ela diz o que o sistema faz hoje, com a origem de cada item.
    Depois extraia do pedido os conceitos-chave: entidades, ações, telas, endpoints.
 2. Localize-os com Grep e Glob: nomes de domínio, rotas, tabelas, eventos.
@@ -25,7 +25,7 @@ sem carregar o sistema inteiro.
    migrations, testes existentes. Não leia arquivos inteiros sem necessidade.
 4. Siga as dependências um nível acima e um abaixo de cada ponto de entrada.
    Não mais que isso.
-5. Grave o `contexto.md`. Use `.sdd/templates/contexto.md` como base, se existir.
+5. Grave o `contexto.md`. Use `sdd/templates/contexto.md` como base, se existir.
 
 ## Estrutura do contexto.md
 

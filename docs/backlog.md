@@ -24,7 +24,7 @@ Para algo que você vai fazer agora, vá direto ao [especificar](especificar.md)
 
 ## Pré-requisitos
 
-O [`/sdd:iniciar`](iniciar.md) rodado: o backlog mora em `.sdd/backlog.md`.
+O [`/sdd:iniciar`](iniciar.md) rodado: o backlog mora em `sdd/backlog.md`.
 
 ## O item de backlog
 

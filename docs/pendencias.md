@@ -17,15 +17,15 @@ mostrar "ESPERANDO VOCÊ".
 
 | Tipo | Onde mora | Como se resolve |
 |---|---|---|
-| Incidente em aberto ou sem post-mortem | `incidentes/INC-NNN.md` | `/sdd:incidente` |
-| Release esperando aceite, go/no-go ou conclusão | `releases/<versão>/` | `/sdd:release` |
+| Incidente em aberto ou sem post-mortem | `sdd/incidentes/INC-NNN.md` | `/sdd:incidente` |
+| Release esperando aceite, go/no-go ou conclusão | `sdd/releases/<versão>/` | `/sdd:release` |
 | Aprovação pendente | artefato da fase sem aprovação, ou alterado depois de aprovado, ou a transição de uma feature adotada | `/sdd:aprovar` |
 | Revisão de segurança devida | feature com segurança obrigatória e tarefas concluídas | `/sdd:seguranca` |
 | Dúvida na spec | `[PRECISA ESCLARECER]` na `spec.md` | `/sdd:clarificar` |
-| Delta spec proposta | `specs/NNN/delta-spec.md` com situação "proposta" | `/sdd:aprovar`, na fase de auditoria |
+| Delta spec proposta | `sdd/specs/NNN/delta-spec.md` com situação "proposta" | `/sdd:aprovar`, na fase de auditoria |
 | Spec do sistema desatualizada | feature pronta ou além, não consolidada | `/sdd:sistema consolidar` |
 | Pronta fora de release | feature pronta sem release | `/sdd:release preparar` |
-| ADR proposto | `docs/adr/*.md` com situação "proposta" | revisar e mudar para "aceita" |
+| ADR proposto | `sdd/adr/*.md` com situação "proposta" | revisar e mudar para "aceita" |
 | Backlog a triar | item sem nível estimado | `/sdd:backlog priorizar` |
 | Sprint sem spec | item da sprint atual que ainda é `B-NNN` | `/sdd:especificar B-NNN` |
 | Git Flow | `develop` ausente, branch fora do padrão, feature pronta não integrada em `develop`, release com o go que não foi para `main` | `sdd-gitflow integrar`, `finalizar`, `renomear` (ver [Git Flow](referencia/git-flow.md)) |

@@ -64,7 +64,7 @@ do `/sdd:release`.
    Sem confirmação, não registre nada.
 
    **Plano aprovado:** os ADRs que o `/sdd:planejar` criou para esta feature
-   (em `docs/adr/`, com a situação `proposta` e citando a feature) passam a
+   (em `sdd/adr/`, com a situação `proposta` e citando a feature) passam a
    `aceita`. Edite a situação de cada um logo depois do `sdd-estado aprovar`
    e diga quais mudaram. Um ADR que o usuário recusou fica `descontinuada`, com o motivo.
 
@@ -94,7 +94,7 @@ do `/sdd:release`.
    plano (nível 2) e revisão de segurança (se obrigatória) estão aprovados e
    inalterados, e recusa com a lista do que falta. Com a feature pronta:
    - conduza a **consolidação na spec do sistema** como no `/sdd:sistema`
-     (edite `sistema/<capacidade>.md`, mostre, e rode `sdd-sistema consolidar NNN-slug`);
+     (edite `sdd/sistema/<capacidade>.md`, mostre, e rode `sdd-sistema consolidar NNN-slug`);
    - **Git Flow** (com `gitflow: ativo`; não vale para hotfix, que vai para
      `main` pela release de correção): primeiro, proponha o commit do que a
      aprovação e a consolidação mudaram, na branch da feature

@@ -11,7 +11,7 @@ sistema, não como quem quer vê-lo funcionar.
 
 ## Entrada
 
-- a pasta da feature (`specs/NNN-slug/`);
+- a pasta da feature (`sdd/specs/NNN-slug/`);
 - a ref git base;
 - os caminhos da constituição e do template `seguranca.md`;
 - `comando_seguranca` e `areas_sensiveis` do projeto.
@@ -37,7 +37,7 @@ sistema, não como quem quer vê-lo funcionar.
    package --vulnerable`, `gitleaks` se existir) e registre o que não pôde rodar.
 7. **LGPD:** para cada dado pessoal tratado, registre finalidade, base legal,
    retenção e proteção. Lacuna em qualquer uma é achado.
-8. Grave `specs/NNN-slug/seguranca.md` pelo template.
+8. Grave `sdd/specs/NNN-slug/seguranca.md` pelo template.
 
 ## Gravidade e veredito
 

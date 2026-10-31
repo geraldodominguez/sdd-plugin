@@ -30,7 +30,7 @@ aberto -> mitigado -> resolvido -> encerrado
    | S4 | incômodo sem impacto relevante (em geral vira item de backlog, não incidente) |
 
 3. Tente identificar a feature e a release de origem (`git log`, `sdd-release
-   listar`, as capacidades em `sistema/`). Na dúvida, deixe em branco.
+   listar`, as capacidades em `sdd/sistema/`). Na dúvida, deixe em branco.
 4. `sdd-incidente abrir "título" --severidade SN [--feature NNN-slug] [--release X.Y.Z]`.
 5. Preencha **Impacto** no arquivo com o que o usuário relatou.
 
@@ -41,7 +41,7 @@ reversível, e só execute com confirmação:
 
 | Opção | Quando |
 |---|---|
-| Rollback da release | o problema começou com a última implantação; use o rollback de `releases/<versão>/implantacao.md` e `sdd-release reverter` |
+| Rollback da release | o problema começou com a última implantação; use o rollback de `sdd/releases/<versão>/implantacao.md` e `sdd-release reverter` |
 | Desligar a função | há feature flag ou configuração |
 | Contorno operacional | um procedimento manual resolve por ora |
 
@@ -57,14 +57,14 @@ Depois: `sdd-incidente situacao INC-NNN mitigado --nota "o que foi feito"`.
    `git status` que não há código pendente e rode `git switch develop`: o
    registro e a pasta nova vão junto. Em `develop`, faça o commit do registro
    (`docs(NNN): INC-NNN hotfix aberto`, com o número do hotfix), **sem** a
-   pasta nova do hotfix em `specs/` (`git add -A ':!specs/NNN-slug/'`, só a pasta do hotfix fica de fora): o hook aceita
+   pasta nova do hotfix em `sdd/specs/` (`git add -A ':!sdd/specs/NNN-slug/'`, só a pasta do hotfix fica de fora): o hook aceita
    este commit em `develop` enquanto a branch do hotfix não existe. Depois,
    rode `sdd-gitflow feature NNN-slug`, que cria `hotfix/X.Y.Z` a partir de
    `main` (não de `develop`: a correção parte do que está em produção) e muda
    para ela, levando a pasta do hotfix. Todo o hotfix é commitado ali.
 
    Na `hotfix/X.Y.Z`, os registros que só existem em `develop` não aparecem:
-   o incidente (leia com `git show develop:incidentes/INC-NNN.md`) e o estado
+   o incidente (leia com `git show develop:sdd/incidentes/INC-NNN.md`) e o estado
    das releases e features mais recentes. As atualizações do incidente
    (`sdd-incidente nota`, `situacao`) são feitas em `develop`, antes da troca
    ou depois do `finalizar`. Uma feature que estava em andamento continua na

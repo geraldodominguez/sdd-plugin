@@ -29,10 +29,10 @@ contexto.
    - a pasta da feature (`sdd-estado caminho`);
    - os caminhos da constituição e dos templates de plano e de ADR
      (`sdd-estado template plano.md`, `sdd-estado template adr.md`);
-   - o `globs_de_contrato` do `.sdd/config.yml`, se definido;
+   - o `globs_de_contrato` do `sdd/config.yml`, se definido;
    - as restrições adicionais do usuário;
    - a instrução de gravar `plano.md`, `contratos/` e, se preciso, ADRs em
-     `docs/adr/` com situação "proposta", e devolver um resumo.
+     `sdd/adr/` com situação "proposta", e devolver um resumo.
 
    O subagent trabalha em contexto próprio e você recebe só o resumo, o que
    mantém a sua janela limpa para as próximas fases.

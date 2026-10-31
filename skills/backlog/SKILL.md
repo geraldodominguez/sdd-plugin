@@ -10,7 +10,7 @@ allowed-tools: Bash(sdd-backlog *), Bash(sdd-backlog), Bash(sdd-estado *), Bash(
 
 Pedido: `$ARGUMENTS` (vazio significa listar)
 
-O backlog fica em `.sdd/backlog.md`. Um item (`B-NNN`) é uma ideia, um pedido
+O backlog fica em `sdd/backlog.md`. Um item (`B-NNN`) é uma ideia, um pedido
 de cliente, um bug relatado ou uma pendência encontrada fora do escopo de uma
 feature. Ele **não tem spec**. Quando ganha spec, vira feature.
 
@@ -33,7 +33,7 @@ feature. Ele **não tem spec**. Quando ganha spec, vira feature.
    ideia interna, pendência da feature NNN).
 3. Com a confirmação, rode `sdd-backlog adicionar "título" --prioridade P --nivel N --origem "texto"`.
 4. Se o usuário deu detalhes que não cabem no título, acrescente-os em linhas
-   recuadas logo abaixo do item no `.sdd/backlog.md`.
+   recuadas logo abaixo do item no `sdd/backlog.md`.
 
 ### Priorizar
 
@@ -42,7 +42,7 @@ feature. Ele **não tem spec**. Quando ganha spec, vira feature.
    proponha prioridade e nível, com o porquê em uma linha, e pergunte.
    Ofereça também descartar o que não faz mais sentido.
 3. Aplique com `sdd-backlog prioridade B-NNN alta|media|baixa`. Para mudar o
-   nível, edite o campo `nivel:` da linha no `.sdd/backlog.md`.
+   nível, edite o campo `nivel:` da linha no `sdd/backlog.md`.
 4. Para reordenar dentro da mesma prioridade, mova as linhas no arquivo: dentro
    de uma prioridade, vale a ordem do arquivo.
 

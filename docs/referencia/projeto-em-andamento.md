@@ -56,7 +56,7 @@ Três ideias explicam tudo:
 
 | Ideia | O que significa |
 |---|---|
-| **Layout** | cada artefato de processo tem um único lugar: `specs/NNN-slug/`, `docs/adr/NNNN-slug.md`, `.sdd/`, `sistema/`, `docs/arquitetura/`, `docs/legado/`. A adoção traz para lá o que está fora |
+| **Layout** | cada artefato de processo tem um único lugar: `sdd/specs/NNN-slug/`, `sdd/adr/NNNN-slug.md`, `sdd/`, `sdd/sistema/`, `sdd/arquitetura/`, `sdd/legado/`. A adoção traz para lá o que está fora |
 | **Transição** | toda feature adotada nasce "em transição": nada é aprovado e nada avança até você aprovar o `transicao.md`, que mostra **como era** e **como vai ficar** |
 | **Marca `[O]`** | a tarefa que o outro processo já fez fica `[O]` (feita fora do plugin, sem gate). Ela não é refeita; os testes dela vêm na fase red e devem passar de início |
 
@@ -70,7 +70,7 @@ aprova nenhum dos dois.
 |---|---|
 | anote o ponto de partida: `git log -1 --format=%H` | a adoção vira alguns commits comuns; esse hash é o ponto para comparar ou voltar. Não crie uma tag para isso: tag fora do formato `vX.Y.Z` vira aviso no `sdd-gitflow conferir` |
 | deixe a árvore limpa: `git status` sem nada pendente | o "como era" de cada arquivo fica no último commit |
-| versione os documentos que vão ser adotados (`git add`, `git commit`) | arquivo fora do git perde o original na conversão; o agente copia para `docs/legado/` nesse caso, mas é melhor ter no git |
+| versione os documentos que vão ser adotados (`git add`, `git commit`) | arquivo fora do git perde o original na conversão; o agente copia para `sdd/legado/` nesse caso, mas é melhor ter no git |
 | confira o `git config user.name` | é o nome registrado em cada aprovação |
 | confira que os testes rodam (`npm test`, `pytest`...) | a fase red das features adotadas precisa deles |
 | liste as branches: `git branch -a` | o plugin usa o Git Flow com nomes fixos (`main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z`); as branches com outros nomes serão renomeadas, com a sua aprovação |
@@ -93,14 +93,14 @@ metade:
 ```
 Este projeto não foi preparado pelo SDD e tem 4 artefato(s) de outro processo.
 
-spec (1) · padrão: specs/NNN-slug/ (crie a feature com sdd-estado nova; nunca crie a pasta à mão)
+spec (1) · padrão: sdd/specs/NNN-slug/ (crie a feature com sdd-estado nova; nunca crie a pasta à mão)
   - docs/specs/exportar-pedidos.md
 
-tarefas (2) · padrão: specs/NNN-slug/ (crie a feature com sdd-estado nova; nunca crie a pasta à mão)
+tarefas (2) · padrão: sdd/specs/NNN-slug/ (crie a feature com sdd-estado nova; nunca crie a pasta à mão)
   - TODO.md
   - tasks/exportar-pedidos.md
 
-adr (1) · padrão: docs/adr/NNNN-slug.md (numeração sequencial de 4 dígitos, a partir do template de ADR)
+adr (1) · padrão: sdd/adr/NNNN-slug.md (numeração sequencial de 4 dígitos, a partir do template de ADR)
   - docs/decisions/banco.md
 
 Para trazer ao padrão: /sdd:iniciar --adotar (lê cada arquivo, propõe o mapa e pede a sua aprovação).
@@ -122,12 +122,13 @@ plano em `notas.md`) o agente procura na leitura do passo 7.
 O agente:
 
 1. roda o inventário e, se ele não está vazio, avisa que o projeto não nasceu com o plugin e que os artefatos serão adotados depois da preparação;
-2. pergunta o nível padrão e a proteção. Para adotar, a **proteção `leve`** é a recomendada: a `estrita` exige disciplina de fases desde o primeiro dia;
-3. cria `.sdd/`, `specs/`, `sistema/` e `docs/adr/`, e injeta o bloco de regras no `CLAUDE.md` e no `AGENTS.md` (o resto desses arquivos fica intacto);
-4. prepara a base do **Git Flow**, antes de qualquer commit: pergunta a `integracao` (`local` ou `pr`); se a produção se chama `master` ou a integração `development`, propõe renomear para `main` e `develop` (passo 6.1); e roda `sdd-gitflow iniciar`, que cria `develop` e muda para ela. Toda a adoção é commitada em `develop`;
-5. rascunha a **constituição** só com o que observou no código: stack e versões dos manifestos, camadas, convenções, comandos de teste e lint, como se implanta hoje. O que não conseguir confirmar fica `{{a definir}}`. Regra que o projeto já descumpre vai para "Exceções aprovadas", com o plano de saída;
-6. propõe o `.sdd/config.yml`: `globs_de_teste` na convenção real do projeto, `areas_sensiveis`, `comando_teste` e os comandos de entrega que conseguir descobrir;
-7. segue para a adoção (passos 7 a 10) antes de te mostrar tudo no gate.
+2. confere a estrutura (`sdd-adotar estrutura --so-verificar`) e pergunta o que falta decidir: criar o repositório git, se não houver, o `user.name` e o `user.email`, o remoto e se acrescenta as permissões dos `sdd-*` a um `.claude/settings.json` que já é seu;
+3. pergunta o nível padrão e a proteção. Para adotar, a **proteção `leve`** é a recomendada: a `estrita` exige disciplina de fases desde o primeiro dia;
+4. cria a pasta `sdd/` (com `specs/`, `sistema/` e `adr/` dentro) e a `.claude/` (`settings.json` e as pastas `agents/`, `skills/`, `commands/` e `rules/`), e injeta o bloco de regras no `CLAUDE.md` e no `AGENTS.md` (o resto desses arquivos fica intacto). Se o projeto já tinha `.claude/`, só completa o que falta e aponta o que está fora do padrão;
+5. prepara a base do **Git Flow**, antes de qualquer commit: pergunta a `integracao` (`local` ou `pr`); se a produção se chama `master` ou a integração `development`, propõe renomear para `main` e `develop` (passo 6.1); e roda `sdd-gitflow iniciar`, que cria `develop` e muda para ela. Toda a adoção é commitada em `develop`;
+6. rascunha a **constituição** só com o que observou no código: stack e versões dos manifestos, camadas, convenções, comandos de teste e lint, como se implanta hoje. O que não conseguir confirmar fica `{{a definir}}`. Regra que o projeto já descumpre vai para "Exceções aprovadas", com o plano de saída;
+7. propõe o `sdd/config.yml`: `globs_de_teste` na convenção real do projeto, `areas_sensiveis`, `comando_teste` e os comandos de entrega que conseguir descobrir;
+8. segue para a adoção (passos 7 a 10) antes de te mostrar tudo no gate.
 
 ### 6.1 As branches de produção e de integração
 
@@ -166,7 +167,7 @@ Conventional Commits, ficam antes da tag e não contam (ver
 Depois, `sdd-gitflow iniciar` cria `develop` (se ainda não existir) e muda
 para ela, de qualquer branch em que você esteja, desde que não haja código
 pendente. As alterações que o `/sdd:iniciar` já fez
-(`.sdd/`, `CLAUDE.md`, `AGENTS.md`) vão junto na troca. Se `develop` já existia
+(`sdd/`, `CLAUDE.md`, `AGENTS.md`) vão junto na troca. Se `develop` já existia
 e está à frente de `main` com outra versão do `CLAUDE.md`, o git recusa a troca
 para não perder nada, e o `sdd-gitflow` mostra a mensagem dele. Nesse caso:
 `git stash`, `git switch develop`, `git stash pop`, resolva o `CLAUDE.md` se
@@ -204,16 +205,16 @@ saber o que já foi implementado. Então decide um destino para cada arquivo:
 | spec, PRD ou requisitos de algo não implementado ou pela metade | uma feature nova, em transição | `feature:<slug>/spec.md` |
 | plano ou design técnico da mesma mudança | a mesma feature | `feature:<slug>/plano.md` |
 | tarefas da mesma mudança | a mesma feature | `feature:<slug>/tarefas.md` |
-| spec de algo já implementado e entregue | `docs/legado/` (não se especifica o passado) | `legado:specs/<nome>.md` |
-| decisão de arquitetura | `docs/adr/NNNN-slug.md`, numerado | `adr:<slug>` |
-| backlog, roadmap, TODO solto | itens em aberto no `.sdd/backlog.md`; o arquivo vai para o legado | `legado:<nome>.md` |
-| sprint de outro processo | `docs/legado/`; a sprint do SDD se replaneja | `legado:sprints/<nome>.md` |
+| spec de algo já implementado e entregue | `sdd/legado/` (não se especifica o passado) | `legado:specs/<nome>.md` |
+| decisão de arquitetura | `sdd/adr/NNNN-slug.md`, numerado | `adr:<slug>` |
+| backlog, roadmap, TODO solto | itens em aberto no `sdd/backlog.md`; o arquivo vai para o legado | `legado:<nome>.md` |
+| sprint de outro processo | `sdd/legado/`; a sprint do SDD se replaneja | `legado:sprints/<nome>.md` |
 | regras e convenções | o conteúdo vai para a constituição; o arquivo, para o legado | `legado:<nome>.md` |
-| arquitetura, diagramas, C4 | `docs/arquitetura/`, como referência | `arquitetura:<nome>` |
-| duplicata, rascunho abandonado, segunda spec da mesma feature | `docs/legado/` (nunca se apaga) | `legado:<caminho>` |
+| arquitetura, diagramas, C4 | `sdd/arquitetura/`, como referência | `arquitetura:<nome>` |
+| duplicata, rascunho abandonado, segunda spec da mesma feature | `sdd/legado/` (nunca se apaga) | `legado:<caminho>` |
 | documento que não é de processo, mas tem nome de artefato | fica onde está | entra em `excecoes_de_layout` |
 
-O mapa fica em `.sdd/adocao-mapa.txt`, uma linha por arquivo, com o motivo em
+O mapa fica em `sdd/adocao-mapa.txt`, uma linha por arquivo, com o motivo em
 comentário:
 
 ```
@@ -236,16 +237,16 @@ o mapa com uma simulação:
 Simulação: 4 arquivo(s). Nada foi movido.
 
   docs/specs/exportar-pedidos.md
-    -> specs/001-exportar-pedidos/spec.md
+    -> sdd/specs/001-exportar-pedidos/spec.md
   tasks/exportar-pedidos.md
-    -> specs/001-exportar-pedidos/tarefas.md
+    -> sdd/specs/001-exportar-pedidos/tarefas.md
   docs/decisions/banco.md
-    -> docs/adr/0001-usar-postgres.md
+    -> sdd/adr/0001-usar-postgres.md
   TODO.md
-    -> docs/legado/TODO.md
+    -> sdd/legado/TODO.md
 
 Features novas (nascem em transição, à espera da conversão e da sua aprovação):
-  + specs/001-exportar-pedidos
+  + sdd/specs/001-exportar-pedidos
 ```
 
 **Gate do mapa: o que olhar antes de dizer "sim"**
@@ -263,10 +264,10 @@ para aqui, com o mapa e a simulação prontos.
 Com o "sim", o agente roda `sdd-adotar aplicar`:
 
 ```
-Adotados: 4 arquivo(s). Registro em .sdd/adocao.md.
+Adotados: 4 arquivo(s). Registro em sdd/adocao.md.
 
 Features em transição (converta os arquivos para o padrão, preencha o transicao.md e aprove a transição com /sdd:aprovar):
-  + specs/001-exportar-pedidos
+  + sdd/specs/001-exportar-pedidos
 
 Ainda citam o caminho antigo (atualize os links):
   ! README.md cita docs/specs/exportar-pedidos.md
@@ -277,10 +278,10 @@ O que aconteceu:
 | Efeito | Detalhe |
 |---|---|
 | arquivos renomeados para o padrão | com `git mv`: o `git log --follow` mostra a história inteira |
-| features numeradas e criadas em **transição** | `specs/001-exportar-pedidos/estado` tem `fase=especificacao` e `adocao=transicao`, e nenhuma aprovação |
+| features numeradas e criadas em **transição** | `sdd/specs/001-exportar-pedidos/estado` tem `fase=especificacao` e `adocao=transicao`, e nenhuma aprovação |
 | `transicao.md` criado do modelo | com o "como era" de cada arquivo já preenchido: caminho original e hash |
-| ADR numerado | `docs/adr/0001-usar-postgres.md` |
-| registro | cada movimento em `.sdd/adocao.md`, no histórico do projeto e no da feature, com o hash do original |
+| ADR numerado | `sdd/adr/0001-usar-postgres.md` |
+| registro | cada movimento em `sdd/adocao.md`, no histórico do projeto e no da feature, com o hash do original |
 | pastas vazias removidas | só as que ficaram vazias |
 | links apontados | os arquivos que ainda citam o caminho antigo |
 
@@ -294,7 +295,7 @@ Depois, o agente:
 - leva para a constituição as regras de outro processo que ainda valem;
 - atualiza os links que o `aplicar` listou;
 - preenche `excecoes_de_layout`, se você aprovou alguma;
-- apaga o `.sdd/adocao-mapa.txt` (o registro fica no `.sdd/adocao.md`);
+- apaga o `sdd/adocao-mapa.txt` (o registro fica no `sdd/adocao.md`);
 - sugere um commit em `develop`: `chore: adoção do SDD, arquivos no padrão`.
 
 Faça esse commit. Assim a conversão do passo seguinte fica num commit
@@ -497,7 +498,7 @@ não cumpre a spec. O agente para e pergunta:
 | a spec está errada | corrige-se a spec antes de aprovar os testes |
 
 A marca `[O]` fica no `tarefas.md` para sempre, como registro do que entrou sem
-gate. No fim, a feature fica pronta, é consolidada em `sistema/pedidos.md`,
+gate. No fim, a feature fica pronta, é consolidada em `sdd/sistema/pedidos.md`,
 entra em `develop` (`sdd-gitflow integrar 001-exportar-pedidos`, ou o pull
 request) e vai numa release como qualquer outra.
 
@@ -536,9 +537,9 @@ Exemplos do que o hook bloqueia e permite:
 | Tentativa de criar | Resultado |
 |---|---|
 | `docs/specs/novo.md`, `tasks/fazer.md`, `TODO.md`, `PLAN.md` | bloqueado: feature nova só pelo `/sdd:especificar` |
-| `specs/009-feita-a-mao/spec.md` (pasta sem `estado`) | bloqueado: a pasta não foi criada pelo `sdd-estado nova` |
-| `docs/adr/usar-redis.md` | bloqueado: o ADR é `docs/adr/NNNN-slug.md` |
-| `docs/adr/0002-usar-redis.md`, `specs/001-exportar-pedidos/contexto.md` | permitido |
+| `sdd/specs/009-feita-a-mao/spec.md` (pasta sem `estado`) | bloqueado: a pasta não foi criada pelo `sdd-estado nova` |
+| `sdd/adr/usar-redis.md` | bloqueado: o ADR é `sdd/adr/NNNN-slug.md` |
+| `sdd/adr/0002-usar-redis.md`, `sdd/specs/001-exportar-pedidos/contexto.md` | permitido |
 | `src/qualquer.ts`, `docs/guia.md` | permitido: não é artefato de processo |
 
 Editar um arquivo que já existe continua livre. Se algo escapou (criado pelo
@@ -558,14 +559,14 @@ A adoção é feita de commits comuns, sem nada apagado:
 | a renomeação de uma branch | `sdd-gitflow` não tem desfazer: `git branch -m <nova> <antiga>`, por exemplo `git branch -m develop development` e `git branch -m main master` (antes de publicar a renomeação no remoto) |
 | só a conversão de uma feature | `git revert` do commit da conversão; a feature volta ao conteúdo original, ainda em transição |
 
-O `.sdd/adocao.md` diz, arquivo por arquivo, de onde cada um veio.
+O `sdd/adocao.md` diz, arquivo por arquivo, de onde cada um veio.
 
 ## 15. Perguntas frequentes
 
 **O plugin vai apagar ou reescrever alguma coisa sem me perguntar?**
 
 Não. Nada se move sem o mapa aprovado, nada é apagado (o que não entra no fluxo
-vai para `docs/legado/`), e o conteúdo só é reescrito na conversão, que você
+vai para `sdd/legado/`), e o conteúdo só é reescrito na conversão, que você
 revê no `transicao.md` e no `git diff` antes de aprovar.
 
 **Por que a feature adotada não entra já aprovada?**
@@ -596,7 +597,7 @@ aparecendo em "Fora do padrão" até você rodar `/sdd:iniciar --adotar` de novo
 **Tenho um `tasks.md` que é de um manual, não de processo.**
 
 Ele fica onde está. Ponha o caminho em `excecoes_de_layout` no
-`.sdd/config.yml`, e nem o hook nem o inventário voltam a apontá-lo.
+`sdd/config.yml`, e nem o hook nem o inventário voltam a apontá-lo.
 
 **Tenho branches com outros nomes. O que acontece com elas?**
 
@@ -609,7 +610,7 @@ branch fora do padrão existir, o hook não deixa commitar nela, e o
 
 **O que acontece com os ADRs adotados?**
 
-São renomeados para `docs/adr/NNNN-slug.md` com o conteúdo original. Se
+São renomeados para `sdd/adr/NNNN-slug.md` com o conteúdo original. Se
 quiser, complete-os no modelo de ADR depois; para o plugin, um ADR com a
 situação "proposta" aparece nas pendências.
 
@@ -619,7 +620,7 @@ situação "proposta" aparece nas pendências.
 |---|---|---|
 | `Mapa inválido. Nada foi movido.` | uma linha do mapa tem erro (listado abaixo da mensagem) | corrija a linha e rode a simulação de novo |
 | `'...' não é um lugar do padrão (use feature:, adr:, legado: ou arquitetura:)` | destino escrito à mão fora do layout | use `feature:`, `adr:`, `legado:` ou `arquitetura:` |
-| `a feature '...' não existe; para uma feature nova, use feature:<slug>/<arquivo>` | caminho `specs/NNN-...` inventado | use o atalho `feature:`; a numeração é do utilitário |
+| `a feature '...' não existe; para uma feature nova, use feature:<slug>/<arquivo>` | caminho `sdd/specs/NNN-...` inventado | use o atalho `feature:`; a numeração é do utilitário |
 | `o transicao.md ainda tem campos {{...}} por preencher` | a conversão não terminou | peça ao agente para completar |
 | `o destino red pressupõe tarefas.md convertido para o padrão, e ele não existe` | falta o arquivo para a fase escolhida | converta as tarefas ou escolha o destino `tarefas` |
 | `a spec tem N dúvida(s) em aberto` | `[PRECISA ESCLARECER]` na spec | esclareça antes, ou use o destino `especificacao` |

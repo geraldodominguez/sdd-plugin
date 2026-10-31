@@ -5,7 +5,7 @@
 #
 # Uso:
 #   sdd-incidente abrir "título" --severidade S1|S2|S3|S4 [--feature NNN-slug] [--release X.Y.Z]
-#                                         cria incidentes/INC-NNN.md
+#                                         cria sdd/incidentes/INC-NNN.md
 #   sdd-incidente situacao INC-NNN mitigado|resolvido [--nota "texto"]
 #   sdd-incidente nota INC-NNN "texto"    acrescenta um evento à linha do tempo
 #   sdd-incidente hotfix INC-NNN "título" [--capacidade nome]
@@ -22,7 +22,7 @@ AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
-[ -d "$RAIZ/.sdd" ] || { echo "sdd-incidente: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+sdd_projeto_usa "$RAIZ" || { echo "sdd-incidente: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
 PASTA="$(sdd_pasta_incidentes "$RAIZ")"
 DIR="$RAIZ/$PASTA"
 
@@ -139,7 +139,7 @@ case "$cmd" in
     [ "$(situacao "$id")" != "encerrado" ] || { echo "sdd-incidente: $id já está encerrado." >&2; exit 1; }
     saida="$("$AQUI/sdd-estado" nova "$titulo" --tipo hotfix --origem "$id" ${cap[@]+"${cap[@]}"})"
     printf '%s\n' "$saida"
-    f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
+    f="$(sdd_kv_ler "$RAIZ/sdd/estado" feature)"
     # Git Flow: o hotfix é feito em hotfix/X.Y.Z, a próxima versão patch.
     vh="$("$AQUI/sdd-release" proxima patch)"
     sdd_feature_gravar "$RAIZ" "$f" branch "hotfix/$vh"

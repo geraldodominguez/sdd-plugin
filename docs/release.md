@@ -27,7 +27,7 @@ Você digita `/sdd:release`; o agente não o usa por conta própria.
 ## Pré-requisitos
 
 Features **prontas** e consolidadas na spec do sistema. Para implantar pelo
-agente, os comandos de deploy no `.sdd/config.yml`; para implantar pelo CI, o
+agente, os comandos de deploy no `sdd/config.yml`; para implantar pelo CI, o
 pipeline do [`/sdd:pipeline`](pipeline.md).
 
 ## A release passo a passo

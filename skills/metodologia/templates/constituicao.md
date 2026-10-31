@@ -2,7 +2,7 @@
 
 > Regras inegociáveis que valem para **todas** as features. Todo plano é
 > checado contra este documento. Alterar a constituição é uma decisão
-> arquitetural: registre um ADR em `docs/adr/`.
+> arquitetural: registre um ADR em `sdd/adr/`.
 >
 > Preencha os campos `{{...}}` e apague o que não se aplica. Seja
 > específico: "usar boas práticas" não é verificável; "toda função pública
@@ -56,7 +56,7 @@ Dependências novas exigem justificativa no plano (seção "Dependências").
 - **Dependências:** {{ex.: nenhuma vulnerabilidade alta ou crítica conhecida em produção}}
 - **Segredos:** {{ex.: varredura de segredos sem achados em todo commit}}
 - **Dados pessoais:** {{ex.: todo dado pessoal tem finalidade, base legal e retenção documentadas}}
-- **Áreas sensíveis:** {{as mesmas de areas_sensiveis no .sdd/config.yml, com o porquê}}
+- **Áreas sensíveis:** {{as mesmas de areas_sensiveis no sdd/config.yml, com o porquê}}
 
 ## 8. Ambientes e entrega
 

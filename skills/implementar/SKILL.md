@@ -35,7 +35,7 @@ testes (os que já existiam recebem a marca, como lista o `transicao.md`), e
 esses testes devem **passar** de início: é assim que o trabalho de fora é
 verificado. Na fase green, implemente só as tarefas `[ ]`.
 
-Leia `comando_teste` e `protecao` no `.sdd/config.yml`. Sem `comando_teste`, descubra o comando de testes do projeto
+Leia `comando_teste` e `protecao` no `sdd/config.yml`. Sem `comando_teste`, descubra o comando de testes do projeto
 e confirme com o usuário.
 
 Pergunte uma vez, no início, se o usuário quer **um commit por tarefa**, no
@@ -68,7 +68,7 @@ tarefa faz para quem usa o sistema:
      regressão que reproduz o incidente, com a marca `sdd:NNN:CA-001`. A
      branch `hotfix/X.Y.Z` sai de `main`, e o registro foi commitado em
      `develop`: ele não está nesta branch. Leia com `git show
-     develop:incidentes/INC-NNN.md` e passe o conteúdo.
+     develop:sdd/incidentes/INC-NNN.md` e passe o conteúdo.
 
    **Não passe código de produção nem a sua ideia de implementação.** O valor
    do escritor-de-testes está em conhecer só o comportamento especificado.

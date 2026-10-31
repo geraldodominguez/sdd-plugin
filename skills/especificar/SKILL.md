@@ -16,7 +16,7 @@ contexto.
 ## Processo
 
 1. **Pré-condições.** Rode `sdd-estado ver`.
-   - Sem `.sdd/`: diga ao usuário para rodar `/sdd:iniciar` e pare.
+   - Sem `sdd/`: diga ao usuário para rodar `/sdd:iniciar` e pare.
    - Pedido vazio: pergunte o que deve mudar, ou mostre `sdd-backlog listar`
      para ele escolher um item, e pare.
    - Se o pedido é um item do backlog (`B-NNN`), leia-o com `sdd-backlog ver B-NNN`:
@@ -36,11 +36,11 @@ contexto.
 3. **Defina a capacidade e a segurança.**
    - **Capacidade:** qual parte do sistema esta mudança toca? Veja as que
      existem com `sdd-sistema listar` e leia a capacidade escolhida em
-     `sistema/<capacidade>.md`: ela diz o que o sistema faz **hoje**, e a spec
+     `sdd/sistema/<capacidade>.md`: ela diz o que o sistema faz **hoje**, e a spec
      vai descrever a diferença. Sem capacidade adequada, proponha um nome novo.
    - **Revisão de segurança:** obrigatória no nível 2. No nível 1, proponha
      `obrigatoria` se a mudança toca autenticação, autorização, dados pessoais,
-     pagamentos, criptografia ou as `areas_sensiveis` do `.sdd/config.yml`.
+     pagamentos, criptografia ou as `areas_sensiveis` do `sdd/config.yml`.
 
 4. **Crie a feature** com `sdd-estado nova "<título curto>" --nivel <N>
    --capacidade <nome> [--seguranca obrigatoria]`, acrescentando
@@ -56,7 +56,7 @@ contexto.
 
 5. **Contexto, em projeto existente.**
    - Nível 2: chame a ferramenta Agent com o subagent `mapeador-de-contexto`,
-     passando o pedido e o destino `specs/NNN-slug/contexto.md`. Ele grava o
+     passando o pedido e o destino `sdd/specs/NNN-slug/contexto.md`. Ele grava o
      mapa e devolve um resumo curto.
    - Nível 1: uma busca sua (Grep, Glob) basta. Cite os arquivos afetados no
      objetivo.
@@ -95,7 +95,7 @@ contexto.
 
 ## Pronto quando
 
-- `specs/NNN-slug/spec.md` existe, sem campos `{{...}}`.
+- `sdd/specs/NNN-slug/spec.md` existe, sem campos `{{...}}`.
 - Todo RF tem pelo menos um CA.
 - Toda dúvida está marcada, não presumida.
 - O usuário sabe qual é o próximo comando.

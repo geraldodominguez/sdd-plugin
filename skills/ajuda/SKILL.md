@@ -20,9 +20,12 @@ do trabalho).
 
 ## Antes de tudo: o projeto usa SDD?
 
-Sem pasta `.sdd/`, o primeiro passo é **`/sdd:iniciar`**, uma vez por
-repositório. Ele cria a estrutura, rascunha a **constituição** a partir do
-código e injeta as regras no `CLAUDE.md` e no `AGENTS.md`. Logo depois, vale
+Sem pasta `sdd/`, o primeiro passo é **`/sdd:iniciar`**, uma vez por
+repositório. Ele pergunta o que não dá para deduzir, cria a pasta `sdd/` (tudo
+do SDD mora nela), a pasta `.claude/` e, se o diretório não for um repositório
+git, o repositório com a branch `main` e o `.gitignore`. Rascunha a
+**constituição** a partir do código e injeta as regras no `CLAUDE.md` e no
+`AGENTS.md`. Logo depois, vale
 rodar **`/sdd:pipeline`** para o CI conferir o processo.
 
 Projeto que não nasceu com o plugin, ou com specs, planos, tarefas e ADRs

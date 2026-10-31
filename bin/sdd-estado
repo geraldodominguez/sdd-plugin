@@ -7,7 +7,7 @@
 #                                              seguranca, capacidade, feature, sprint
 #   sdd-estado nova "título" [--nivel N] [--origem B-NNN|INC-NNN] [--tipo hotfix]
 #                  [--capacidade nome] [--seguranca obrigatoria|dispensada]
-#                                              cria specs/NNN-slug/ e ativa a feature
+#                                              cria sdd/specs/NNN-slug/ e ativa a feature
 #   sdd-estado usar <NNN-slug>                 ativa uma feature existente (só o ponteiro: não
 #                                              troca de branch; avisa se a branch dela é outra)
 #   sdd-estado aprovar [artefato] [--decisao D] [--sem-avancar] [--nota "texto"]
@@ -48,7 +48,7 @@ AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
-if [ ! -d "$RAIZ/.sdd" ]; then
+if ! sdd_projeto_usa "$RAIZ"; then
   echo "sdd-estado: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2
   exit 1
 fi
@@ -60,7 +60,7 @@ proximo_numero() { sdd_proximo_numero_feature "$RAIZ"; }
 
 feature_ativa() {
   local f
-  f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
+  f="$(sdd_kv_ler "$RAIZ/sdd/estado" feature)"
   [ -n "$f" ] || { echo "sdd-estado: nenhuma feature ativa. Use 'sdd-estado usar NNN-slug'." >&2; exit 1; }
   [ -d "$RAIZ/$PASTA_SPECS/$f" ] || { echo "sdd-estado: a feature ativa '$f' não existe em $PASTA_SPECS/." >&2; exit 1; }
   printf '%s\n' "$f"
@@ -149,13 +149,13 @@ shift || true
 
 case "$cmd" in
   ver)
-    f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
+    f="$(sdd_kv_ler "$RAIZ/sdd/estado" feature)"
     if [ $# -gt 0 ]; then
       sdd_estado_ler "$RAIZ" "$1"
       exit 0
     fi
     printf 'feature=%s\n' "$f"
-    printf 'sprint=%s\n' "$(sdd_kv_ler "$RAIZ/.sdd/estado" sprint)"
+    printf 'sprint=%s\n' "$(sdd_kv_ler "$RAIZ/sdd/estado" sprint)"
     if [ -n "$f" ]; then
       for k in $SDD_CHAVES_DA_FEATURE; do
         printf '%s=%s\n' "$k" "$(sdd_feature_ler "$RAIZ" "$f" "$k")"
@@ -210,12 +210,12 @@ case "$cmd" in
           if [ -n "$valor" ] && [ ! -d "$RAIZ/$PASTA_SPECS/$valor" ]; then
             echo "sdd-estado: a feature '$valor' não existe em $PASTA_SPECS/" >&2; exit 1
           fi
-          sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$valor" ;;
+          sdd_kv_gravar "$RAIZ/sdd/estado" feature "$valor" ;;
         sprint)
-          if [ -n "$valor" ] && [ ! -f "$RAIZ/.sdd/sprints/$valor.md" ]; then
-            echo "sdd-estado: a sprint '$valor' não existe em .sdd/sprints/" >&2; exit 1
+          if [ -n "$valor" ] && [ ! -f "$RAIZ/sdd/sprints/$valor.md" ]; then
+            echo "sdd-estado: a sprint '$valor' não existe em sdd/sprints/" >&2; exit 1
           fi
-          sdd_kv_gravar "$RAIZ/.sdd/estado" sprint "$valor" ;;
+          sdd_kv_gravar "$RAIZ/sdd/estado" sprint "$valor" ;;
         *) echo "sdd-estado: chave desconhecida '$chave' (use fase, nivel, seguranca, capacidade, feature ou sprint)" >&2; exit 1 ;;
       esac
     done
@@ -281,7 +281,7 @@ case "$cmd" in
     [ "$tipo" = "hotfix" ] || sdd_feature_gravar "$RAIZ" "$id" branch "feature/$id"
     carimbar "$id"
     sdd_registrar "$RAIZ" "$id" criada "nível $nivel, $tipo${origem:+, origem $origem}: $titulo"
-    sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$id"
+    sdd_kv_gravar "$RAIZ/sdd/estado" feature "$id"
     case "$origem" in
       B-*) "$AQUI/sdd-backlog" promover "$origem" "$id" >/dev/null ;;
     esac
@@ -292,7 +292,7 @@ case "$cmd" in
   usar)
     id="${1:?uso: sdd-estado usar <NNN-slug>}"
     existe_feature "$id"
-    sdd_kv_gravar "$RAIZ/.sdd/estado" feature "$id"
+    sdd_kv_gravar "$RAIZ/sdd/estado" feature "$id"
     "$0" ver
     # O "usar" só aponta a feature ativa; ele não troca de branch. Com o Git
     # Flow, avise quando a branch atual não é a da feature.

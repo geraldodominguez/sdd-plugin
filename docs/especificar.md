@@ -27,7 +27,7 @@ O [`/sdd:iniciar`](iniciar.md) rodado no repositório.
 ## A branch da feature
 
 Com o Git Flow ativo (o padrão), ela cria a branch `feature/NNN-slug` a partir
-de `develop`, com o mesmo id da pasta `specs/NNN-slug/`, e muda para ela. Toda
+de `develop`, com o mesmo id da pasta `sdd/specs/NNN-slug/`, e muda para ela. Toda
 a feature, da spec ao código, é commitada ali. Ver [Git Flow](referencia/git-flow.md).
 
 ## Capacidade e segurança
@@ -36,7 +36,7 @@ Antes de escrever, ela decide duas coisas com você:
 
 | Decisão | Para quê |
 |---|---|
-| **Capacidade** (cadastro, autenticação, faturamento...) | ler o comportamento vigente em `sistema/<capacidade>.md` e, quando a feature ficar pronta, consolidar nela |
+| **Capacidade** (cadastro, autenticação, faturamento...) | ler o comportamento vigente em `sdd/sistema/<capacidade>.md` e, quando a feature ficar pronta, consolidar nela |
 | **Revisão de segurança** obrigatória ou dispensada | sempre obrigatória no nível 2; no nível 1, quando a mudança toca autenticação, dados pessoais, pagamentos ou as áreas sensíveis do projeto |
 
 ## A spec é a fonte de verdade
@@ -59,7 +59,7 @@ teria respondido sozinho. O próximo passo é o [clarificar](clarificar.md).
 **Posso escrever a spec em inglês?**
 
 Pode. Os IDs e as marcas são o que importa para as ferramentas. Os templates
-estão em português; edite os seus em `.sdd/templates/`.
+estão em português; edite os seus em `sdd/templates/`.
 
 ## Está funcionando se
 

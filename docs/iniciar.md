@@ -2,9 +2,15 @@
 
 ## O que faz
 
-Prepara um repositório para o SDD: cria `.sdd/` (configuração, backlog,
-sprints, templates), `specs/`, `sistema/` e `docs/adr/`, injeta as regras do método no `CLAUDE.md` e
-no `AGENTS.md` e rascunha a **constituição**. Num projeto existente, ela
+Prepara um repositório para o SDD. Tudo do método mora numa pasta só, `sdd/`
+(configuração, backlog, sprints, templates, `specs/`, `sistema/` e `adr/`),
+para a raiz do seu projeto não se encher de pastas. Ela cria também a pasta
+`.claude/` com as subpastas que o Claude Code lê do projeto (`agents/`,
+`skills/`, `commands/` e `rules/`) e um `settings.json` com as permissões de
+leitura dos utilitários `sdd-*`. Se o diretório não é um repositório git, ela
+cria um, com a branch `main`, o `.gitignore` e um commit inicial vazio.
+Injeta as regras do método no `CLAUDE.md` e no `AGENTS.md` e rascunha a
+**constituição**. Num projeto existente, ela
 preenche a constituição só com o que observa no código (stack, versões,
 camadas, comandos) e deixa como "a definir" o que não consegue confirmar. Não
 inventa regra.
@@ -24,6 +30,26 @@ o config, a constituição e os templates se você pedir (`--forcar`). Com o pro
 `/sdd:iniciar --adotar` quando o `/sdd:pendencias` mostrar artefatos "Fora do
 padrão".
 
+## O que ela pergunta
+
+Ela não decide sozinha o que é seu. Antes de criar qualquer coisa, confere o
+projeto (`sdd-adotar estrutura --so-verificar`) e pergunta o que não dá para
+deduzir:
+
+| Situação | Pergunta |
+|---|---|
+| não é um repositório git | se cria um (sem isso, o Git Flow fica desligado) |
+| o repositório é de uma pasta acima | se é esse mesmo |
+| o git não sabe quem você é | seu `user.name` e `user.email`; ela não commita sem eles |
+| não há remoto | a URL do remoto, ou se você quer criar o repositório na plataforma agora |
+| já existe um `.claude/settings.json` | se acrescenta as permissões que faltam; o arquivo é seu |
+| já existe uma pasta `sdd/` que não é do SDD | como resolver; ela se recusa a seguir |
+| nível, proteção, integração e comandos do projeto | os valores; ela propõe, você confirma |
+
+Num projeto que já usa o SDD, `sdd-adotar estrutura` confere de novo se
+`sdd/`, `.claude/` e o git estão completos e no padrão: cria o que falta de
+`.claude/` e do git, e só aponta o que existe com conteúdo seu.
+
 ## O Git Flow e a versão
 
 Antes de qualquer commit, ela prepara a base do Git Flow: pergunta se as
@@ -41,9 +67,9 @@ no commit certo, porque a próxima versão é calculada a partir dela. Ver
 |---|---|
 | Inventário | `sdd-adotar inventario` acha os artefatos fora do lugar, pelo nome e pela pasta |
 | Leitura | o agente lê cada um por inteiro e olha o código para saber o que já foi implementado |
-| Mapa | cada arquivo recebe um destino: feature nova, ADR, `docs/arquitetura/` ou `docs/legado/` |
+| Mapa | cada arquivo recebe um destino: feature nova, ADR, `sdd/arquitetura/` ou `sdd/legado/` |
 | **Gate** | você aprova o mapa; sem aprovação, nada se move |
-| Aplicação | `sdd-adotar aplicar` renomeia para o padrão com `git mv`, numera, registra em `.sdd/adocao.md` e põe cada feature em **transição** |
+| Aplicação | `sdd-adotar aplicar` renomeia para o padrão com `git mv`, numera, registra em `sdd/adocao.md` e põe cada feature em **transição** |
 | Arrumação | backlog, constituição, links e exceções |
 | Conversão | o agente reescreve spec, plano e tarefas no modelo, marca `[O]` as tarefas feitas fora do plugin e `[ ]` as abertas, e preenche no `transicao.md` como era e como vai ficar |
 | **Gate da transição** | você aprova cada feature com `/sdd:aprovar`, e ela continua de onde parou |
@@ -70,7 +96,7 @@ Ver [proteção por hooks](referencia/protecao-por-hooks.md) e
 | Ambientes e entrega | release, pipeline |
 | Operação e manutenção | plano (observabilidade), incidentes |
 
-| Chave do `.sdd/config.yml` | Para quê |
+| Chave do `sdd/config.yml` | Para quê |
 |---|---|
 | `areas_sensiveis` | globs que tornam a revisão de segurança obrigatória no nível 1 |
 | `comando_teste`, `comando_lint` | testes e lint (escritor de testes, auditor, pipeline) |
@@ -82,7 +108,7 @@ Ver [proteção por hooks](referencia/protecao-por-hooks.md) e
 
 **Atualizei o plugin. O que faço nos projetos que já usam o SDD?**
 
-Rode `/sdd:iniciar` em cada um. Num projeto com `.sdd/`, ela faz a
+Rode `/sdd:iniciar` em cada um. Num projeto com `sdd/`, ela faz a
 **atualização**, não a preparação: atualiza o bloco de regras e o
 `.gitattributes`, mostra os templates que diferem dos do plugin e as chaves
 novas do config, e pergunta, uma a uma, o que trocar e que valor usar. Depois
@@ -103,7 +129,7 @@ Só acrescenta, ou atualiza no lugar, o bloco entre `<!-- sdd:inicio -->` e
 Renomeia para o padrão, só com o mapa que você aprovou, e depois converte o
 conteúdo para os modelos do SDD. O `git mv` preserva o histórico de cada
 arquivo, o hash do original fica no `transicao.md` e nada é apagado: o que não
-entra no fluxo vai para `docs/legado/`.
+entra no fluxo vai para `sdd/legado/`.
 
 **A feature continua de onde parou?**
 
@@ -117,7 +143,7 @@ fase red e devem passar de início.
 
 **Um documento meu tem nome de artefato, mas não é do SDD.**
 
-Ele fica onde está. Ponha o glob em `excecoes_de_layout` no `.sdd/config.yml`,
+Ele fica onde está. Ponha o glob em `excecoes_de_layout` no `sdd/config.yml`,
 e nem o hook nem o inventário voltam a apontá-lo.
 
 **O meu projeto já descumpre regras que eu quero na constituição. E agora?**
@@ -132,11 +158,12 @@ Quase tudo. Só o ponteiro pessoal fica de fora.
 
 | Caminho | Versionar? | Por quê |
 |---|---|---|
-| `.sdd/config.yml`, `constituicao.md`, `templates/`, `backlog.md`, `sprints/` | sim | são do time |
-| `sistema/`, `releases/`, `incidentes/` | sim | a spec viva, as entregas e os incidentes são do time |
-| `specs/` (inclusive `estado` e `historico.md` de cada feature) | sim | o quadro e as aprovações são do time |
-| `.sdd/adocao.md`, `docs/legado/`, `docs/arquitetura/` | sim | de onde veio cada artefato adotado, e o que veio de outro processo |
-| `.sdd/estado` | não (já vem no `.sdd/.gitignore`) | é o ponteiro pessoal: a feature ativa e a sprint atual de cada pessoa |
+| `.claude/` (inclusive `settings.json`) | sim | as permissões e as pastas do Claude Code são do time; o `.claude/settings.local.json`, pessoal, já vem no `.gitignore` |
+| `sdd/config.yml`, `constituicao.md`, `templates/`, `backlog.md`, `sprints/` | sim | são do time |
+| `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/` | sim | a spec viva, as entregas e os incidentes são do time |
+| `sdd/specs/` (inclusive `estado` e `historico.md` de cada feature) | sim | o quadro e as aprovações são do time |
+| `sdd/adocao.md`, `sdd/legado/`, `sdd/arquitetura/` | sim | de onde veio cada artefato adotado, e o que veio de outro processo |
+| `sdd/estado` | não (já vem no `sdd/.gitignore`) | é o ponteiro pessoal: a feature ativa e a sprint atual de cada pessoa |
 
 ## Está funcionando se
 

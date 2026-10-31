@@ -44,8 +44,16 @@ sdd_raiz_plugin() {
   (cd "$aqui/.." && pwd)
 }
 
+# sdd_projeto_usa <raiz>: 0 se o projeto usa o SDD. O config.yml é o marcador;
+# o sdd/estado (ignorado pelo git, então presente em toda branch da cópia de
+# trabalho) vale também, para o projeto ser reconhecido numa branch que ainda
+# não recebeu o sdd/ (main antes da primeira release).
+sdd_projeto_usa() {
+  [ -f "$1/sdd/config.yml" ] || [ -f "$1/sdd/estado" ]
+}
+
 # Raiz do projeto: CLAUDE_PROJECT_DIR, ou a pasta mais próxima (subindo) que
-# contém .sdd/, ou a pasta atual.
+# contém sdd/, ou a pasta atual.
 sdd_raiz_projeto() {
   if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
     printf '%s\n' "$CLAUDE_PROJECT_DIR"
@@ -54,7 +62,7 @@ sdd_raiz_projeto() {
   local dir
   dir="$(pwd)"
   while [ "$dir" != "/" ] && [ -n "$dir" ]; do
-    if [ -d "$dir/.sdd" ]; then
+    if sdd_projeto_usa "$dir"; then
       printf '%s\n' "$dir"
       return
     fi
@@ -64,13 +72,13 @@ sdd_raiz_projeto() {
 }
 
 # ---------------------------------------------------------------------------
-# Configuração (.sdd/config.yml, chaves planas "chave: valor")
+# Configuração (sdd/config.yml, chaves planas "chave: valor")
 # ---------------------------------------------------------------------------
 
 # sdd_config <raiz> <chave> [padrão]
 sdd_config() {
   local raiz="$1" chave="$2" padrao="${3:-}"
-  local arquivo="$raiz/.sdd/config.yml"
+  local arquivo="$raiz/sdd/config.yml"
   local valor=""
   if [ -f "$arquivo" ]; then
     valor="$(grep -E "^[[:space:]]*${chave}[[:space:]]*:" "$arquivo" | head -1 \
@@ -90,8 +98,8 @@ sdd_config() {
 # Estado
 #
 # O estado mora em dois lugares:
-#   .sdd/estado            ponteiros pessoais: feature ativa e sprint ativa
-#   specs/NNN-slug/estado  estado da feature: fase, nivel, origem, atualizado
+#   sdd/estado            ponteiros pessoais: feature ativa e sprint ativa
+#   sdd/specs/NNN-slug/estado  estado da feature: fase, nivel, origem, atualizado
 # O estado da feature é versionado (o time inteiro vê o quadro); os ponteiros
 # podem ficar fora do git, para cada pessoa ter a sua feature ativa.
 # ---------------------------------------------------------------------------
@@ -129,10 +137,10 @@ sdd_kv_gravar() {
 }
 
 # sdd_pasta_specs <raiz>
-sdd_pasta_specs() { sdd_config "$1" pasta_specs specs; }
-sdd_pasta_sistema() { sdd_config "$1" pasta_sistema sistema; }
-sdd_pasta_releases() { sdd_config "$1" pasta_releases releases; }
-sdd_pasta_incidentes() { sdd_config "$1" pasta_incidentes incidentes; }
+sdd_pasta_specs() { sdd_config "$1" pasta_specs sdd/specs; }
+sdd_pasta_sistema() { sdd_config "$1" pasta_sistema sdd/sistema; }
+sdd_pasta_releases() { sdd_config "$1" pasta_releases sdd/releases; }
+sdd_pasta_incidentes() { sdd_config "$1" pasta_incidentes sdd/incidentes; }
 
 # sdd_arquivo_estado_feature <raiz> <feature>
 sdd_arquivo_estado_feature() { printf '%s\n' "$1/$(sdd_pasta_specs "$1")/$2/estado"; }
@@ -144,18 +152,18 @@ sdd_feature_ler() { sdd_kv_ler "$(sdd_arquivo_estado_feature "$1" "$2")" "$3"; }
 sdd_feature_gravar() { sdd_kv_gravar "$(sdd_arquivo_estado_feature "$1" "$2")" "$3" "$4"; }
 
 # sdd_estado_ler <raiz> <chave>
-# fase, nivel, origem e atualizado vêm da feature ativa; o resto, de .sdd/estado.
+# fase, nivel, origem e atualizado vêm da feature ativa; o resto, de sdd/estado.
 sdd_estado_ler() {
   local raiz="$1" chave="$2"
   if sdd_e_chave_da_feature "$chave"; then
     local f v
-    f="$(sdd_kv_ler "$raiz/.sdd/estado" feature)"
+    f="$(sdd_kv_ler "$raiz/sdd/estado" feature)"
     if [ -n "$f" ] && [ -f "$(sdd_arquivo_estado_feature "$raiz" "$f")" ]; then
       sdd_feature_ler "$raiz" "$f" "$chave"
       return
     fi
   fi
-  sdd_kv_ler "$raiz/.sdd/estado" "$chave"
+  sdd_kv_ler "$raiz/sdd/estado" "$chave"
 }
 
 # sdd_estado_gravar <raiz> <chave> <valor>
@@ -163,13 +171,13 @@ sdd_estado_gravar() {
   local raiz="$1" chave="$2" valor="$3"
   if sdd_e_chave_da_feature "$chave"; then
     local f
-    f="$(sdd_kv_ler "$raiz/.sdd/estado" feature)"
+    f="$(sdd_kv_ler "$raiz/sdd/estado" feature)"
     if [ -n "$f" ]; then
       sdd_feature_gravar "$raiz" "$f" "$chave" "$valor"
       return
     fi
   fi
-  sdd_kv_gravar "$raiz/.sdd/estado" "$chave" "$valor"
+  sdd_kv_gravar "$raiz/sdd/estado" "$chave" "$valor"
 }
 
 # sdd_features <raiz>: lista os ids das features (NNN-slug), em ordem.
@@ -184,8 +192,8 @@ sdd_features() {
 # ---------------------------------------------------------------------------
 # Histórico
 #
-# specs/NNN-slug/historico.md  eventos da feature
-# .sdd/historico.md            eventos do projeto (backlog, sprint)
+# sdd/specs/NNN-slug/historico.md  eventos da feature
+# sdd/historico.md            eventos do projeto (backlog, sprint)
 # Linha: "- AAAA-MM-DDTHH:MM:SSZ | evento | detalhe | por: Nome"
 # ---------------------------------------------------------------------------
 
@@ -205,7 +213,7 @@ sdd_arquivo_historico() {
   if [ -n "${2:-}" ]; then
     printf '%s\n' "$1/$(sdd_pasta_specs "$1")/$2/historico.md"
   else
-    printf '%s\n' "$1/.sdd/historico.md"
+    printf '%s\n' "$1/sdd/historico.md"
   fi
 }
 
@@ -259,7 +267,7 @@ sdd_testes_da_feature() {
   globs="$(sdd_config "$raiz" globs_de_teste "$SDD_GLOBS_TESTE_PADRAO")"
   specs="$(sdd_pasta_specs "$raiz")"
   sdd_listar_arquivos "$raiz" | sort | while IFS= read -r f; do
-    case "$f" in "$specs"/*|.sdd/*) continue ;; esac
+    case "$f" in "$specs"/*|sdd/*) continue ;; esac
     if sdd_casa_glob "$f" "$globs" && grep -q "sdd:${num}:" "$raiz/$f" 2>/dev/null; then
       printf '%s\n' "$f"
     fi
@@ -684,8 +692,8 @@ sdd_md_sem_lacunas() { [ -f "$1" ] && ! grep -q '{{' "$1"; }
 
 # sdd_template <raiz> <nome>: template local do projeto ou o do plugin.
 sdd_template() {
-  if [ -f "$1/.sdd/templates/$2" ]; then
-    printf '%s\n' "$1/.sdd/templates/$2"
+  if [ -f "$1/sdd/templates/$2" ]; then
+    printf '%s\n' "$1/sdd/templates/$2"
   else
     printf '%s\n' "$(sdd_raiz_plugin)/skills/metodologia/templates/$2"
   fi
@@ -715,7 +723,7 @@ sdd_slug() {
     | sed -E 's/-+$//'
 }
 
-# sdd_proximo_numero_feature <raiz>: próximo NNN livre em specs/.
+# sdd_proximo_numero_feature <raiz>: próximo NNN livre em sdd/specs/.
 sdd_proximo_numero_feature() {
   local specs b
   # Com o Git Flow, uma feature ainda não integrada só existe na branch dela:
@@ -734,10 +742,10 @@ sdd_proximo_numero_feature() {
   } | awk '/^[0-9][0-9][0-9]-/ { n = substr($0, 1, 3) + 0; if (n > m) m = n } END { printf "%03d\n", m + 1 }'
 }
 
-# sdd_proximo_numero_adr <raiz>: próximo NNNN livre em docs/adr/.
+# sdd_proximo_numero_adr <raiz>: próximo NNNN livre em sdd/adr/.
 sdd_proximo_numero_adr() {
   local maior=0 a n
-  for a in "$1"/docs/adr/[0-9][0-9][0-9][0-9]-*.md; do
+  for a in "$1"/sdd/adr/[0-9][0-9][0-9][0-9]-*.md; do
     [ -f "$a" ] || continue
     n="$(basename "$a" | cut -c1-4)"
     n=$((10#$n))
@@ -750,7 +758,7 @@ sdd_proximo_numero_adr() {
 # Layout: onde cada artefato mora
 #
 # O layout é o da tabela do README ("Onde fica cada coisa"), com as pastas
-# configuráveis do .sdd/config.yml. Um artefato de processo (spec, plano,
+# configuráveis do sdd/config.yml. Um artefato de processo (spec, plano,
 # tarefas, ADR, backlog, sprint, arquitetura, regras do projeto) fora dele é
 # o rastro de outro processo ou de um agente que inventou a própria estrutura.
 # As mesmas funções servem ao hook (arquivo novo), ao sdd-adotar (inventário e
@@ -845,15 +853,15 @@ sdd_no_layout() {
   specs="$SDD__LAYOUT_SPECS"; sistema="$SDD__LAYOUT_SISTEMA"
   releases="$SDD__LAYOUT_RELEASES"; incidentes="$SDD__LAYOUT_INCIDENTES"
   case "$rel" in
-    .sdd/*|"$sistema"/*|"$releases"/*|"$incidentes"/*|docs/legado/*|docs/arquitetura/*) return 0 ;;
-    docs/adr/*)
-      printf '%s' "${rel#docs/adr/}" | grep -qE '^[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*\.md$' && return 0 ;;
+    sdd/adr/*)
+      printf '%s' "${rel#sdd/adr/}" | grep -qE '^[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*\.md$' && return 0 ;;
     "$specs"/*/*)
       resto="${rel#"$specs"/}"
       pasta="${resto%%/*}"
       # Pasta com nome de feature, mas sem estado, foi criada à mão: não conta.
       printf '%s' "$pasta" | grep -qE '^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' \
         && [ -f "$raiz/$specs/$pasta/estado" ] && return 0 ;;
+    sdd/config.yml|sdd/constituicao.md|sdd/backlog.md|sdd/estado|sdd/historico.md|sdd/adocao.md|sdd/adocao-mapa.txt|sdd/.gitignore|sdd/sprints/*|sdd/templates/*|sdd/legado/*|sdd/arquitetura/*|"$sistema"/*|"$releases"/*|"$incidentes"/*) return 0 ;;
   esac
   excecoes="$SDD__LAYOUT_EXCECOES"
   [ -n "$excecoes" ] && sdd_casa_glob "$rel" "$excecoes" && return 0
@@ -876,7 +884,7 @@ sdd_artefatos_fora_do_layout() {
   # Filtra pela extensão antes: só os candidatos passam pelo classificador.
   sdd_listar_arquivos "$raiz" | grep -iE '\.(md|mdx|markdown|dsl|puml|plantuml)$' | sort | while IFS= read -r f; do
     [ -n "$f" ] && [ -f "$raiz/$f" ] || continue
-    case "$f" in .sdd/*) continue ;; esac
+    case "$f" in sdd/templates/*) continue ;; esac
     tipo="$(sdd_fora_do_layout "$raiz" "$f")" || continue
     printf '%s\t%s\n' "$tipo" "$f"
   done
@@ -887,11 +895,11 @@ sdd_artefatos_fora_do_layout() {
 sdd_destino_do_tipo() {
   case "$1" in
     spec|plano|tarefas) echo "$(sdd_pasta_specs "${2:-.}")/NNN-slug/ (crie a feature com sdd-estado nova; nunca crie a pasta à mão)" ;;
-    adr) echo "docs/adr/NNNN-slug.md (numeração sequencial de 4 dígitos, a partir do template de ADR)" ;;
-    backlog) echo ".sdd/backlog.md (sdd-backlog adicionar)" ;;
-    sprint) echo ".sdd/sprints/ (sdd-sprint)" ;;
-    arquitetura) echo "docs/arquitetura/" ;;
-    constituicao) echo ".sdd/constituicao.md (regras do projeto inteiro)" ;;
+    adr) echo "sdd/adr/NNNN-slug.md (numeração sequencial de 4 dígitos, a partir do template de ADR)" ;;
+    backlog) echo "sdd/backlog.md (sdd-backlog adicionar)" ;;
+    sprint) echo "sdd/sprints/ (sdd-sprint)" ;;
+    arquitetura) echo "sdd/arquitetura/" ;;
+    constituicao) echo "sdd/constituicao.md (regras do projeto inteiro)" ;;
     *) echo "o lugar do padrão (ver /sdd:ajuda)" ;;
   esac
 }
@@ -1041,4 +1049,174 @@ sdd_semver_somar() {
     minor) echo "$ma.$((mi + 1)).0" ;;
     *) echo "$ma.$mi.$((pa + 1))" ;;
   esac
+}
+
+# ---------------------------------------------------------------------------
+# Estrutura do projeto: sdd/, .claude/ e o repositório git
+#
+# Usadas pelo sdd-iniciar (cria o que falta) e pelo sdd-adotar estrutura
+# (confere e, com criar=1, completa). Cada função imprime uma linha por item:
+#   "+ item"            criado agora
+#   "= item"            já existia e está no padrão
+#   "- item (falta)"    falta (só quando criar=0)
+#   "! item: motivo"    existe, mas fora do padrão: nunca é alterado sozinho
+#   "? item: pergunta"  depende de uma decisão do usuário
+# ---------------------------------------------------------------------------
+
+# Pastas que o Claude Code lê do projeto, dentro de .claude/.
+SDD_CLAUDE_PASTAS="agents skills commands rules"
+
+# Permissões só de leitura dos utilitários, para o settings.json do projeto.
+# Os utilitários que gravam continuam pedindo confirmação.
+SDD_CLAUDE_PERMISSOES='Bash(sdd-status)
+Bash(sdd-status *)
+Bash(sdd-pendencias)
+Bash(sdd-pendencias *)
+Bash(sdd-rastrear *)
+Bash(sdd-verificar)
+Bash(sdd-verificar *)
+Bash(sdd-estado ver)
+Bash(sdd-estado ver *)'
+
+# Linhas que o .gitignore de um projeto com o SDD precisa ter.
+SDD_GITIGNORE_LINHAS=".DS_Store Thumbs.db *.tmp.* .env .env.* !.env.example .claude/settings.local.json"
+
+# sdd_claude_estrutura <raiz> <criar 0|1>
+sdd_claude_estrutura() {
+  local raiz="$1" criar="$2" p arq perm faltam="" valido=""
+  for p in $SDD_CLAUDE_PASTAS; do
+    if [ -d "$raiz/.claude/$p" ]; then
+      echo "= .claude/$p/"
+    elif [ "$criar" = 1 ]; then
+      mkdir -p "$raiz/.claude/$p" && touch "$raiz/.claude/$p/.gitkeep"
+      echo "+ .claude/$p/"
+    else
+      echo "- .claude/$p/ (falta)"
+    fi
+  done
+
+  arq="$raiz/.claude/settings.json"
+  if [ ! -e "$arq" ]; then
+    if [ "$criar" = 1 ]; then
+      mkdir -p "$raiz/.claude"
+      {
+        printf '{\n  "permissions": {\n    "allow": [\n'
+        local ultima
+        ultima="$(printf '%s\n' "$SDD_CLAUDE_PERMISSOES" | tail -1)"
+        while IFS= read -r perm; do
+          if [ "$perm" = "$ultima" ]; then printf '      "%s"\n' "$perm"; else printf '      "%s",\n' "$perm"; fi
+        done <<< "$SDD_CLAUDE_PERMISSOES"
+        printf '    ]\n  }\n}\n'
+      } > "$arq"
+      echo "+ .claude/settings.json (permissões de leitura dos utilitários sdd-*)"
+    else
+      echo "- .claude/settings.json (falta)"
+    fi
+    return 0
+  fi
+
+  if command -v jq >/dev/null 2>&1; then
+    jq -e . "$arq" >/dev/null 2>&1 && valido=sim || valido=nao
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$arq" >/dev/null 2>&1 && valido=sim || valido=nao
+  fi
+  if [ "$valido" = nao ]; then
+    echo "! .claude/settings.json: não é um JSON válido (corrija à mão)"
+    return 0
+  fi
+  while IFS= read -r perm; do
+    grep -qF "\"$perm\"" "$arq" || faltam="$faltam$perm, "
+  done <<< "$SDD_CLAUDE_PERMISSOES"
+  if [ -n "$faltam" ]; then
+    echo "! .claude/settings.json: falta em permissions.allow: ${faltam%, } (o arquivo é seu; acrescente se quiser)"
+  else
+    echo "= .claude/settings.json"
+  fi
+}
+
+# sdd_estrutura_sdd <raiz> <criar 0|1>: confere a pasta sdd/ contra o padrão.
+# Não cria config.yml nem constituição (têm conteúdo do projeto): sem eles,
+# o projeto precisa do sdd-iniciar.
+sdd_estrutura_sdd() {
+  local raiz="$1" criar="$2" d f origem
+  if [ ! -f "$raiz/sdd/config.yml" ]; then
+    echo "! sdd/config.yml: o projeto ainda não foi preparado (rode /sdd:iniciar)"
+    return 0
+  fi
+  for f in config.yml constituicao.md backlog.md estado .gitignore; do
+    if [ -f "$raiz/sdd/$f" ]; then echo "= sdd/$f"; else echo "! sdd/$f: falta (rode sdd-iniciar, que completa sem sobrescrever)"; fi
+  done
+  for d in sdd/sprints sdd/templates sdd/templates/release sdd/adr "$(sdd_pasta_specs "$raiz")" "$(sdd_pasta_sistema "$raiz")"; do
+    if [ -d "$raiz/$d" ]; then
+      echo "= $d/"
+    elif [ "$criar" = 1 ]; then
+      mkdir -p "$raiz/$d"; touch "$raiz/$d/.gitkeep"; echo "+ $d/"
+    else
+      echo "- $d/ (falta)"
+    fi
+  done
+  origem="$(sdd_raiz_plugin)/skills/metodologia/templates"
+  for f in "$origem"/*.md; do
+    [ "$(basename "$f")" = "bloco-agentes.md" ] && continue
+    [ -f "$raiz/sdd/templates/$(basename "$f")" ] || echo "- sdd/templates/$(basename "$f") (falta; o sdd-iniciar completa)"
+  done
+}
+
+# sdd_git_preparar <raiz> <criar 0|1>: repositório, branch main, .gitignore,
+# identidade, commit inicial e remoto.
+sdd_git_preparar() {
+  local raiz="$1" criar="$2" topo l nome email
+  if ! topo="$(git -C "$raiz" rev-parse --show-toplevel 2>/dev/null)"; then
+    if [ "$criar" != 1 ]; then echo "- repositório git (falta)"; return 0; fi
+    case "$raiz" in "$HOME"|/|"") echo "! repositório git: recusado em '$raiz' (rode a partir da pasta do projeto)"; return 0 ;; esac
+    git -C "$raiz" init -q -b main 2>/dev/null || { git -C "$raiz" init -q && git -C "$raiz" symbolic-ref HEAD refs/heads/main; }
+    echo "+ repositório git (branch main)"
+    topo="$raiz"
+  else
+    echo "= repositório git"
+    local a b
+    a="$(cd "$raiz" && pwd -P)"; b="$(cd "$topo" && pwd -P)"
+    [ "$a" = "$b" ] || echo "! repositório git: o projeto está dentro do repositório $topo (confirme que é o certo)"
+  fi
+
+  if ! git -C "$raiz" rev-parse --verify HEAD >/dev/null 2>&1; then
+    local atual
+    atual="$(git -C "$raiz" symbolic-ref --short HEAD 2>/dev/null || true)"
+    if [ "$atual" != "main" ] && [ "$criar" = 1 ]; then
+      git -C "$raiz" symbolic-ref HEAD refs/heads/main
+      echo "+ branch inicial main (era ${atual:-nenhuma})"
+    fi
+  fi
+
+  if [ "$criar" = 1 ]; then
+    local arq="$raiz/.gitignore" novas=0
+    [ -e "$arq" ] || : > "$arq"
+    for l in $SDD_GITIGNORE_LINHAS; do
+      if ! grep -qxF "$l" "$arq"; then
+        if [ "$novas" -eq 0 ] && [ -s "$arq" ] && [ -n "$(tail -c1 "$arq")" ]; then printf '\n' >> "$arq"; fi
+        printf '%s\n' "$l" >> "$arq"
+        novas=$((novas + 1))
+      fi
+    done
+    if [ "$novas" -gt 0 ]; then echo "+ .gitignore ($novas linha(s))"; else echo "= .gitignore"; fi
+  else
+    for l in $SDD_GITIGNORE_LINHAS; do
+      grep -qxF "$l" "$raiz/.gitignore" 2>/dev/null || { echo "- .gitignore: falta a linha $l"; }
+    done
+  fi
+
+  nome="$(git -C "$raiz" config user.name 2>/dev/null || true)"
+  email="$(git -C "$raiz" config user.email 2>/dev/null || true)"
+  if [ -z "$nome" ] || [ -z "$email" ]; then
+    echo "? identidade do git: user.name e user.email não estão configurados (sem eles não há commit)"
+  elif [ "$criar" = 1 ] && ! git -C "$raiz" rev-parse --verify HEAD >/dev/null 2>&1; then
+    git -C "$raiz" commit -q --allow-empty -m "chore: início" && echo "+ commit inicial vazio em main (chore: início)"
+  fi
+
+  if ! git -C "$raiz" remote | grep -q .; then
+    echo "? remoto: não há 'origin' (git remote add origin <url>, ou gh repo create)"
+  else
+    echo "= remoto origin"
+  fi
+  return 0
 }

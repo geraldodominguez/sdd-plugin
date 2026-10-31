@@ -1,9 +1,9 @@
 ---
 name: iniciar
-description: Prepara o repositório para o SDD. Cria .sdd/ (configuração, backlog, sprints), specs/ e docs/adr/, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
-argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar]"
+description: Prepara o repositório para o SDD. Cria a pasta sdd/ (configuração, backlog, sprints, specs, sistema, adr), a pasta .claude/ com as subpastas que o Claude Code usa e, se faltar, o repositório git com tudo configurado, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
+argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar] [--sem-git] [--sem-claude]"
 disable-model-invocation: true
-allowed-tools: Bash(git status), Bash(git status *), Bash(sdd-estado ver), Bash(sdd-estado definir feature=*), Bash(git symbolic-ref HEAD refs/heads/main), Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm .sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write, Bash(git tag *), Bash(git merge develop), Bash(git branch *)
+allowed-tools: Bash(git status), Bash(git status *), Bash(sdd-estado ver), Bash(sdd-estado definir feature=*), Bash(git symbolic-ref HEAD refs/heads/main), Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(git config user.name *), Bash(git config user.email *), Bash(git remote add *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write, Bash(git tag *), Bash(git merge develop), Bash(git branch *)
 ---
 
 # /sdd:iniciar
@@ -13,21 +13,49 @@ Argumentos: `$ARGUMENTS`
 ## Processo
 
 1. **Veja o estado.** Rode `sdd-adotar inventario`. Ele funciona antes do
-   `.sdd/` existir e lista os artefatos de processo (specs, planos, tarefas,
+   `sdd/` existir e lista os artefatos de processo (specs, planos, tarefas,
    ADRs, backlog, sprints, arquitetura, regras) que estão fora do lugar do
    padrão.
-   - **Sem `.sdd/` e com inventário vazio:** projeto novo ou sem processo. Siga
+   - **Sem `sdd/` e com inventário vazio:** projeto novo ou sem processo. Siga
      do passo 2.
-   - **Sem `.sdd/` e com inventário:** o projeto não nasceu com o plugin. Diga
+   - **Sem `sdd/` e com inventário:** o projeto não nasceu com o plugin. Diga
      ao usuário quantos artefatos encontrou e de onde (`docs/specs/`, `.kiro/`,
      `TODO.md`...), avise que eles serão lidos e trazidos ao padrão depois da
      preparação, com a aprovação dele, e siga do passo 2.
-   - **Com `.sdd/`:** o projeto já usa o SDD. Não siga os passos 2 a 9 (eles
+   - **Com `sdd/`:** o projeto já usa o SDD. Não siga os passos 2 a 10 (eles
      são da preparação e reescreveriam a constituição e o config): vá para a
      **Atualização** (abaixo), que termina na Adoção se houver inventário ou
      `--adotar`.
 
-2. **Escolha os parâmetros.** Se os argumentos não trazem nível e proteção,
+2. **Pergunte antes de preparar.** Rode `sdd-adotar estrutura --so-verificar`:
+   ele mostra, sem criar nada, o que o projeto já tem (`sdd/`, `.claude/`, o
+   repositório git) e o que falta. Com a saída em mãos, faça as perguntas que
+   se aplicam, todas de uma vez, e só siga com as respostas:
+   - **Repositório git ausente** (`- repositório git (falta)`): "Este
+     diretório não é um repositório git. Crio um, com a branch `main`,
+     `.gitignore` e um commit inicial vazio?" Se a resposta for não, use
+     `--sem-git` e diga que o Git Flow fica desligado (`gitflow: desligado`).
+   - **O repositório é de uma pasta acima** (`! repositório git: o projeto
+     está dentro do repositório ...`): confirme se é esse mesmo.
+   - **Identidade do git ausente** (`? identidade do git`): peça `user.name` e
+     `user.email` e rode `git config` com os valores dados (sem eles, não há
+     commit inicial). Não invente nem copie de outro lugar.
+   - **Remoto ausente** (`? remoto`): pergunte se há um repositório na
+     plataforma (GitHub, GitLab) e a URL, e rode `git remote add origin <url>`;
+     ou, se o usuário quiser criar agora, `gh repo create` (só depois de ele
+     dizer o nome, a visibilidade e a organização). Sem resposta, deixe sem
+     remoto e avise que publicar fica para depois.
+   - **`.claude/` com arquivo seu** (`! .claude/settings.json ...`): mostre o
+     que falta e pergunte se acrescenta as permissões de leitura dos
+     utilitários `sdd-*`; o arquivo é do usuário e só muda com a aprovação dele.
+   - **Pasta `sdd/` que não é do SDD**, ou `.sdd/` do layout antigo: o
+     `sdd-iniciar` se recusa a seguir; explique e pergunte como o usuário quer
+     resolver (mover a pasta existente, ou mudar o que é dele).
+   - **Convenções do projeto** que você não consegue deduzir (nível, proteção,
+     `integracao`, comandos de teste): pergunte no passo 3 e no passo 6, não
+     chute.
+
+3. **Escolha os parâmetros.** Se os argumentos não trazem nível e proteção,
    proponha um padrão e confirme numa única pergunta:
 
    | Projeto | Nível padrão | Proteção |
@@ -35,7 +63,7 @@ Argumentos: `$ARGUMENTS`
    | A maioria | 1 | `leve` |
    | Crítico (domínio rico, dinheiro, dados pessoais) | 2 | `estrita` |
 
-3. **Rode** `sdd-iniciar` com os parâmetros escolhidos. Em seguida, a base do
+4. **Rode** `sdd-iniciar` com os parâmetros escolhidos. Em seguida, a base do
    **Git Flow** (ver `GIT-FLOW.md` da skill metodologia), antes de qualquer
    commit, porque o hook não deixa commitar em `main`:
    - Pergunte como as branches se juntam e grave `integracao` no config:
@@ -57,13 +85,13 @@ Argumentos: `$ARGUMENTS`
    - Rode `sdd-gitflow iniciar`: ele garante `main`, cria `develop` e muda para
      ela (de qualquer branch, se não houver código pendente). Todo commit daqui
      em diante (a preparação do SDD, a adoção) é feito em `develop`.
-   - **Repositório sem nenhum commit:** o `sdd-gitflow iniciar` recusa. Se a
-     branch inicial não é `main` (o `conferir` mostra "sem nenhum commit
-     ainda"), rode `git symbolic-ref HEAD refs/heads/main`. Peça ao usuário o
-     primeiro commit, vazio, em `main`: `git commit --allow-empty -m "chore:
-     início"`. Depois, `sdd-gitflow iniciar`.
+   - **Repositório sem nenhum commit:** o `sdd-iniciar` já cria o commit
+     inicial vazio em `main` (`chore: início`) quando a identidade do git está
+     configurada. Se ele avisou `? identidade do git`, configure-a (pergunta
+     do passo 2) e faça o commit: `git commit --allow-empty -m "chore: início"`.
+     O `sdd-gitflow iniciar` recusa um repositório sem commit.
 
-4. **Rascunhe a constituição** em `.sdd/constituicao.md`.
+5. **Rascunhe a constituição** em `sdd/constituicao.md`.
    - **Projeto existente:** leia os manifestos (package.json, pyproject.toml,
      *.csproj, go.mod, Dockerfile, docker-compose, CI), a estrutura de pastas,
      a configuração de lint e de testes e um ou dois módulos representativos.
@@ -75,15 +103,15 @@ Argumentos: `$ARGUMENTS`
      decisões mais importantes (stack, arquitetura, política de testes,
      segurança, ambientes e entrega).
 
-5. **Ajuste `.sdd/config.yml`.** Proponha `areas_sensiveis` (pastas de
+6. **Ajuste `sdd/config.yml`.** Proponha `areas_sensiveis` (pastas de
    autenticação, pagamentos, dados pessoais, migrations) e confirme. Preencha
    `comando_teste`, `comando_lint` e, se der para descobrir, `comando_seguranca`
    e os de implantação, e adapte `globs_de_teste` à convenção real do projeto.
 
-6. **Adoção.** Se o inventário do passo 1 não estava vazio, faça a **Adoção**
+7. **Adoção.** Se o inventário do passo 1 não estava vazio, faça a **Adoção**
    (abaixo) agora, antes do gate.
 
-7. **Git Flow: as branches de trabalho.** Com o Git Flow ativo, rode
+8. **Git Flow: as branches de trabalho.** Com o Git Flow ativo, rode
    `sdd-gitflow conferir` de novo. Para cada branch fora do padrão que sobrou,
    proponha o nome novo numa tabela e peça aprovação (é o usuário quem decide):
 
@@ -99,14 +127,14 @@ Argumentos: `$ARGUMENTS`
    `develop` devem ser protegidas: só por pull request, com o CI obrigatório
    (o `/sdd:pipeline` ajuda).
 
-8. **Gate.** Mostre o que foi criado, o rascunho da constituição, o resultado
+9. **Gate.** Mostre o que foi criado, o rascunho da constituição, o resultado
    da adoção (se houve) e o que ficou em aberto. Peça ao usuário que revise e
    aprove a constituição: ela vale para todas as features. Com a aprovação,
    sugira o commit da preparação em `develop` (ou na branch atual, com o Git
    Flow desligado): `chore: sdd iniciado`. Se houve adoção, os commits dela já
    foram feitos no caminho.
 
-9. **Encerre** dizendo os próximos passos possíveis:
+10. **Encerre** dizendo os próximos passos possíveis:
 
    | O usuário tem | Próximo |
    |---|---|
@@ -117,7 +145,7 @@ Argumentos: `$ARGUMENTS`
 
 ## Atualização
 
-Para um projeto que já tem `.sdd/`: traz o projeto para a versão instalada do
+Para um projeto que já tem `sdd/`: traz o projeto para a versão instalada do
 plugin sem tocar no que é do time. A constituição, o config já preenchido, as
 specs e os históricos ficam como estão.
 
@@ -130,6 +158,13 @@ specs e os históricos ficam como estão.
    mantém o resto. Mostre a saída. Nunca use `--forcar` aqui: ele sobrescreve
    config, constituição e templates, e só vale se o usuário pedir, com essas
    palavras, para recomeçar a configuração.
+
+   Rode também `sdd-adotar estrutura`: ele confere `sdd/`, `.claude/` e o
+   repositório git, e cria o que falta de `.claude/` e do git. Para cada linha
+   `!` (fora do padrão, como um `.claude/settings.json` sem as permissões dos
+   `sdd-*`) ou `?` (sem remoto, sem identidade do git), mostre e pergunte como
+   seguir, como no passo 2 do Processo. Nunca altere um arquivo seu sem a
+   aprovação dele.
 
 3. **Templates diferentes (`~` na saída).** O projeto pode tê-los
    customizado, ou eles podem só estar desatualizados. Para cada um, leia a
@@ -148,7 +183,7 @@ specs e os históricos ficam como estão.
    - `commits`: `convencional` (Conventional Commits; a versão sai deles) ou
      `livre` (como antes);
    - as demais: o padrão mostrado, a não ser que o usuário queira outro.
-   Acrescente cada chave ao `.sdd/config.yml` com o comentário que ela tem no
+   Acrescente cada chave ao `sdd/config.yml` com o comentário que ela tem no
    config do plugin (`sdd-estado template --plugin config.yml` dá o caminho).
    Não mude as chaves que já existem.
 
@@ -157,14 +192,14 @@ specs e os históricos ficam como estão.
    projeto, e o hook mandaria o commit dela para a branch da feature. No fim,
    ela volta (passo 8).
 
-6. **Git Flow.** Com `gitflow: ativo`, faça a parte do Git Flow do passo 3 do
+6. **Git Flow.** Com `gitflow: ativo`, faça a parte do Git Flow do passo 4 do
    Processo, menos a pergunta da `integracao` (já respondida): `sdd-gitflow
    conferir`, renomear `main` e `develop` com aprovação, a tag `vX.Y.Z` da
    versão em produção com aprovação, e `sdd-gitflow iniciar`, que muda para
    `develop` de qualquer branch (inclusive a de uma feature) e leva junto as
    alterações da atualização. Se ele recusar por código pendente, mostre ao
    usuário: o código precisa de um commit na branch dele (ou de um `git
-   stash`) antes. Depois, o passo 7 do Processo
+   stash`) antes. Depois, o passo 8 do Processo
    (as branches de trabalho fora do padrão).
 
 7. **Commit.** Mostre `git status` e sugira o commit em `develop` (ou na
@@ -193,6 +228,14 @@ specs e os históricos ficam como estão.
 Traz para o padrão o que outro processo ou outro agente deixou fora do lugar.
 É o único momento em que o agente move artefatos, e sempre pelo `sdd-adotar`,
 com um mapa aprovado pelo usuário.
+
+0. **Confira a estrutura.** Rode `sdd-adotar estrutura`. Ele verifica se o
+   projeto já tem `sdd/`, `.claude/` (com `settings.json`, `agents/`,
+   `skills/`, `commands/` e `rules/`) e o repositório git, cria o que falta
+   de `.claude/` e do git, e aponta o que existe fora do padrão (`!`) ou
+   depende de uma resposta (`?`). Resolva cada linha com o usuário antes de
+   mover qualquer arquivo; os itens de `sdd/` que faltam são completados pelo
+   `sdd-iniciar`.
 
 1. **Leia tudo.** Leia **por inteiro** cada arquivo do inventário. Quando ele
    vier de uma pasta de outra ferramenta (`.specify/`, `.kiro/`, `openspec/`,
@@ -225,9 +268,9 @@ com um mapa aprovado pelo usuário.
    Uma feature tem um único `spec.md`: escolha o arquivo principal e mande os
    demais para `legado:`, citando-os no gate.
 
-3. **Escreva o mapa** em `.sdd/adocao-mapa.txt`, uma linha por arquivo, no
+3. **Escreva o mapa** em `sdd/adocao-mapa.txt`, uma linha por arquivo, no
    formato `origem -> destino`, com um comentário (`#`) acima de cada grupo
-   dizendo por quê. Rode `sdd-adotar aplicar .sdd/adocao-mapa.txt --simular` e
+   dizendo por quê. Rode `sdd-adotar aplicar sdd/adocao-mapa.txt --simular` e
    corrija o mapa até a simulação passar.
 
 4. **Gate da adoção.** Mostre ao usuário, agrupado por destino: cada origem, o
@@ -240,16 +283,16 @@ com um mapa aprovado pelo usuário.
 
 5. **Aplique.** Antes, rode `git ls-files` nas origens que vão para features:
    o "como era" de cada arquivo fica no git. Arquivo fora do git perde o
-   original na conversão, então copie-o antes para `docs/legado/<caminho original>`.
-   Rode `sdd-adotar aplicar .sdd/adocao-mapa.txt`. Ele renomeia cada arquivo
+   original na conversão, então copie-o antes para `sdd/legado/<caminho original>`.
+   Rode `sdd-adotar aplicar sdd/adocao-mapa.txt`. Ele renomeia cada arquivo
    para o padrão (com `git mv`), cria as features na situação de
    **transição** (`adocao=transicao`) e, em cada uma, o `transicao.md` a partir
    do modelo, com o "como era" dos arquivos já preenchido. Depois:
    - itens em aberto de backlog, roadmap e TODO: `sdd-backlog adicionar "título" --origem "adoção: <arquivo>"`, um por item, sem os já feitos;
-   - regras de outro processo: incorpore à constituição (passo 4 do processo) o que for regra do projeto e ainda valer;
+   - regras de outro processo: incorpore à constituição (passo 5 do processo) o que for regra do projeto e ainda valer;
    - links: atualize os arquivos que o `aplicar` listou como citando o caminho antigo;
-   - exceções aprovadas: preencha `excecoes_de_layout` no `.sdd/config.yml`;
-   - apague o mapa (`rm .sdd/adocao-mapa.txt`): o registro fica em `.sdd/adocao.md` e no histórico.
+   - exceções aprovadas: preencha `excecoes_de_layout` no `sdd/config.yml`;
+   - apague o mapa (`rm sdd/adocao-mapa.txt`): o registro fica em `sdd/adocao.md` e no histórico.
 
    Então, com nenhuma feature ativa, sugira o commit de tudo isso em `develop`
    (ou na branch atual, com o Git Flow desligado): `chore: adoção do SDD,
@@ -348,6 +391,11 @@ parou.
 
 - Não crie features nem specs, a não ser as features que a adoção aprovada cria.
 - Não altere código do projeto.
+- Não invente a identidade do git, a URL do remoto nem o nome de um repositório
+  novo: pergunte. Criar um repositório na plataforma (`gh repo create`) é
+  decisão do usuário e pede a confirmação dele no momento.
+- Não altere um `.claude/settings.json` que já existe sem a aprovação do
+  usuário: mostre o que falta e pergunte.
 - Numa atualização, não reescreva a constituição, não mude chaves do config
   que já existem e não rode `sdd-iniciar --forcar` sem o usuário pedir.
 - Não reescreva um `CLAUDE.md` existente: o `sdd-iniciar` só acrescenta ou
@@ -363,7 +411,9 @@ parou.
 
 ## Pronto quando
 
-- `.sdd/` (com `backlog.md` e `sprints/`), `specs/` e `docs/adr/` existem.
+- `sdd/` (com `backlog.md`, `sprints/`, `specs/`, `sistema/` e `adr/`) existe e é a única pasta do SDD na raiz.
+- `.claude/` tem `settings.json` e as pastas `agents/`, `skills/`, `commands/` e `rules/`.
+- O projeto é um repositório git, com `main`, `.gitignore` e commit inicial, e o usuário decidiu o remoto.
 - A constituição tem só fatos observados ou campos marcados como a definir.
 - `comando_teste` está preenchido ou o usuário sabe que precisa preencher.
 - `sdd-adotar contar` dá 0, ou o usuário decidiu deixar a adoção para depois.

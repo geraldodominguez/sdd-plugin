@@ -6,6 +6,20 @@ configuração) sempre sobem a versão maior.
 
 ## Não lançado
 
+Incompatível: os caminhos do layout mudam (versão maior, 2.0.0 na release).
+Ver a [ADR 0017](.agents/adr/0017-tudo-do-sdd-em-uma-pasta.md).
+
+### Mudou
+
+- **Tudo do SDD numa pasta só, `sdd/`.** `.sdd/`, `specs/`, `sistema/`, `releases/`, `incidentes/` e `docs/adr/` (com `docs/legado/` e `docs/arquitetura/`) viram `sdd/`, `sdd/specs/`, `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/`, `sdd/adr/`, `sdd/legado/` e `sdd/arquitetura/`. A raiz do projeto fica só com `CLAUDE.md`, `AGENTS.md`, `.gitattributes`, `.gitignore` e `.claude/`. O projeto usa o SDD quando tem `sdd/config.yml`. Sem migração: o `sdd-iniciar` recusa um projeto com a `.sdd/` antiga e uma `sdd/` que não é do SDD.
+- O `sdd/.gitignore` ignora só `/estado` (ponteiro pessoal), e não o `estado` de cada feature.
+
+### Novo
+
+- **`sdd-iniciar` cria a pasta `.claude/`** (`settings.json` com as permissões de leitura dos `sdd-*`, e `agents/`, `skills/`, `commands/` e `rules/`) e, se o diretório não é um repositório, **o repositório git**: branch `main`, `.gitignore`, commit inicial vazio e o aviso de que falta o remoto. Opções `--sem-git` e `--sem-claude`.
+- **`sdd-adotar estrutura [--so-verificar]`:** confere `sdd/`, `.claude/` e o git, cria o que falta e aponta (`!`, `?`) o que está fora do padrão ou depende de uma resposta. Um `settings.json` existente nunca é reescrito.
+- A skill `/sdd:iniciar` pergunta ao usuário o que não dá para deduzir antes de criar qualquer coisa (repositório, identidade do git, remoto, `.claude/settings.json` existente, pasta `sdd/` alheia, nível, proteção, integração, comandos) e confere a estrutura na adoção e na atualização.
+
 ## 1.0.2 - 2026-10-30
 
 Correções do uso real no macOS e no Windows. Nenhum formato rastreável mudou.

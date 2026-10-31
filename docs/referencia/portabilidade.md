@@ -7,10 +7,10 @@ dele**.
 
 | Item | Formato | Portável? |
 |---|---|---|
-| `specs/`, `docs/adr/` | markdown | sim, qualquer ferramenta |
-| `.sdd/constituicao.md`, `.sdd/templates/` | markdown | sim |
-| `.sdd/config.yml`, `.sdd/estado` | texto | sim |
-| `sistema/`, `releases/`, `incidentes/` | markdown e texto | sim |
+| `sdd/specs/`, `sdd/adr/` | markdown | sim, qualquer ferramenta |
+| `sdd/constituicao.md`, `sdd/templates/` | markdown | sim |
+| `sdd/config.yml`, `sdd/estado` | texto | sim |
+| `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/` | markdown e texto | sim |
 | pipeline gerado pelo `/sdd:pipeline` | YAML do GitHub Actions ou GitLab CI | sim, só chama `bin/sdd-*` |
 | `AGENTS.md` (bloco SDD) | markdown | sim, lido por vários agentes |
 | `bin/sdd-*` | bash | sim, qualquer terminal |

@@ -26,7 +26,7 @@ implementação. Mudar um contrato no meio exige voltar ao plano, com a sua
 aprovação. Na proteção estrita, um hook impede a edição dos arquivos que casam
 com `globs_de_contrato` na fase green.
 
-Toda decisão durável (tecnologia, padrão, trade-off) vira um ADR em `docs/adr/`,
+Toda decisão durável (tecnologia, padrão, trade-off) vira um ADR em `sdd/adr/`,
 com situação "proposta" até você aprovar o plano com `/sdd:aprovar`. O hash
 registrado na aprovação cobre o `plano.md` e todos os arquivos de `contratos/`:
 mudar um contrato depois invalida a aprovação.

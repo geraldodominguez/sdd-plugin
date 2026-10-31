@@ -1,6 +1,6 @@
 # Backlog
 
-> Exemplo de `.sdd/backlog.md` depois de uma sprint e de um incidente. O formato da linha é lido
+> Exemplo de `sdd/backlog.md` depois de uma sprint e de um incidente. O formato da linha é lido
 > pelos utilitários; detalhes livres vão em linhas recuadas abaixo do item.
 
 ## Itens

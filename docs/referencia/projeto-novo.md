@@ -29,11 +29,11 @@ o [adotar o SDD num projeto em andamento](projeto-em-andamento.md).
 
 | Item | Onde fica | Para quê |
 |---|---|---|
-| As regras do projeto | `.sdd/constituicao.md` | todo plano é checado contra elas |
-| A configuração | `.sdd/config.yml` | nível, proteção, testes, áreas sensíveis, comandos de entrega |
-| O backlog e a sprint | `.sdd/backlog.md`, `.sdd/sprints/` | o que vem depois e o que é para agora |
-| A primeira feature | `specs/001-<slug>/` | spec, tarefas, histórico com as suas aprovações |
-| A spec viva do sistema | `sistema/<capacidade>.md` | o que o sistema faz hoje |
+| As regras do projeto | `sdd/constituicao.md` | todo plano é checado contra elas |
+| A configuração | `sdd/config.yml` | nível, proteção, testes, áreas sensíveis, comandos de entrega |
+| O backlog e a sprint | `sdd/backlog.md`, `sdd/sprints/` | o que vem depois e o que é para agora |
+| A primeira feature | `sdd/specs/001-<slug>/` | spec, tarefas, histórico com as suas aprovações |
+| A spec viva do sistema | `sdd/sistema/<capacidade>.md` | o que o sistema faz hoje |
 | As regras para os agentes | bloco no `CLAUDE.md` e no `AGENTS.md` | todo agente do projeto segue o mesmo processo e o mesmo layout |
 | O CI | `.github/workflows/` ou `.gitlab-ci.yml` | confere o processo em todo push e só implanta com o go |
 | O Git Flow | `main`, `develop`, `feature/NNN-slug`, `release/X.Y.Z`, `hotfix/X.Y.Z`, tags `vX.Y.Z` | os mesmos nomes de branch em todo projeto; os comandos criam e juntam as branches |
@@ -95,6 +95,11 @@ git remote add origin <url-do-repositório>
 
 O plugin nunca faz push: em cada etapa, ele diz o comando para você publicar.
 
+Este passo é opcional: se você pular, o `/sdd:iniciar` percebe que o diretório
+não é um repositório e pergunta se pode criá-lo, com a branch `main`, o
+`.gitignore` e o commit inicial (e pede o `user.name`, o `user.email` e a URL
+do remoto, se faltarem).
+
 A branch de produção se chama **`main`** em todo projeto do SDD (ver
 [Git Flow](git-flow.md)). Com um git antigo, sem a opção `-b`, rode `git init`
 e depois `git symbolic-ref HEAD refs/heads/main`.
@@ -128,12 +133,12 @@ feature). A **proteção** diz o quanto os hooks impõem o fluxo:
 | `leve` | congelam os testes depois da fase red, exigem `T-NNN` (ou o número da feature no escopo) nos commits, protegem histórico e estado, e mantêm o layout |
 | `estrita` | tudo da `leve`, mais: nada de código antes do plano, só testes na fase red, nada de edição na auditoria |
 
-Na dúvida, comece com `leve`. Dá para subir depois, no `.sdd/config.yml`.
+Na dúvida, comece com `leve`. Dá para subir depois, no `sdd/config.yml`.
 
 **O que ele cria:**
 
 ```
-.sdd/
+sdd/
   config.yml          configuração do projeto
   constituicao.md     regras inegociáveis (rascunho)
   backlog.md          itens ainda sem spec
@@ -141,10 +146,14 @@ Na dúvida, comece com `leve`. Dá para subir depois, no `.sdd/config.yml`.
   templates/          cópia dos modelos, para você customizar
   estado              sua feature ativa (fora do git)
   .gitignore
-specs/                uma pasta por feature
-sistema/README.md     a spec viva do sistema começa aqui
-docs/adr/             decisões de arquitetura
+  specs/              uma pasta por feature
+  sistema/README.md   a spec viva do sistema começa aqui
+  adr/                decisões de arquitetura
+.claude/
+  settings.json       permissões de leitura dos utilitários sdd-*
+  agents/ skills/ commands/ rules/   as pastas que o Claude Code lê do projeto
 CLAUDE.md, AGENTS.md  com o bloco de regras do SDD (o resto do arquivo fica intacto)
+.gitignore            lixo do sistema, .env e .claude/settings.local.json
 ```
 
 **O Git Flow.** Logo depois, o agente pergunta como as branches se juntam e
@@ -176,7 +185,7 @@ há adoção. Se ele encontrar alguma coisa, siga o
 
 ## 6. Escrever a constituição
 
-A constituição (`.sdd/constituicao.md`) é o conjunto de regras que valem para
+A constituição (`sdd/constituicao.md`) é o conjunto de regras que valem para
 **todas** as features. O planejador checa cada plano contra ela, e o auditor
 cobra cada desvio. Num projeto novo, o agente deixa os campos como
 `{{a definir}}` e lista as cinco decisões que importam:
@@ -198,7 +207,7 @@ enquanto tiver) e cada regra é verificável.
 
 ## 7. Ajustar a configuração
 
-Abra `.sdd/config.yml`. O agente sugere os valores; você confirma:
+Abra `sdd/config.yml`. O agente sugere os valores; você confirma:
 
 | Chave | O que pôr | Exemplo |
 |---|---|---|
@@ -228,7 +237,7 @@ git commit -m "chore: sdd iniciado"
 git push -u origin main develop
 ```
 
-O `.sdd/estado` (a sua feature ativa) já fica fora do git. O resto é do time.
+O `sdd/estado` (a sua feature ativa) já fica fora do git. O resto é do time.
 
 ## 8. Ligar o CI: /sdd:pipeline
 
@@ -268,7 +277,7 @@ Escolha o que entra no período:
 | O agente faz | Você decide |
 |---|---|
 | lista o backlog por prioridade e sugere um conjunto | quais itens entram e o objetivo da sprint |
-| cria `.sdd/sprints/<id>.md` | a duração |
+| cria `sdd/sprints/<id>.md` | a duração |
 
 Se você trabalha sozinho e sem sprints, pule este passo e vá direto para o
 `/sdd:especificar`.
@@ -290,15 +299,15 @@ feature de nível 2 inteira, com os arquivos de verdade.
 | O agente faz | Você decide |
 |---|---|
 | classifica o nível e pergunta | confirma o nível |
-| escolhe a capacidade (`sistema/`) | confirma o nome |
-| cria `specs/001-exportar-pedidos/` pelo `sdd-estado nova` | nada |
+| escolhe a capacidade (`sdd/sistema/`) | confirma o nome |
+| cria `sdd/specs/001-exportar-pedidos/` pelo `sdd-estado nova` | nada |
 | cria a branch `feature/001-exportar-pedidos` a partir de `develop` e muda para ela (`sdd-gitflow feature`) | nada |
 | escreve a spec: requisitos (RF) em EARS e critérios de aceitação (CA) em Dado, Quando, Então | lê: é isso que você quer? |
 | marca o que não sabe com `[PRECISA ESCLARECER]` | nada ainda |
 
 A pasta da feature **sempre** nasce pelo `sdd-estado nova`, numerada, e a
 branch tem o mesmo nome: `feature/` mais o id da pasta. Um agente que tentar
-criar `docs/specs/exportar.md`, `specs/exportar/` ou uma branch `feat/exportar`
+criar `docs/specs/exportar.md`, `sdd/specs/exportar/` ou uma branch `feat/exportar`
 à mão é bloqueado pelo hook. Toda a feature, da spec ao código, é commitada na
 branch dela.
 
@@ -311,7 +320,7 @@ branch dela.
 
 O `/sdd:clarificar` faz até cinco perguntas por rodada, cada uma com opções e
 uma recomendação. O `/sdd:aprovar` mostra o resumo e pede o seu "sim". A
-aprovação fica no `specs/001-exportar-pedidos/historico.md` com o hash da spec:
+aprovação fica no `sdd/specs/001-exportar-pedidos/historico.md` com o hash da spec:
 se ela mudar depois, os comandos percebem.
 
 ### 10.3 Tarefas
@@ -357,7 +366,7 @@ No nível 1, sem área sensível:
 ```
 
 O `/sdd:aprovar` confere que spec e testes estão aprovados e inalterados e
-conduz a **consolidação**: o agente atualiza `sistema/pedidos.md` com o
+conduz a **consolidação**: o agente atualiza `sdd/sistema/pedidos.md` com o
 comportamento novo e mostra o diff para você confirmar.
 
 Depois, ele faz o commit do que a aprovação gerou na branch da feature
@@ -434,8 +443,8 @@ A rotina completa, com o que olhar em cada aprovação, está no
 Depois da primeira feature pronta:
 
 - [ ] `/sdd:status` mostra a feature na coluna "Pronta" (ou em produção, depois da release).
-- [ ] `specs/001-<slug>/historico.md` tem uma linha de aprovação para cada gate, com o seu nome e um hash.
-- [ ] `sistema/<capacidade>.md` descreve o comportamento novo, com `(origem: 001/RF-001)`.
+- [ ] `sdd/specs/001-<slug>/historico.md` tem uma linha de aprovação para cada gate, com o seu nome e um hash.
+- [ ] `sdd/sistema/<capacidade>.md` descreve o comportamento novo, com `(origem: 001/RF-001)`.
 - [ ] `sdd-verificar` passa no CI.
 - [ ] `/sdd:pendencias` diz "Nada esperando por você", ou só o que você já sabe.
 - [ ] Nenhum arquivo de processo fora do layout: a seção "Fora do padrão" não aparece nas pendências.
@@ -446,7 +455,7 @@ Depois da primeira feature pronta:
 | Sintoma | Causa | O que fazer |
 |---|---|---|
 | `sdd-*: command not found` | o plugin não está ativo na sessão | `/reload-plugins`; no Windows, confirme o Git Bash |
-| o hook bloqueou um arquivo que não é teste | `globs_de_teste` amplo demais | ajuste no `.sdd/config.yml` |
+| o hook bloqueou um arquivo que não é teste | `globs_de_teste` amplo demais | ajuste no `sdd/config.yml` |
 | o hook bloqueou criar `docs/specs/x.md` ou `TODO.md` | o layout é contrato | peça a feature pelo `/sdd:especificar`; ideias vão para o backlog |
 | o hook bloqueou um `tasks.md` de um manual seu | o arquivo tem nome de artefato | ponha o caminho em `excecoes_de_layout` |
 | "spec.md não está aprovado ou mudou depois da aprovação" | a spec foi editada depois do "sim" | `git diff`; aprove de novo ou desfaça |

@@ -2,18 +2,26 @@
 # sdd-iniciar: prepara um projeto para usar SDD.
 #
 # Uso: sdd-iniciar [--forcar] [--nivel 1|2] [--protecao desligada|leve|estrita]
+#                  [--sem-git] [--sem-claude]
 #
-# Cria, sem sobrescrever o que já existe (a menos que --forcar):
-#   .sdd/config.yml        configuração do projeto
-#   .sdd/constituicao.md   regras inegociáveis (a preencher)
-#   .sdd/estado            ponteiros pessoais: feature ativa e sprint atual
-#   .sdd/backlog.md        itens ainda sem spec
-#   .sdd/sprints/          uma sprint por arquivo
-#   .sdd/templates/        cópia dos templates do plugin (customizável)
-#   specs/                 uma pasta por feature (o que cada mudança alterou)
-#   sistema/               a spec viva do sistema, por capacidade (o que ele faz hoje)
-#   releases/, incidentes/ criadas sob demanda por /sdd:release e /sdd:incidente
-#   docs/adr/              decisões arquiteturais duráveis
+# Tudo do SDD mora numa pasta só, sdd/. Cria, sem sobrescrever o que já existe
+# (a menos que --forcar):
+#   sdd/config.yml        configuração do projeto
+#   sdd/constituicao.md   regras inegociáveis (a preencher)
+#   sdd/estado            ponteiros pessoais: feature ativa e sprint atual
+#   sdd/backlog.md        itens ainda sem spec
+#   sdd/sprints/          uma sprint por arquivo
+#   sdd/templates/        cópia dos templates do plugin (customizável)
+#   sdd/specs/            uma pasta por feature (o que cada mudança alterou)
+#   sdd/sistema/          a spec viva do sistema, por capacidade (o que ele faz hoje)
+#   sdd/adr/              decisões arquiteturais duráveis
+#   sdd/releases/, sdd/incidentes/  criadas sob demanda por /sdd:release e /sdd:incidente
+# Cria também, se faltarem:
+#   .claude/              settings.json (permissões de leitura dos sdd-*) e as
+#                         pastas agents/, skills/, commands/ e rules/
+#   repositório git       git init na branch main, .gitignore, commit inicial vazio
+#                         (se a identidade do git estiver configurada) e o aviso de
+#                         remoto; --sem-git e --sem-claude pulam cada parte
 # E injeta o bloco de regras SDD em CLAUDE.md e AGENTS.md (idempotente), e
 # acrescenta ao .gitattributes o merge por união dos históricos: com o Git Flow,
 # duas branches acrescentam linhas ao mesmo histórico, e o merge junta as duas.
@@ -33,11 +41,15 @@ case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 FORCAR=0
 NIVEL=1
 PROTECAO=leve
+SEM_GIT=0
+SEM_CLAUDE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --forcar) FORCAR=1 ;;
     --nivel) NIVEL="${2:?--nivel exige um valor}"; shift ;;
     --protecao) PROTECAO="${2:?--protecao exige um valor}"; shift ;;
+    --sem-git) SEM_GIT=1 ;;
+    --sem-claude) SEM_CLAUDE=1 ;;
     -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;;
     *) echo "sdd-iniciar: opção desconhecida: $1" >&2; exit 1 ;;
   esac
@@ -60,7 +72,7 @@ criados=()
 mantidos=()
 diferentes=()
 ATUALIZACAO=0
-[ -e "$RAIZ/.sdd/config.yml" ] && ATUALIZACAO=1
+[ -e "$RAIZ/sdd/config.yml" ] && ATUALIZACAO=1
 
 copiar() {
   local de="$1" para="$2"
@@ -74,36 +86,50 @@ copiar() {
   criados+=("${para#"$RAIZ"/}")
 }
 
-mkdir -p "$RAIZ/.sdd/templates/release" "$RAIZ/specs" "$RAIZ/docs/adr" "$RAIZ/sistema"
-if [ ! -e "$RAIZ/sistema/README.md" ]; then
-  cp "$ORIGEM/sistema-readme.md" "$RAIZ/sistema/README.md"
-  criados+=("sistema/README.md")
+if [ -d "$RAIZ/.sdd" ] && [ ! -e "$RAIZ/sdd/config.yml" ]; then
+  echo "sdd-iniciar: este projeto tem a pasta .sdd/, do layout antigo do plugin (anterior à 2.0). O layout novo usa sdd/; mova com 'git mv .sdd sdd' (e specs/, sistema/, releases/, incidentes/ para dentro dela) antes de rodar de novo." >&2
+  exit 1
+fi
+if [ -e "$RAIZ/sdd" ] && [ ! -e "$RAIZ/sdd/config.yml" ] && [ -n "$(ls -A "$RAIZ/sdd" 2>/dev/null)" ]; then
+  echo "sdd-iniciar: já existe uma pasta sdd/ com outro conteúdo, que não é do SDD. Mude de lugar ou me diga como seguir." >&2
+  exit 1
+fi
+
+GIT_SAIDA=""
+if [ "$SEM_GIT" -ne 1 ]; then
+  GIT_SAIDA="$(sdd_git_preparar "$RAIZ" 1)"
+fi
+
+mkdir -p "$RAIZ/sdd/templates/release" "$RAIZ/sdd/specs" "$RAIZ/sdd/adr" "$RAIZ/sdd/sistema"
+if [ ! -e "$RAIZ/sdd/sistema/README.md" ]; then
+  cp "$ORIGEM/sistema-readme.md" "$RAIZ/sdd/sistema/README.md"
+  criados+=("sdd/sistema/README.md")
 fi
 
 # Templates: cópia local, para o projeto customizar sem afetar o plugin.
 for f in "$ORIGEM"/*.md; do
   [ "$(basename "$f")" = "bloco-agentes.md" ] && continue
-  copiar "$f" "$RAIZ/.sdd/templates/$(basename "$f")"
+  copiar "$f" "$RAIZ/sdd/templates/$(basename "$f")"
 done
 for f in "$ORIGEM"/release/*.md; do
-  copiar "$f" "$RAIZ/.sdd/templates/release/$(basename "$f")"
+  copiar "$f" "$RAIZ/sdd/templates/release/$(basename "$f")"
 done
 
 # A constituição é sempre do projeto: não entra na lista de diferentes.
-if [ -e "$RAIZ/.sdd/constituicao.md" ] && [ "$FORCAR" -ne 1 ]; then
-  mantidos+=(".sdd/constituicao.md")
+if [ -e "$RAIZ/sdd/constituicao.md" ] && [ "$FORCAR" -ne 1 ]; then
+  mantidos+=("sdd/constituicao.md")
 else
-  copiar "$ORIGEM/constituicao.md" "$RAIZ/.sdd/constituicao.md"
+  copiar "$ORIGEM/constituicao.md" "$RAIZ/sdd/constituicao.md"
 fi
 
-CONFIG="$RAIZ/.sdd/config.yml"
+CONFIG="$RAIZ/sdd/config.yml"
 if [ ! -e "$CONFIG" ] || [ "$FORCAR" -eq 1 ]; then
   sed -e "s/^nivel_padrao: .*/nivel_padrao: $NIVEL/" \
       -e "s/^protecao: [a-z]*/protecao: $PROTECAO/" \
       "$ORIGEM/config.yml" > "$CONFIG"
-  criados+=(".sdd/config.yml")
+  criados+=("sdd/config.yml")
 else
-  mantidos+=(".sdd/config.yml")
+  mantidos+=("sdd/config.yml")
 fi
 
 # Chaves do config do plugin que o config do projeto ainda não tem.
@@ -115,26 +141,31 @@ while IFS= read -r linha; do
   faltam+=("$chave: ${valor:-(vazio)}")
 done < <(grep -E '^[a-z_]+:' "$ORIGEM/config.yml")
 
-if [ ! -e "$RAIZ/.sdd/estado" ]; then
-  printf 'feature=\nsprint=\n' > "$RAIZ/.sdd/estado"
-  criados+=(".sdd/estado")
+if [ ! -e "$RAIZ/sdd/estado" ]; then
+  printf 'feature=\nsprint=\n' > "$RAIZ/sdd/estado"
+  criados+=("sdd/estado")
 fi
 
 # O ponteiro de feature ativa é pessoal; o estado de cada feature é versionado.
-if [ ! -e "$RAIZ/.sdd/.gitignore" ]; then
-  printf '# Ponteiros pessoais (feature ativa e sprint atual) ficam fora do git.\nestado\n*.tmp.*\n' > "$RAIZ/.sdd/.gitignore"
-  criados+=(".sdd/.gitignore")
+if [ ! -e "$RAIZ/sdd/.gitignore" ]; then
+  printf '# Ponteiros pessoais (feature ativa e sprint atual) ficam fora do git.\n/estado\n*.tmp.*\n' > "$RAIZ/sdd/.gitignore"
+  criados+=("sdd/.gitignore")
 fi
 
-if [ ! -e "$RAIZ/.sdd/backlog.md" ]; then
-  cp "$ORIGEM/backlog.md" "$RAIZ/.sdd/backlog.md"
-  criados+=(".sdd/backlog.md")
+if [ ! -e "$RAIZ/sdd/backlog.md" ]; then
+  cp "$ORIGEM/backlog.md" "$RAIZ/sdd/backlog.md"
+  criados+=("sdd/backlog.md")
 fi
-mkdir -p "$RAIZ/.sdd/sprints"
-[ -e "$RAIZ/.sdd/sprints/.gitkeep" ] || touch "$RAIZ/.sdd/sprints/.gitkeep"
+mkdir -p "$RAIZ/sdd/sprints"
+[ -e "$RAIZ/sdd/sprints/.gitkeep" ] || touch "$RAIZ/sdd/sprints/.gitkeep"
 
-[ -e "$RAIZ/specs/.gitkeep" ] || touch "$RAIZ/specs/.gitkeep"
-[ -e "$RAIZ/docs/adr/.gitkeep" ] || touch "$RAIZ/docs/adr/.gitkeep"
+[ -e "$RAIZ/sdd/specs/.gitkeep" ] || touch "$RAIZ/sdd/specs/.gitkeep"
+[ -e "$RAIZ/sdd/adr/.gitkeep" ] || touch "$RAIZ/sdd/adr/.gitkeep"
+
+CLAUDE_SAIDA=""
+if [ "$SEM_CLAUDE" -ne 1 ]; then
+  CLAUDE_SAIDA="$(sdd_claude_estrutura "$RAIZ" 1)"
+fi
 
 # Bloco de regras em CLAUDE.md e AGENTS.md, entre marcadores.
 BLOCO="$ORIGEM/bloco-agentes.md"
@@ -166,7 +197,7 @@ if ! grep -qF '# sdd:inicio' "$ATRIB" 2>/dev/null; then
   {
     [ -s "$ATRIB" ] && printf '\n'
     printf '# sdd:inicio (históricos do SDD só recebem linhas: o merge junta os dois lados)\n'
-    printf '.sdd/historico.md merge=union\n%s/*/historico.md merge=union\n%s/*/historico.md merge=union\n' "$PS_" "$PR_"
+    printf 'sdd/historico.md merge=union\n%s/*/historico.md merge=union\n%s/*/historico.md merge=union\n' "$PS_" "$PR_"
     printf '# sdd:fim\n'
   } >> "$ATRIB"
   criados+=(".gitattributes (merge por união dos históricos)")
@@ -174,7 +205,7 @@ fi
 
 echo "SDD iniciado em: $RAIZ"
 if [ "$ATUALIZACAO" -eq 1 ] && [ "$FORCAR" -ne 1 ]; then
-  echo "  nível padrão: $(sdd_config "$RAIZ" nivel_padrao 1) | proteção: $(sdd_config "$RAIZ" protecao leve) (do .sdd/config.yml, mantido)"
+  echo "  nível padrão: $(sdd_config "$RAIZ" nivel_padrao 1) | proteção: $(sdd_config "$RAIZ" protecao leve) (do sdd/config.yml, mantido)"
 else
   echo "  nível padrão: $NIVEL | proteção: $PROTECAO"
 fi
@@ -191,12 +222,20 @@ if [ ${#diferentes[@]} -gt 0 ]; then
   printf '  ~ %s\n' "${diferentes[@]}"
 fi
 if [ ${#faltam[@]} -gt 0 ]; then
-  echo "Chaves que o .sdd/config.yml não tem (até serem acrescentadas, vale o padrão do plugin):"
+  echo "Chaves que o sdd/config.yml não tem (até serem acrescentadas, vale o padrão do plugin):"
   printf '  ? %s\n' "${faltam[@]}"
+fi
+if [ -n "$GIT_SAIDA" ]; then
+  echo "Git:"
+  printf '%s\n' "$GIT_SAIDA" | sed 's/^/  /'
+fi
+if [ -n "$CLAUDE_SAIDA" ]; then
+  echo ".claude/:"
+  printf '%s\n' "$CLAUDE_SAIDA" | sed 's/^/  /'
 fi
 echo
 if [ "$ATUALIZACAO" -eq 1 ] && [ "$FORCAR" -ne 1 ]; then
   echo "Projeto atualizado. Revise os templates e as chaves acima; a constituição e o config não foram alterados."
 else
-  echo "Próximo passo: preencher .sdd/constituicao.md e revisar .sdd/config.yml."
+  echo "Próximo passo: preencher sdd/constituicao.md e revisar sdd/config.yml."
 fi

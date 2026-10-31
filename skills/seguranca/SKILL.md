@@ -18,7 +18,7 @@ contexto.
 | Situação | Revisão |
 |---|---|
 | Feature de nível 2 | sempre |
-| Feature de nível 1 que tocou `areas_sensiveis` do `.sdd/config.yml` | obrigatória (o `sdd-estado sensivel` marca sozinho) |
+| Feature de nível 1 que tocou `areas_sensiveis` do `sdd/config.yml` | obrigatória (o `sdd-estado sensivel` marca sozinho) |
 | Feature de nível 1 marcada com `seguranca=obrigatoria` na especificação | obrigatória |
 | Outras de nível 1 | opcional: rode se o usuário pedir |
 
@@ -37,7 +37,7 @@ contexto.
    - a pasta da feature (`sdd-estado caminho`);
    - a ref base;
    - os caminhos da constituição e do template (`sdd-estado template seguranca.md`);
-   - o `comando_seguranca` e o `areas_sensiveis` do `.sdd/config.yml`.
+   - o `comando_seguranca` e o `areas_sensiveis` do `sdd/config.yml`.
 
    Não explique a implementação nem antecipe o que você acha seguro. O revisor
    forma o próprio julgamento a partir do código e dos artefatos.

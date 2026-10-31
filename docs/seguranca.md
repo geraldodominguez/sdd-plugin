@@ -27,7 +27,7 @@ revisões diferentes e complementares.
 ## Pré-requisitos
 
 A fase green concluída. Para as varreduras automáticas, o `comando_seguranca`
-no `.sdd/config.yml` (ex.: `npm audit --omit=dev && gitleaks detect`). Sem ele,
+no `sdd/config.yml` (ex.: `npm audit --omit=dev && gitleaks detect`). Sem ele,
 o revisor tenta o que a stack oferece e registra o que não pôde rodar.
 
 ## As três decisões
