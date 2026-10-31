@@ -9,9 +9,19 @@
 #   sdd-adotar aplicar <mapa> [--simular]   move os arquivos conforme o mapa aprovado
 #   sdd-adotar estrutura [--so-verificar]   confere sdd/, .claude/ e o repositório git
 #                                           e cria o que falta (.claude/ e git)
+#   sdd-adotar docs [--simular]             leva a docs/ da raiz para sdd/docs/, DEPOIS de
+#                                           adotados os artefatos de processo
 #
 # O inventário funciona antes do /sdd:iniciar: é ele que detecta um projeto
 # que não nasceu com o plugin. O aplicar exige sdd/.
+#
+# O docs é o último passo da adoção: recusa rodar enquanto houver artefato de
+# processo fora do padrão (specs, planos, tarefas, ADRs, backlog), porque esses
+# têm destino próprio. Move cada arquivo de docs/ para sdd/docs/ (mesmo caminho
+# relativo, com git mv), pelo mesmo caminho do aplicar: registra em sdd/adocao.md
+# e lista os arquivos que ainda citam o caminho antigo. Um arquivo que colide com
+# um que já existe em sdd/docs/ (o README.md, por exemplo) ganha o sufixo
+# -original. Nunca sobrescreve nem apaga.
 #
 # A estrutura confere o que o projeto precisa para o SDD: a pasta sdd/ (itens
 # que faltam), a pasta .claude/ (settings.json e as pastas agents, skills,
@@ -58,6 +68,8 @@ PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 
 uso() { sdd_ajuda "$0"; }
 
+docs_da_raiz() { sdd_listar_arquivos "$RAIZ" | grep '^docs/' | sort; }
+
 aparar() { printf '%s' "$1" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | tr -d '\r'; }
 
 # ---------------------------------------------------------------------------
@@ -73,8 +85,11 @@ inventario() {
     [ -n "$linhas" ] && printf '%s\n' "$linhas"
     return 0
   fi
+  local ndocs
+  ndocs="$(docs_da_raiz | grep -c . || true)"
   if [ -z "$linhas" ]; then
     echo "Nenhum artefato fora do padrão."
+    [ "$ndocs" -gt 0 ] && echo "docs/ da raiz: $ndocs arquivo(s), que a adoção leva para sdd/docs/ (sdd-adotar docs)."
     return 0
   fi
   local total
@@ -94,6 +109,7 @@ inventario() {
     printf '%s\n' "$deste" | sed 's/^/  - /'
     echo
   done
+  [ "$ndocs" -gt 0 ] && echo "docs/ da raiz: $ndocs arquivo(s). Depois dos artefatos acima, a adoção os leva para sdd/docs/ (sdd-adotar docs)." && echo
   echo "Para trazer ao padrão: /sdd:iniciar --adotar (lê cada arquivo, propõe o mapa e pede a sua aprovação)."
 }
 
@@ -384,6 +400,45 @@ aplicar() {
   return 0
 }
 
+docs() {
+  local simular=0
+  [ "${1:-}" = "--simular" ] && simular=1
+  sdd_projeto_usa "$RAIZ" || { echo "sdd-adotar docs: rode /sdd:iniciar antes." >&2; exit 1; }
+  local pend
+  pend="$(sdd_artefatos_fora_do_layout "$RAIZ" | grep -c . || true)"
+  if [ "$pend" -gt 0 ]; then
+    echo "sdd-adotar docs: ainda há $pend artefato(s) de processo fora do padrão (veja sdd-adotar inventario). Adote primeiro specs, tarefas e ADRs; a docs/ é o último passo." >&2
+    exit 1
+  fi
+  local arquivos f rel dest base ext vistos="" mapa n=0
+  arquivos="$(docs_da_raiz)"
+  if [ -z "$arquivos" ]; then
+    echo "Não há docs/ na raiz para migrar."
+    return 0
+  fi
+  mapa="$(mktemp "${TMPDIR:-/tmp}/sdd-docs-mapa.XXXXXX")"
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    rel="${f#docs/}"; dest="$rel"
+    while [ -e "$RAIZ/sdd/docs/$dest" ] || printf '%s' "$vistos" | grep -qxF "$dest"; do
+      base="${dest%.*}"; ext="${dest##*.}"
+      if [ "$base" = "$dest" ]; then dest="$dest-original"; else dest="$base-original.$ext"; fi
+    done
+    vistos="$vistos$dest"$'\n'
+    [ "$dest" = "$rel" ] || echo "Colisão: $f vira sdd/docs/$dest"
+    printf '%s -> docs:%s\n' "$f" "$dest" >> "$mapa"
+    n=$((n + 1))
+  done <<< "$arquivos"
+  if [ "$simular" -eq 1 ]; then aplicar "$mapa" --simular; else aplicar "$mapa"; fi
+  rm -f "$mapa"
+  local exc
+  exc="$(sdd_config "$RAIZ" excecoes_de_layout "")"
+  case "$exc" in
+    *docs/*) echo; echo "Atenção: excecoes_de_layout cita docs/ ($exc). Troque por sdd/docs/ no sdd/config.yml, ou o hook volta a apontar esses arquivos." ;;
+  esac
+  return 0
+}
+
 estrutura() {
   local criar=1
   [ "${1:-}" = "--so-verificar" ] && criar=0
@@ -408,6 +463,7 @@ case "$cmd" in
   contar) sdd_artefatos_fora_do_layout "$RAIZ" | grep -c . || true ;;
   aplicar) aplicar "$@" ;;
   estrutura) estrutura "$@" ;;
+  docs) docs "$@" ;;
   -h|--ajuda|--help|"") uso ;;
   *) echo "sdd-adotar: comando desconhecido: $cmd" >&2; uso >&2; exit 1 ;;
 esac

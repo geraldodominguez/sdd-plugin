@@ -31,6 +31,12 @@ o config, a constituição e os templates se você pedir (`--forcar`). Com o pro
 `/sdd:iniciar --adotar` quando o `/sdd:pendencias` mostrar artefatos "Fora do
 padrão".
 
+Nada do SDD fica numa `docs/` da raiz. Num projeto adotado, a `docs/` que já
+existe é a **última** coisa a migrar: primeiro vão para o lugar as specs,
+tarefas, planos e ADRs, e só então ela vai para `sdd/docs/`, com a sua
+aprovação e o aviso do que usa a `docs/` pelo caminho (site de documentação,
+GitHub Pages, CI). Você pode recusar, e a `docs/` fica onde está.
+
 Para o mapa completo do que fica onde, e para que serve cada pasta, veja a
 [estrutura de pastas](referencia/estrutura-de-pastas.md).
 
@@ -43,9 +49,12 @@ deduzir:
 | Situação | Pergunta |
 |---|---|
 | não é um repositório git | se cria um (sem isso, o Git Flow fica desligado) |
+| vai criar o repositório | se a identidade do git (`user.name`, `user.email`) é a conta certa para este projeto; se não for, grava a certa só no repositório |
+| vai ligar a uma plataforma | em que conta do GitHub ou GitLab (`gh auth status`) e em qual dono ou organização |
+| o repositório remoto já existe | se liga este projeto nele ou cria outro, com outro nome |
 | o repositório é de uma pasta acima | se é esse mesmo |
 | o git não sabe quem você é | seu `user.name` e `user.email`; ela não commita sem eles |
-| não há remoto | a URL do remoto, ou se você quer criar o repositório na plataforma agora |
+| não há remoto | a URL do remoto, ou se você quer criar o repositório na plataforma agora (com nome, visibilidade e dono confirmados) |
 | já existe um `.claude/settings.json` | se acrescenta as permissões que faltam; o arquivo é seu |
 | já existe uma pasta `sdd/` que não é do SDD | como resolver; ela se recusa a seguir |
 | nível, proteção, integração e comandos do projeto | os valores; ela propõe, você confirma |

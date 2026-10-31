@@ -9,7 +9,7 @@ processo do SDD (spec, plano, tarefas).
 | documentação de API externa que o sistema consome | a spec de uma mudança (`sdd/specs/`) |
 | levantamentos, atas e pedidos de clientes | o que o sistema faz hoje (`sdd/sistema/`) |
 | regulamentos, contratos e normas que o projeto cumpre | uma decisão de arquitetura (`sdd/adr/`) |
-| glossário do domínio, diagramas de negócio | a documentação do produto para o usuário final (a `docs/` da raiz) |
+| glossário do domínio, diagramas de negócio | a spec ou o plano de uma mudança, mesmo que tenha nome de requisito (vão para `sdd/specs/`) |
 
 O `/sdd:especificar` e o `mapeador-de-contexto` consultam esta pasta antes de
 perguntar ao usuário. Quando uma spec se apoia em um documento daqui, ela cita

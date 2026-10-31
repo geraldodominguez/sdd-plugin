@@ -1022,7 +1022,8 @@ subst 's/\r$//' "$W6/sdd/specs/001-cupom/spec.md"
 
 echo "layout sdd/, .claude/ e git (2.0)"
 N1="$TMP/projeto-vazio"; mkdir -p "$N1"
-out="$(cd "$N1" && sdd-iniciar 2>&1)"
+printf '[user]\n\tname = Pessoa Global\n\temail = global@t.t\n' > "$TMP/gitconfig-global"
+out="$(cd "$N1" && GIT_CONFIG_GLOBAL="$TMP/gitconfig-global" sdd-iniciar 2>&1)"
 for d in sdd/specs sdd/sistema sdd/adr sdd/docs sdd/sprints sdd/templates/release; do
   [ -d "$N1/$d" ] && ok "iniciar cria $d/" || fail "iniciar cria $d/" "$out"
 done
@@ -1035,6 +1036,7 @@ if command -v jq >/dev/null 2>&1; then jq -e . "$N1/.claude/settings.json" >/dev
 [ "$(cd "$N1" && git branch --show-current)" = "main" ] && ok "iniciar cria o repositório na branch main" || fail "git init main"
 grep -qx '.claude/settings.local.json' "$N1/.gitignore" && ok "iniciar configura o .gitignore" || fail ".gitignore"
 printf '%s' "$out" | grep -q 'remoto' && ok "iniciar avisa que falta o remoto" || fail "aviso do remoto" "$out"
+printf '%s' "$out" | grep -q "= identidade do git: Pessoa Global <global@t.t>" && ok "iniciar mostra a identidade do git para confirmar a conta" || fail "identidade na saída" "$out"
 (cd "$N1" && git check-ignore -q sdd/estado) && ok "sdd/estado fica fora do git" || fail "sdd/estado versionado"
 (cd "$N1" && sdd-estado nova "Teste do layout" >/dev/null 2>&1)
 (cd "$N1" && ! git check-ignore -q sdd/specs/001-teste-do-layout/estado) && ok "o estado da feature é versionado" || fail "estado da feature ignorado pelo git"
@@ -1086,6 +1088,24 @@ out="$(cd "$N6" && sdd-adotar estrutura --so-verificar 2>&1)"
 [ ! -e "$N6/.claude" ] && [ ! -d "$N6/.git" ] && printf '%s' "$out" | grep -q '(falta)' && ok "--so-verificar não cria nada" || fail "--so-verificar" "$out"
 out="$(cd "$N6" && sdd-adotar estrutura 2>&1)"
 [ -d "$N6/.git" ] && [ -d "$N6/.claude/agents" ] && ok "estrutura cria .claude/ e o repositório git" || fail "estrutura cria git e .claude" "$out"
+
+echo "sdd-adotar docs"
+D1="$TMP/docs-raiz"; mkdir -p "$D1/docs/guias" "$D1/docs/specs"
+printf '# manual\n' > "$D1/docs/guias/manual.md"; printf '# leia\n' > "$D1/docs/README.md"
+printf '# spec\n' > "$D1/docs/specs/login.md"; printf 'veja docs/guias/manual.md\n' > "$D1/LEIAME.md"
+(cd "$D1" && sdd-iniciar --sem-git >/dev/null 2>&1)
+out="$(cd "$D1" && sdd-adotar inventario 2>&1)"
+printf '%s' "$out" | grep -q 'docs/ da raiz: 3 arquivo' && ok "inventário informa a docs/ da raiz" || fail "inventário da docs/" "$out"
+assert_exit 1 "docs recusa rodar com artefato de processo pendente" bash -c "cd '$D1' && sdd-adotar docs"
+(cd "$D1" && printf 'docs/specs/login.md -> legado:login.md\n' > mapa.txt && sdd-adotar aplicar mapa.txt >/dev/null 2>&1; rm -f mapa.txt)
+out="$(cd "$D1" && sdd-adotar docs --simular 2>&1)"
+[ -f "$D1/docs/guias/manual.md" ] && printf '%s' "$out" | grep -q 'Simulação' && ok "docs --simular não move nada" || fail "docs --simular" "$out"
+out="$(cd "$D1" && sdd-adotar docs 2>&1)"
+[ -f "$D1/sdd/docs/guias/manual.md" ] && [ ! -e "$D1/docs" ] && ok "docs leva a docs/ da raiz para sdd/docs/ e remove a pasta vazia" || fail "docs migra" "$out"
+[ -f "$D1/sdd/docs/README-original.md" ] && [ -f "$D1/sdd/docs/README.md" ] && ok "colisão com o README ganha o sufixo -original" || fail "README-original"
+printf '%s' "$out" | grep -q 'LEIAME.md cita docs/guias/manual.md' && ok "docs lista os links que citam o caminho antigo" || fail "links antigos da docs" "$out"
+out="$(cd "$D1" && sdd-adotar docs 2>&1)"
+printf '%s' "$out" | grep -q 'Não há docs/' && ok "docs sem docs/ na raiz: nada a fazer" || fail "docs repetido" "$out"
 
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"

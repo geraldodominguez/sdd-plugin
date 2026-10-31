@@ -3,7 +3,7 @@ name: iniciar
 description: Prepara o repositório para o SDD. Cria a pasta sdd/ (configuração, backlog, sprints, specs, sistema, adr), a pasta .claude/ com as subpastas que o Claude Code usa e, se faltar, o repositório git com tudo configurado, rascunha a constituição a partir do código e injeta as regras no CLAUDE.md e no AGENTS.md. Num projeto que não nasceu com o plugin, lê os artefatos de outros processos e agentes (specs, planos, tarefas, ADRs, backlog), os renomeia e converte para o padrão com a sua aprovação, e deixa cada feature em andamento numa transição que mostra como era e como fica, para o plugin continuar de onde o outro processo parou. Rode uma vez por repositório, e de novo com --adotar quando aparecerem artefatos fora do padrão.
 argument-hint: "[--nivel 1|2] [--protecao desligada|leve|estrita] [--adotar] [--sem-git] [--sem-claude]"
 disable-model-invocation: true
-allowed-tools: Bash(git status), Bash(git status *), Bash(sdd-estado ver), Bash(sdd-estado definir feature=*), Bash(git symbolic-ref HEAD refs/heads/main), Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(git config user.name *), Bash(git config user.email *), Bash(git remote add *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write, Bash(git tag *), Bash(git merge develop), Bash(git branch *)
+allowed-tools: Bash(git status), Bash(git status *), Bash(sdd-estado ver), Bash(sdd-estado definir feature=*), Bash(git symbolic-ref HEAD refs/heads/main), Bash(sdd-gitflow *), Bash(sdd-iniciar *), Bash(sdd-iniciar), Bash(sdd-status), Bash(sdd-status *), Bash(sdd-adotar *), Bash(git config user.name), Bash(git config user.email), Bash(git config user.name *), Bash(git config user.email *), Bash(git remote add *), Bash(gh auth status), Bash(gh repo view *), Bash(sdd-backlog adicionar *), Bash(sdd-pendencias), Bash(sdd-rastrear *), Bash(sdd-estado usar *), Bash(sdd-estado template *), Bash(sdd-estado definir nivel=*), Bash(sdd-estado definir capacidade=*), Bash(git ls-files *), Bash(git log *), Bash(rm sdd/adocao-mapa.txt), Read, Glob, Grep, Edit, Write, Bash(git tag *), Bash(git merge develop), Bash(git branch *)
 ---
 
 # /sdd:iniciar
@@ -17,7 +17,8 @@ Argumentos: `$ARGUMENTS`
    ADRs, backlog, sprints, arquitetura, regras) que estão fora do lugar do
    padrão.
    - **Sem `sdd/` e com inventário vazio:** projeto novo ou sem processo. Siga
-     do passo 2.
+     do passo 2. Se ele avisa que há uma `docs/` na raiz, ela também é adotada:
+     faça só o passo 8 da **Adoção** (abaixo), depois da preparação.
    - **Sem `sdd/` e com inventário:** o projeto não nasceu com o plugin. Diga
      ao usuário quantos artefatos encontrou e de onde (`docs/specs/`, `.kiro/`,
      `TODO.md`...), avise que eles serão lidos e trazidos ao padrão depois da
@@ -35,16 +36,36 @@ Argumentos: `$ARGUMENTS`
      diretório não é um repositório git. Crio um, com a branch `main`,
      `.gitignore` e um commit inicial vazio?" Se a resposta for não, use
      `--sem-git` e diga que o Git Flow fica desligado (`gitflow: desligado`).
+     Se for sim, **confirme a conta antes de criar** (os dois itens abaixo) e
+     só então rode o `sdd-iniciar`.
+   - **A conta do git** (sempre que o repositório vai ser criado, e quando a
+     identidade falta): mostre a identidade que o commit vai usar
+     (`git config user.name` e `git config user.email`, que podem vir da
+     configuração global) e pergunte se é a conta certa para este projeto. Uma
+     pessoa com conta pessoal e de trabalho erra aqui sem perceber. Se for
+     outra, ou se faltar, peça os valores e grave **no repositório**, depois do
+     `git init` (`git config user.name` e `git config user.email`, sem
+     `--global`). Não invente nem copie de outro lugar.
+   - **A conta da plataforma** (GitHub, GitLab): com o `gh` instalado, rode
+     `gh auth status` e mostre em que conta ele está logado; pergunte se é
+     nela (ou em qual organização) que o repositório remoto fica. Sem o `gh`,
+     pergunte a conta e a URL.
+   - **O repositório remoto já existe?** Pergunte o nome do repositório e
+     confira se ele já existe na conta ou na organização escolhida
+     (`gh repo view <dono>/<nome>`; sem o `gh`, pergunte). Se existe, pergunte
+     se é para **ligar** este projeto a ele (`git remote add origin <url>`) ou
+     **criar outro** com um nome diferente. Ao ligar num repositório que já tem
+     histórico, avise que o `main` local e o remoto vão divergir e não faça
+     push nem pull sem combinar com o usuário. Para criar, `gh repo create
+     <dono>/<nome>` só depois de ele confirmar o nome, a visibilidade
+     (pública ou privada) e o dono.
    - **O repositório é de uma pasta acima** (`! repositório git: o projeto
      está dentro do repositório ...`): confirme se é esse mesmo.
-   - **Identidade do git ausente** (`? identidade do git`): peça `user.name` e
-     `user.email` e rode `git config` com os valores dados (sem eles, não há
-     commit inicial). Não invente nem copie de outro lugar.
-   - **Remoto ausente** (`? remoto`): pergunte se há um repositório na
-     plataforma (GitHub, GitLab) e a URL, e rode `git remote add origin <url>`;
-     ou, se o usuário quiser criar agora, `gh repo create` (só depois de ele
-     dizer o nome, a visibilidade e a organização). Sem resposta, deixe sem
-     remoto e avise que publicar fica para depois.
+   - **Identidade do git ausente** (`? identidade do git`): é o caso da conta
+     do git acima, sem nenhum valor para mostrar.
+   - **Remoto ausente** (`? remoto`), num repositório que já existia: as mesmas
+     perguntas da conta da plataforma e do repositório remoto. Sem resposta,
+     deixe sem remoto e avise que publicar fica para depois.
    - **`.claude/` com arquivo seu** (`! .claude/settings.json ...`): mostre o
      que falta e pergunte se acrescenta as permissões de leitura dos
      utilitários `sdd-*`; o arquivo é do usuário e só muda com a aprovação dele.
@@ -308,6 +329,28 @@ com um mapa aprovado pelo usuário.
 7. **Confira.** `sdd-adotar contar` deve dar 0. Mostre `sdd-pendencias`: cada
    feature adotada aparece esperando a aprovação da transição.
 
+8. **Migre a `docs/` da raiz, por último.** Só depois de specs, planos,
+   tarefas e ADRs estarem no lugar e commitados (o `sdd-adotar docs` recusa
+   rodar antes: ele exige `contar` em 0). Tudo do SDD mora em `sdd/`, então a
+   `docs/` do projeto vai para `sdd/docs/`.
+   - Rode `sdd-adotar docs --simular` e mostre ao usuário a lista, com as
+     colisões (um `README.md` vira `README-original.md`).
+   - **Antes de pedir a aprovação, procure quem usa a `docs/` pelo caminho**,
+     porque mover quebra isso: `mkdocs.yml` (`docs_dir`), Docusaurus, Sphinx
+     (`conf.py`), GitHub Pages (`/docs` nas configurações do repositório),
+     workflows de CI, `package.json`, `Makefile` e links do `README.md`
+     (`Grep` por `docs/` nesses arquivos). Mostre o que achou e o que
+     precisaria mudar.
+   - Pergunte se pode migrar. Se o projeto publica a `docs/` (GitHub Pages, site
+     de documentação) e o usuário não quer mexer na publicação, deixe a `docs/`
+     onde está e diga que o SDD segue funcionando (o hook não confere a
+     `docs/`); o material de entrada do SDD vai em `sdd/docs/`.
+   - Com o "sim", rode `sdd-adotar docs`, atualize os links que ele listou, os
+     arquivos de configuração achados e o `excecoes_de_layout` do
+     `sdd/config.yml`, se citar `docs/`. Sugira o commit, em `develop`:
+     `chore: docs/ da raiz para sdd/docs/`.
+   - Projeto sem `docs/` na raiz: não há o que migrar, e o passo termina aqui.
+
 ## Conversão de uma feature adotada
 
 Os arquivos já estão com o nome do padrão (`spec.md`, `plano.md`,
@@ -392,8 +435,10 @@ parou.
 
 - Não crie features nem specs, a não ser as features que a adoção aprovada cria.
 - Não altere código do projeto.
-- Não invente a identidade do git, a URL do remoto nem o nome de um repositório
-  novo: pergunte. Criar um repositório na plataforma (`gh repo create`) é
+- Não crie o repositório sem confirmar a conta (a identidade do git e a conta
+  da plataforma). Não invente a identidade, a URL do remoto nem o nome de um
+  repositório novo: pergunte. Se o repositório remoto já existe, não escolha
+  entre ligar e criar outro: pergunte. Criar um repositório na plataforma (`gh repo create`) é
   decisão do usuário e pede a confirmação dele no momento.
 - Não altere um `.claude/settings.json` que já existe sem a aprovação do
   usuário: mostre o que falta e pergunte.
@@ -402,7 +447,7 @@ parou.
 - Não reescreva um `CLAUDE.md` existente: o `sdd-iniciar` só acrescenta ou
   atualiza o bloco entre `<!-- sdd:inicio -->` e `<!-- sdd:fim -->`.
 - Na adoção, não mova nem apague arquivos por conta própria (`mv`, `git mv`,
-  `rm`, Write em outro lugar): só o `sdd-adotar aplicar`, com o mapa aprovado.
+  `rm`, Write em outro lugar): só o `sdd-adotar aplicar` e o `sdd-adotar docs`, com o mapa aprovado.
 - Na conversão, não invente requisito, critério ou tarefa que o original não
   tem, e não apague nada do original sem dizer para onde foi ("O que ficou de
   fora").
@@ -419,5 +464,6 @@ parou.
 - `comando_teste` está preenchido ou o usuário sabe que precisa preencher.
 - `sdd-adotar contar` dá 0, ou o usuário decidiu deixar a adoção para depois.
 - Cada feature adotada tem o `transicao.md` sem lacunas, à espera do `/sdd:aprovar`.
+- A `docs/` da raiz foi migrada para `sdd/docs/` (por último), ou o usuário decidiu deixá-la onde está.
 - O usuário revisou a constituição.
 - Com o Git Flow ativo, `sdd-gitflow conferir` não aponta problemas (ou o usuário decidiu o que fazer com cada branch fora do padrão), e o trabalho está em `develop`.

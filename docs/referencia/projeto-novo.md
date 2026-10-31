@@ -97,8 +97,10 @@ O plugin nunca faz push: em cada etapa, ele diz o comando para você publicar.
 
 Este passo é opcional: se você pular, o `/sdd:iniciar` percebe que o diretório
 não é um repositório e pergunta se pode criá-lo, com a branch `main`, o
-`.gitignore` e o commit inicial (e pede o `user.name`, o `user.email` e a URL
-do remoto, se faltarem).
+`.gitignore` e o commit inicial. Antes de criar, ele confirma a conta: mostra a
+identidade do git que o commit vai usar e a conta do GitHub ou GitLab em que o
+`gh` está logado. Se o repositório remoto já existe, ele pergunta se liga o
+projeto nele ou cria outro.
 
 A branch de produção se chama **`main`** em todo projeto do SDD (ver
 [Git Flow](git-flow.md)). Com um git antigo, sem a opção `-b`, rode `git init`

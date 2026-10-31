@@ -212,6 +212,7 @@ saber o que já foi implementado. Então decide um destino para cada arquivo:
 | regras e convenções | o conteúdo vai para a constituição; o arquivo, para o legado | `legado:<nome>.md` |
 | arquitetura, diagramas, C4 | `sdd/arquitetura/`, como referência | `arquitetura:<nome>` |
 | documentação de API externa, levantamento ou ata de cliente, norma | `sdd/docs/`, como material de entrada | `docs:<caminho>` |
+| o resto da `docs/` da raiz (manual, guias) | `sdd/docs/`, **no fim da adoção**, depois de tudo acima | `sdd-adotar docs` (sem mapa) |
 | duplicata, rascunho abandonado, segunda spec da mesma feature | `sdd/legado/` (nunca se apaga) | `legado:<caminho>` |
 | documento que não é de processo, mas tem nome de artefato | fica onde está | entra em `excecoes_de_layout` |
 

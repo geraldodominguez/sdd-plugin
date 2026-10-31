@@ -421,6 +421,7 @@ sdd-adotar inventario [--tsv]
 sdd-adotar contar
 sdd-adotar aplicar <mapa> [--simular]
 sdd-adotar estrutura [--so-verificar]
+sdd-adotar docs [--simular]
 ```
 
 Traz para o padrão os artefatos de processo que outro processo ou outro agente
@@ -499,6 +500,16 @@ falta, em três grupos, uma linha por item:
 
 Sai com 0 quando tudo está no padrão e com 1 quando há alguma linha `-`, `!` ou
 `?`.
+
+**Docs.** Leva a `docs/` da raiz para `sdd/docs/`, o **último** passo da
+adoção: recusa rodar (saída 1) enquanto o `sdd-adotar contar` não der 0, porque
+specs, planos, tarefas e ADRs têm destino próprio e podem estar dentro da
+`docs/`. Move cada arquivo com `git mv`, no mesmo caminho relativo, pelo mesmo
+caminho do `aplicar`: registra em `sdd/adocao.md` e no histórico do projeto, lista os
+arquivos que ainda citam o caminho antigo e nunca sobrescreve nem apaga. Um
+arquivo que colide com um que já existe em `sdd/docs/` (o `README.md`) vira
+`<nome>-original`. Se o `excecoes_de_layout` do config citar `docs/`, ele avisa
+para trocar por `sdd/docs/`. `--simular` mostra o plano sem mover nada.
 
 ## sdd-gitflow
 

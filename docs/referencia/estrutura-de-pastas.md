@@ -120,7 +120,6 @@ fase. O `estado` e o `historico.md` são escritos só pelos utilitários.
 | `CLAUDE.md`, `AGENTS.md` | o bloco de regras do SDD entre `<!-- sdd:inicio -->` e `<!-- sdd:fim -->`; o resto do arquivo é seu | o plugin só toca no bloco | sim |
 | `.gitattributes` | o merge por união dos históricos, que o Git Flow precisa | o plugin acrescenta | sim |
 | `.gitignore` | lixo do sistema, `.env` e `.claude/settings.local.json` | o plugin acrescenta o que falta | sim |
-| `docs/` (a da raiz) | **a documentação do seu produto** (manual, guias, site). O SDD não cria nem mexe nela | você | sim |
 
 ## 5. O que vai para o git
 
@@ -163,7 +162,7 @@ confere. Ver [proteção por hooks](protecao-por-hooks.md#arquivos-novos-só-no-
 | uma norma, um regulamento, um glossário do domínio | `sdd/docs/` |
 | uma decisão de arquitetura tomada | `sdd/adr/` |
 | um diagrama C4 ou documento de arquitetura | `sdd/arquitetura/` |
-| o manual ou o site do produto | a `docs/` da raiz, fora do SDD |
+| o manual ou o site do produto | `sdd/docs/` também (ou, se o projeto publica a `docs/` pelo caminho, como GitHub Pages ou mkdocs, deixe-a na raiz e recuse a migração) |
 | um TODO, um roadmap ou uma lista de ideias | `/sdd:backlog adicionar`, item por item |
 | a spec de outro processo (Spec Kit, Kiro, OpenSpec) | `/sdd:iniciar --adotar` |
 | um contrato com dado pessoal, uma chave, uma senha | fora do repositório |
@@ -192,9 +191,24 @@ Para ser visível e fácil de achar no editor e no GitHub. O plugin reconhece o
 projeto pelo `sdd/config.yml`, então uma pasta `sdd/` que não é do SDD não o
 confunde: o `/sdd:iniciar` se recusa a seguir e pergunta como resolver.
 
-**O `/sdd:iniciar` cria a `docs/` da raiz?**
+**O `/sdd:iniciar` cria uma `docs/` na raiz?**
 
-Não. A `docs/` da raiz é sua. O que o SDD cria está em `sdd/docs/`.
+Nunca. Tudo o que o SDD cria está dentro de `sdd/`, inclusive a `sdd/docs/`.
+
+**E se o meu projeto já tem uma `docs/` na raiz?**
+
+Na adoção, ela é a **última** coisa a migrar. Primeiro vão para o lugar as
+specs, os planos, as tarefas e os ADRs que estão soltos (inclusive os que
+estão dentro de `docs/`, como `docs/specs/` ou `docs/decisions/`). Só então o
+`sdd-adotar docs` leva o que sobrou da `docs/` para `sdd/docs/`, com `git mv`,
+mantendo os caminhos relativos (`docs/guias/x.md` vira `sdd/docs/guias/x.md`) e
+sem apagar nada. Um arquivo que colide com um que já existe, como o
+`README.md`, ganha o sufixo `-original`.
+
+Antes de migrar, o agente procura o que usa a `docs/` pelo caminho (mkdocs,
+Docusaurus, Sphinx, GitHub Pages, CI, links do README) e mostra o que quebraria.
+Você aprova, ou recusa e a `docs/` fica onde está: o hook não confere a `docs/`
+da raiz, então o SDD segue funcionando.
 
 **Posso criar subpastas em `sdd/docs/`?**
 

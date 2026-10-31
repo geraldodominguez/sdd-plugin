@@ -1210,6 +1210,11 @@ sdd_git_preparar() {
   email="$(git -C "$raiz" config user.email 2>/dev/null || true)"
   if [ -z "$nome" ] || [ -z "$email" ]; then
     echo "? identidade do git: user.name e user.email não estão configurados (sem eles não há commit)"
+  else
+    echo "= identidade do git: $nome <$email> (confirme que é a conta certa para este projeto)"
+  fi
+  if [ -z "$nome" ] || [ -z "$email" ]; then
+    :
   elif [ "$criar" = 1 ] && ! git -C "$raiz" rev-parse --verify HEAD >/dev/null 2>&1; then
     git -C "$raiz" commit -q --allow-empty -m "chore: início" && echo "+ commit inicial vazio em main (chore: início)"
   fi
