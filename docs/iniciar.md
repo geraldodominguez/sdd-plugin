@@ -3,7 +3,8 @@
 ## O que faz
 
 Prepara um repositório para o SDD. Tudo do método mora numa pasta só, `sdd/`
-(configuração, backlog, sprints, templates, `specs/`, `sistema/` e `adr/`),
+(configuração, backlog, sprints, templates, `specs/`, `sistema/`, `adr/` e
+`docs/`, esta com o material do projeto: API externa, levantamentos de clientes),
 para a raiz do seu projeto não se encher de pastas. Ela cria também a pasta
 `.claude/` com as subpastas que o Claude Code lê do projeto (`agents/`,
 `skills/`, `commands/` e `rules/`) e um `settings.json` com as permissões de
@@ -29,6 +30,9 @@ ela não duplica nem apaga o que você escreveu no `CLAUDE.md`, e só sobrescrev
 o config, a constituição e os templates se você pedir (`--forcar`). Com o projeto já preparado, use
 `/sdd:iniciar --adotar` quando o `/sdd:pendencias` mostrar artefatos "Fora do
 padrão".
+
+Para o mapa completo do que fica onde, e para que serve cada pasta, veja a
+[estrutura de pastas](referencia/estrutura-de-pastas.md).
 
 ## O que ela pergunta
 

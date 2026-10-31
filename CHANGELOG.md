@@ -16,6 +16,9 @@ Ver a [ADR 0017](.agents/adr/0017-tudo-do-sdd-em-uma-pasta.md).
 
 ### Novo
 
+- **`sdd/docs/`:** pasta para o material de entrada do projeto (documentação de API externa, levantamentos e atas de clientes, normas). Criada pelo `sdd-iniciar` com um `README.md`, isenta do classificador de layout (um `requisitos-do-cliente.md` ali não é mais "spec fora do lugar"), conferida pelo `sdd-adotar estrutura`, consultada pelo `/sdd:especificar` e pelo `mapeador-de-contexto`, e com o destino `docs:<caminho>` no mapa da adoção.
+- **Página [estrutura de pastas](docs/referencia/estrutura-de-pastas.md):** o que o SDD cria, para que serve cada pasta, quem escreve onde, o que vai para o git e onde pôr cada tipo de documento.
+
 - **`sdd-iniciar` cria a pasta `.claude/`** (`settings.json` com as permissões de leitura dos `sdd-*`, e `agents/`, `skills/`, `commands/` e `rules/`) e, se o diretório não é um repositório, **o repositório git**: branch `main`, `.gitignore`, commit inicial vazio e o aviso de que falta o remoto. Opções `--sem-git` e `--sem-claude`.
 - **`sdd-adotar estrutura [--so-verificar]`:** confere `sdd/`, `.claude/` e o git, cria o que falta e aponta (`!`, `?`) o que está fora do padrão ou depende de uma resposta. Um `settings.json` existente nunca é reescrito.
 - A skill `/sdd:iniciar` pergunta ao usuário o que não dá para deduzir antes de criar qualquer coisa (repositório, identidade do git, remoto, `.claude/settings.json` existente, pasta `sdd/` alheia, nível, proteção, integração, comandos) e confere a estrutura na adoção e na atualização.

@@ -71,6 +71,7 @@ Depois de preparar o repositório, ele faz a **adoção**:
 | backlog, roadmap, TODO | itens no `sdd/backlog.md`; o arquivo vai para `sdd/legado/` |
 | regras e convenções | conteúdo na constituição; o arquivo vai para `sdd/legado/` |
 | arquitetura, diagramas | `sdd/arquitetura/` |
+| material de entrada do projeto (documentação de API externa, levantamento ou ata de cliente, norma) | `sdd/docs/` |
 
 Nada é apagado: o que não entra no fluxo vai para `sdd/legado/`, e o
 original de cada arquivo convertido fica no git (o hash dele está no

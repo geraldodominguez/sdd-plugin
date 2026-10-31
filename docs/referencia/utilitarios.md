@@ -92,7 +92,7 @@ sdd-iniciar [--forcar] [--nivel 1|2] [--protecao desligada|leve|estrita] [--sem-
 ```
 
 Cria `sdd/` (config, constituição, estado, backlog, sprints, templates,
-`specs/`, `sistema/` e `adr/`) no diretório atual (ou em `$CLAUDE_PROJECT_DIR`),
+`specs/`, `sistema/`, `adr/` e `docs/`, com um `README.md` que explica a pasta) no diretório atual (ou em `$CLAUDE_PROJECT_DIR`),
 injeta o bloco de regras no `CLAUDE.md` e no `AGENTS.md`, e acrescenta ao
 `.gitattributes` o merge por união dos históricos (para os merges do Git Flow).
 Não sobrescreve nada sem `--forcar`.
@@ -456,6 +456,7 @@ do padrão ou um atalho que o utilitário numera:
 | `adr:<slug>` | `sdd/adr/NNNN-slug.md` |
 | `legado:<caminho>` | `sdd/legado/<caminho>` |
 | `arquitetura:<caminho>` | `sdd/arquitetura/<caminho>` |
+| `docs:<caminho>` | `sdd/docs/<caminho>`: material de entrada do projeto (API externa, levantamento de cliente), que não é artefato de processo |
 | outro caminho | só se for do padrão (ex.: um arquivo novo numa feature que já existe) |
 
 O mapa inteiro é conferido antes de mover qualquer arquivo: origem
@@ -487,7 +488,7 @@ falta, em três grupos, uma linha por item:
 | `?` | depende de uma resposta sua |
 
 - `sdd/`: `config.yml`, `constituicao.md`, `backlog.md`, `estado`,
-  `.gitignore`, `sprints/`, `templates/`, `adr/`, `specs/`, `sistema/` e os
+  `.gitignore`, `sprints/`, `templates/`, `adr/`, `docs/`, `specs/`, `sistema/` e os
   templates do plugin. Recria as pastas; o que tem conteúdo do projeto
   (config, constituição) só se completa pelo `sdd-iniciar`.
 - `.claude/`: `agents/`, `skills/`, `commands/`, `rules/` e `settings.json`. Um

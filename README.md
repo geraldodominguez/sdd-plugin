@@ -403,6 +403,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Guias
 
+- [Estrutura de pastas: o que o SDD cria e para que serve cada uma](docs/referencia/estrutura-de-pastas.md)
 - [Começar um projeto novo, passo a passo](docs/referencia/projeto-novo.md)
 - [Adotar o SDD num projeto em andamento, passo a passo](docs/referencia/projeto-em-andamento.md)
 - [Git Flow: as branches de cada momento do ciclo](docs/referencia/git-flow.md)
@@ -430,6 +431,7 @@ sdd/                         tudo do SDD mora aqui; na raiz só ficam CLAUDE.md,
   incidentes/INC-NNN.md      um incidente, com linha do tempo e post-mortem
   adr/NNNN-slug.md           decisões de arquitetura
   arquitetura/               documentos e diagramas de arquitetura, como referência
+  docs/                      documentos do projeto: API externa, levantamentos de clientes, normas
   legado/                    o que veio de outro processo e não entra no fluxo
 .claude/                     settings.json (permissões de leitura dos sdd-*) e as pastas
                              agents/, skills/, commands/ e rules/ do Claude Code

@@ -19,13 +19,16 @@ sem carregar o sistema inteiro.
 1. Leia primeiro a spec do sistema em `sdd/sistema/` (as capacidades que o pedido
    parece tocar): ela diz o que o sistema faz hoje, com a origem de cada item.
    Depois extraia do pedido os conceitos-chave: entidades, ações, telas, endpoints.
-2. Localize-os com Grep e Glob: nomes de domínio, rotas, tabelas, eventos.
+2. Veja se `sdd/docs/` tem material do projeto sobre o pedido (documentação de
+   API externa, levantamento de cliente) e leia só o que for relevante; cite o
+   caminho no contexto.
+3. Localize-os com Grep e Glob: nomes de domínio, rotas, tabelas, eventos.
    Comece amplo e afunile.
-3. Leia **só os trechos relevantes**: assinaturas, schemas, definições de rota,
+4. Leia **só os trechos relevantes**: assinaturas, schemas, definições de rota,
    migrations, testes existentes. Não leia arquivos inteiros sem necessidade.
-4. Siga as dependências um nível acima e um abaixo de cada ponto de entrada.
+5. Siga as dependências um nível acima e um abaixo de cada ponto de entrada.
    Não mais que isso.
-5. Grave o `contexto.md`. Use `sdd/templates/contexto.md` como base, se existir.
+6. Grave o `contexto.md`. Use `sdd/templates/contexto.md` como base, se existir.
 
 ## Estrutura do contexto.md
 

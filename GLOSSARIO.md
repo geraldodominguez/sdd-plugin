@@ -18,7 +18,7 @@ O número SemVer `MAJOR.MINOR.PATCH` de uma release, com a tag `vX.Y.Z` em `main
 _Evite_: build, número da sprint
 
 **Layout**:
-Os lugares fixos de cada artefato de processo: `sdd/specs/NNN-slug/`, `sdd/adr/NNNN-slug.md`, `sdd/`, `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/`, `sdd/arquitetura/` e `sdd/legado/`. Um contrato: o hook bloqueia criar artefato fora dele.
+Os lugares fixos de cada artefato de processo: `sdd/specs/NNN-slug/`, `sdd/adr/NNNN-slug.md`, `sdd/`, `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/`, `sdd/arquitetura/`, `sdd/docs/` e `sdd/legado/`. Um contrato: o hook bloqueia criar artefato fora dele.
 _Evite_: estrutura de pastas (sugere algo que cada um decide)
 
 **Adoção**:

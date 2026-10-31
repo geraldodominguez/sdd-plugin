@@ -56,7 +56,7 @@ Três ideias explicam tudo:
 
 | Ideia | O que significa |
 |---|---|
-| **Layout** | cada artefato de processo tem um único lugar: `sdd/specs/NNN-slug/`, `sdd/adr/NNNN-slug.md`, `sdd/`, `sdd/sistema/`, `sdd/arquitetura/`, `sdd/legado/`. A adoção traz para lá o que está fora |
+| **Layout** | cada artefato de processo tem um único lugar: `sdd/specs/NNN-slug/`, `sdd/adr/NNNN-slug.md`, `sdd/`, `sdd/sistema/`, `sdd/arquitetura/`, `sdd/legado/` (e `sdd/docs/` para o material de entrada do projeto). A adoção traz para lá o que está fora |
 | **Transição** | toda feature adotada nasce "em transição": nada é aprovado e nada avança até você aprovar o `transicao.md`, que mostra **como era** e **como vai ficar** |
 | **Marca `[O]`** | a tarefa que o outro processo já fez fica `[O]` (feita fora do plugin, sem gate). Ela não é refeita; os testes dela vêm na fase red e devem passar de início |
 
@@ -211,6 +211,7 @@ saber o que já foi implementado. Então decide um destino para cada arquivo:
 | sprint de outro processo | `sdd/legado/`; a sprint do SDD se replaneja | `legado:sprints/<nome>.md` |
 | regras e convenções | o conteúdo vai para a constituição; o arquivo, para o legado | `legado:<nome>.md` |
 | arquitetura, diagramas, C4 | `sdd/arquitetura/`, como referência | `arquitetura:<nome>` |
+| documentação de API externa, levantamento ou ata de cliente, norma | `sdd/docs/`, como material de entrada | `docs:<caminho>` |
 | duplicata, rascunho abandonado, segunda spec da mesma feature | `sdd/legado/` (nunca se apaga) | `legado:<caminho>` |
 | documento que não é de processo, mas tem nome de artefato | fica onde está | entra em `excecoes_de_layout` |
 

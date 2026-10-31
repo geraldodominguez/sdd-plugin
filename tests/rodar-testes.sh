@@ -1023,7 +1023,7 @@ subst 's/\r$//' "$W6/sdd/specs/001-cupom/spec.md"
 echo "layout sdd/, .claude/ e git (2.0)"
 N1="$TMP/projeto-vazio"; mkdir -p "$N1"
 out="$(cd "$N1" && sdd-iniciar 2>&1)"
-for d in sdd/specs sdd/sistema sdd/adr sdd/sprints sdd/templates/release; do
+for d in sdd/specs sdd/sistema sdd/adr sdd/docs sdd/sprints sdd/templates/release; do
   [ -d "$N1/$d" ] && ok "iniciar cria $d/" || fail "iniciar cria $d/" "$out"
 done
 [ ! -e "$N1/.sdd" ] && [ ! -e "$N1/specs" ] && [ ! -e "$N1/sistema" ] && [ ! -e "$N1/docs" ] && ok "nada do SDD fora de sdd/ (só .claude/ e arquivos de raiz)" || fail "nada fora de sdd/" "$(ls -A "$N1")"
@@ -1038,6 +1038,19 @@ printf '%s' "$out" | grep -q 'remoto' && ok "iniciar avisa que falta o remoto" |
 (cd "$N1" && git check-ignore -q sdd/estado) && ok "sdd/estado fica fora do git" || fail "sdd/estado versionado"
 (cd "$N1" && sdd-estado nova "Teste do layout" >/dev/null 2>&1)
 (cd "$N1" && ! git check-ignore -q sdd/specs/001-teste-do-layout/estado) && ok "o estado da feature é versionado" || fail "estado da feature ignorado pelo git"
+
+[ -f "$N1/sdd/docs/README.md" ] && ok "iniciar cria sdd/docs/ com o README" || fail "sdd/docs/README.md"
+mkdir -p "$N1/sdd/docs/clientes"
+assert_exit 0 "sdd/docs/ é isenta: requisitos do cliente não é spec fora do lugar" guard_write "$N1" "$N1/sdd/docs/clientes/requisitos-do-cliente.md"
+assert_exit 0 "sdd/docs/ é isenta: prd.md também" guard_write "$N1" "$N1/sdd/docs/prd.md"
+assert_exit 2 "o mesmo nome fora de sdd/docs/ continua bloqueado" guard_write "$N1" "$N1/requisitos-do-cliente.md"
+printf '# requisitos\n' > "$N1/sdd/docs/clientes/requisitos-do-cliente.md"
+[ "$(cd "$N1" && sdd-adotar contar)" = "0" ] && ok "o inventário não aponta o que está em sdd/docs/" || fail "inventário em sdd/docs/" "$(cd "$N1" && sdd-adotar inventario)"
+printf '# API\n' > "$N1/api-gateway.md"
+printf 'api-gateway.md -> docs:apis/gateway.md\n' > "$N1/mapa-docs.txt"
+(cd "$N1" && sdd-adotar aplicar mapa-docs.txt >/dev/null 2>&1)
+[ -f "$N1/sdd/docs/apis/gateway.md" ] && [ ! -e "$N1/api-gateway.md" ] && ok "o destino docs:<caminho> leva para sdd/docs/" || fail "destino docs:"
+rm -f "$N1/mapa-docs.txt"
 
 N2="$TMP/sem-git"; mkdir -p "$N2"
 (cd "$N2" && sdd-iniciar --sem-git --sem-claude >/dev/null 2>&1)

@@ -24,6 +24,7 @@ próximo passo fora do comum.
 | `sdd/incidentes/INC-NNN.md` | Um incidente, da abertura ao post-mortem. |
 | `sdd/adr/NNNN-slug.md` | Decisões arquiteturais duráveis, numeradas com 4 dígitos. |
 | `sdd/arquitetura/` | Documentos e diagramas de arquitetura, como referência. |
+| `sdd/docs/` | Material de entrada do projeto: documentação de API externa, levantamentos de clientes, normas. Leia antes de perguntar ao usuário; não é artefato de processo e o hook não a confere. |
 | `sdd/legado/` | O que veio de outro processo e não entra no fluxo. Não é fonte de verdade. |
 
 Esses são os únicos lugares de artefatos de processo. Não crie pastas ou nomes
@@ -36,7 +37,7 @@ que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 - `sdd-sistema listar | nova | ver | consolidar | consolidada | pendentes`
 - `sdd-release proxima | analisar | changelog | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
-- `sdd-adotar inventario | contar | aplicar` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
+- `sdd-adotar inventario | contar | aplicar | estrutura` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
 - `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | valido | pode-integrar | nome`
 - `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
 

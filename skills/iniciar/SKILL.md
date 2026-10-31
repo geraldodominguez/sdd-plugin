@@ -262,6 +262,7 @@ com um mapa aprovado pelo usuário.
    | sprint de outro processo | `legado:sprints/<nome>.md` (a sprint do SDD se replaneja com `/sdd:sprint planejar`) |
    | regras, convenções, constituição de outro processo | `legado:<nome>.md`; o conteúdo alimenta a constituição |
    | arquitetura, diagramas, C4 | `arquitetura:<nome>` |
+   | material de entrada do projeto (documentação de API externa, levantamento ou ata de cliente, norma, glossário) | `docs:<caminho>` |
    | segundo arquivo de spec da mesma feature, duplicata, rascunho abandonado | `legado:...` (nunca apague) |
    | documento que não é de processo (manual, guia), mas tem nome de artefato | fica onde está; proponha o glob em `excecoes_de_layout` |
 

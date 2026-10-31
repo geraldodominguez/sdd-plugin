@@ -54,14 +54,20 @@ contexto.
    pergunte o que fazer (commit, stash) antes de seguir. Toda a feature, da
    spec ao código, é commitada nesta branch.
 
-5. **Contexto, em projeto existente.**
+5. **Documentos do projeto.** Antes de perguntar ao usuário sobre uma API
+   externa, um cliente ou uma regra de negócio, veja se `sdd/docs/` já tem o
+   material (`Glob` e `Grep` por `sdd/docs/**`) e leia o que for do pedido. Cite
+   o caminho na spec onde ela se apoia nele. Se o material não existe e o
+   usuário o fornece, proponha guardá-lo em `sdd/docs/` (só texto versionável).
+
+6. **Contexto, em projeto existente.**
    - Nível 2: chame a ferramenta Agent com o subagent `mapeador-de-contexto`,
      passando o pedido e o destino `sdd/specs/NNN-slug/contexto.md`. Ele grava o
      mapa e devolve um resumo curto.
    - Nível 1: uma busca sua (Grep, Glob) basta. Cite os arquivos afetados no
      objetivo.
 
-6. **Escreva a spec** seguindo a metodologia:
+7. **Escreva a spec** seguindo a metodologia:
    - só o quê e por quê, sem tecnologia;
    - requisitos em EARS, com IDs `RF-NNN` e `RNF-NNN`;
    - critérios em Dado, Quando, Então, com IDs `CA-NNN`, cobrindo caminho
@@ -73,9 +79,9 @@ contexto.
      regra de negócio;
    - apague os campos `{{...}}` e os exemplos não usados.
 
-7. **Revise** com o `QUALIDADE-DA-SPEC.md` e corrija o que falhar.
+8. **Revise** com o `QUALIDADE-DA-SPEC.md` e corrija o que falhar.
 
-8. **Gate.** Apresente:
+9. **Gate.** Apresente:
    - um resumo de três a cinco linhas (objetivo, quantos RFs e CAs, escopo);
    - os marcadores em aberto;
    - o próximo comando:

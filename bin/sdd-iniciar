@@ -15,6 +15,7 @@
 #   sdd/specs/            uma pasta por feature (o que cada mudança alterou)
 #   sdd/sistema/          a spec viva do sistema, por capacidade (o que ele faz hoje)
 #   sdd/adr/              decisões arquiteturais duráveis
+#   sdd/docs/             documentos do projeto: API externa, levantamentos de clientes
 #   sdd/releases/, sdd/incidentes/  criadas sob demanda por /sdd:release e /sdd:incidente
 # Cria também, se faltarem:
 #   .claude/              settings.json (permissões de leitura dos sdd-*) e as
@@ -100,7 +101,11 @@ if [ "$SEM_GIT" -ne 1 ]; then
   GIT_SAIDA="$(sdd_git_preparar "$RAIZ" 1)"
 fi
 
-mkdir -p "$RAIZ/sdd/templates/release" "$RAIZ/sdd/specs" "$RAIZ/sdd/adr" "$RAIZ/sdd/sistema"
+mkdir -p "$RAIZ/sdd/templates/release" "$RAIZ/sdd/specs" "$RAIZ/sdd/adr" "$RAIZ/sdd/sistema" "$RAIZ/sdd/docs"
+if [ ! -e "$RAIZ/sdd/docs/README.md" ]; then
+  cp "$ORIGEM/docs-readme.md" "$RAIZ/sdd/docs/README.md"
+  criados+=("sdd/docs/README.md")
+fi
 if [ ! -e "$RAIZ/sdd/sistema/README.md" ]; then
   cp "$ORIGEM/sistema-readme.md" "$RAIZ/sdd/sistema/README.md"
   criados+=("sdd/sistema/README.md")

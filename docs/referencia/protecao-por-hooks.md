@@ -61,6 +61,7 @@ mensagem dizendo onde ele mora:
 | `sdd/specs/009-feita-a-mao/spec.md`, numa pasta sem `estado` | bloqueada: a pasta não foi criada pelo `sdd-estado nova` |
 | `sdd/adr/usar-redis.md` | bloqueada: ADR é `sdd/adr/NNNN-slug.md` |
 | `sdd/adr/0002-usar-redis.md`, `sdd/specs/001-login/contexto.md` | permitida |
+| `sdd/docs/requisitos-do-cliente.md`, `sdd/docs/apis/pagamentos.md` | permitida: `sdd/docs/` é material de entrada do projeto e fica isenta, mesmo com nome de requisito |
 | `docs/guia.md`, `src/qualquer.ts` | permitida: não é artefato de processo |
 
 Um arquivo é artefato de processo pelo nome ou pela pasta (spec, PRD,

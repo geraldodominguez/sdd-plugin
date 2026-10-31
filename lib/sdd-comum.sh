@@ -861,6 +861,7 @@ sdd_no_layout() {
       # Pasta com nome de feature, mas sem estado, foi criada à mão: não conta.
       printf '%s' "$pasta" | grep -qE '^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' \
         && [ -f "$raiz/$specs/$pasta/estado" ] && return 0 ;;
+    sdd/docs/*) return 0 ;;
     sdd/config.yml|sdd/constituicao.md|sdd/backlog.md|sdd/estado|sdd/historico.md|sdd/adocao.md|sdd/adocao-mapa.txt|sdd/.gitignore|sdd/sprints/*|sdd/templates/*|sdd/legado/*|sdd/arquitetura/*|"$sistema"/*|"$releases"/*|"$incidentes"/*) return 0 ;;
   esac
   excecoes="$SDD__LAYOUT_EXCECOES"
@@ -1146,7 +1147,7 @@ sdd_estrutura_sdd() {
   for f in config.yml constituicao.md backlog.md estado .gitignore; do
     if [ -f "$raiz/sdd/$f" ]; then echo "= sdd/$f"; else echo "! sdd/$f: falta (rode sdd-iniciar, que completa sem sobrescrever)"; fi
   done
-  for d in sdd/sprints sdd/templates sdd/templates/release sdd/adr "$(sdd_pasta_specs "$raiz")" "$(sdd_pasta_sistema "$raiz")"; do
+  for d in sdd/sprints sdd/templates sdd/templates/release sdd/adr sdd/docs "$(sdd_pasta_specs "$raiz")" "$(sdd_pasta_sistema "$raiz")"; do
     if [ -d "$raiz/$d" ]; then
       echo "= $d/"
     elif [ "$criar" = 1 ]; then

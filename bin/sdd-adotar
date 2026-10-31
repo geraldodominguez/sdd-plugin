@@ -29,6 +29,8 @@
 #   adr:<slug>                 sdd/adr/NNNN-slug.md
 #   legado:<caminho>           sdd/legado/<caminho> (preservado, fora do fluxo)
 #   arquitetura:<caminho>      sdd/arquitetura/<caminho>
+#   docs:<caminho>             sdd/docs/<caminho> (material de entrada do projeto: API
+#                              externa, levantamento de cliente; não é artefato de processo)
 #   <caminho do padrão>        ex.: sdd/sistema/clientes.md, ou um arquivo novo numa
 #                              feature que já existe
 #
@@ -152,6 +154,11 @@ resolver_destino() {
       [ -n "$d" ] || { RES_ERRO="use arquitetura:<caminho>"; return; }
       RES_CAMINHO="sdd/arquitetura/$d"
       ;;
+    docs:*)
+      d="${d#docs:}"; d="${d#/}"
+      [ -n "$d" ] || { RES_ERRO="use docs:<caminho>"; return; }
+      RES_CAMINHO="sdd/docs/$d"
+      ;;
     *)
       RES_CAMINHO="${d#./}"
       ;;
@@ -223,7 +230,7 @@ aplicar() {
           [ -f "$RAIZ/$PASTA_SPECS/$p/estado" ] || { erros+=("linha $n: a feature '$p' não existe; para uma feature nova, use feature:<slug>/<arquivo>"); continue; }
           ;;
         *)
-          sdd_no_layout "$RAIZ" "$caminho" || { erros+=("linha $n: '$caminho' não é um lugar do padrão (use feature:, adr:, legado: ou arquitetura:)"); continue; }
+          sdd_no_layout "$RAIZ" "$caminho" || { erros+=("linha $n: '$caminho' não é um lugar do padrão (use feature:, adr:, legado:, arquitetura: ou docs:)"); continue; }
           ;;
       esac
     fi
