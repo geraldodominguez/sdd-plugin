@@ -4,9 +4,9 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
-## Não lançado
+## 2.0.0 - 2026-11-01
 
-Incompatível: os caminhos do layout mudam (versão maior, 2.0.0 na release).
+Incompatível: os caminhos do layout mudam.
 Ver a [ADR 0017](.agents/adr/0017-tudo-do-sdd-em-uma-pasta.md).
 
 ### Mudou
