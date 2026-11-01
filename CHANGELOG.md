@@ -6,6 +6,25 @@ configuração) sempre sobem a versão maior.
 
 ## Não lançado
 
+Incompatível: os caminhos do layout mudam (versão maior, 2.0.0 na release).
+Ver a [ADR 0017](.agents/adr/0017-tudo-do-sdd-em-uma-pasta.md).
+
+### Mudou
+
+- **Tudo do SDD numa pasta só, `sdd/`.** `.sdd/`, `specs/`, `sistema/`, `releases/`, `incidentes/` e `docs/adr/` (com `docs/legado/` e `docs/arquitetura/`) viram `sdd/`, `sdd/specs/`, `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/`, `sdd/adr/`, `sdd/legado/` e `sdd/arquitetura/`. A raiz do projeto fica só com `CLAUDE.md`, `AGENTS.md`, `.gitattributes`, `.gitignore` e `.claude/`. O projeto usa o SDD quando tem `sdd/config.yml`. Sem migração: o `sdd-iniciar` recusa um projeto com a `.sdd/` antiga e uma `sdd/` que não é do SDD.
+- O `sdd/.gitignore` ignora só `/estado` (ponteiro pessoal), e não o `estado` de cada feature.
+
+### Novo
+
+- **`sdd/docs/`:** pasta para o material de entrada do projeto (documentação de API externa, levantamentos e atas de clientes, normas). Criada pelo `sdd-iniciar` com um `README.md`, isenta do classificador de layout (um `requisitos-do-cliente.md` ali não é mais "spec fora do lugar"), conferida pelo `sdd-adotar estrutura`, consultada pelo `/sdd:especificar` e pelo `mapeador-de-contexto`, e com o destino `docs:<caminho>` no mapa da adoção.
+- **`sdd-adotar docs [--simular]`:** leva a `docs/` da raiz para `sdd/docs/`, por último na adoção: só roda depois de os artefatos de processo estarem no lugar (`contar` em 0), com `git mv`, sem apagar nada, e a skill avisa o que usa a `docs/` pelo caminho (mkdocs, Docusaurus, GitHub Pages, CI, links) antes de pedir a aprovação. O `inventario` passa a informar quantos arquivos a `docs/` da raiz tem.
+- **Página [estrutura de pastas](docs/referencia/estrutura-de-pastas.md):** o que o SDD cria, para que serve cada pasta, quem escreve onde, o que vai para o git e onde pôr cada tipo de documento.
+
+- **`sdd-iniciar` cria a pasta `.claude/`** (`settings.json` com as permissões de leitura dos `sdd-*`, e `agents/`, `skills/`, `commands/` e `rules/`) e, se o diretório não é um repositório, **o repositório git**: branch `main`, `.gitignore`, commit inicial vazio e o aviso de que falta o remoto. Opções `--sem-git` e `--sem-claude`.
+- **`sdd-adotar estrutura [--so-verificar]`:** confere `sdd/`, `.claude/` e o git, cria o que falta e aponta (`!`, `?`) o que está fora do padrão ou depende de uma resposta. Um `settings.json` existente nunca é reescrito.
+- Antes de criar o repositório, a skill `/sdd:iniciar` confirma a conta: a identidade do git que o commit vai usar (e grava outra só no repositório, se for o caso) e a conta da plataforma (`gh auth status`). Se o repositório remoto já existe, pergunta se liga o projeto nele ou cria outro. O `sdd-iniciar` e o `sdd-adotar estrutura` mostram a identidade do git na saída.
+- A skill `/sdd:iniciar` pergunta ao usuário o que não dá para deduzir antes de criar qualquer coisa (repositório, identidade do git, remoto, `.claude/settings.json` existente, pasta `sdd/` alheia, nível, proteção, integração, comandos) e confere a estrutura na adoção e na atualização.
+
 ## 1.0.2 - 2026-10-30
 
 Correções do uso real no macOS e no Windows. Nenhum formato rastreável mudou.

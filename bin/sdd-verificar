@@ -38,7 +38,7 @@ for a in "$@"; do
 done
 
 RAIZ="$(sdd_raiz_projeto)"
-[ -d "$RAIZ/.sdd" ] || { echo "sdd-verificar: projeto sem .sdd/." >&2; exit 1; }
+sdd_projeto_usa "$RAIZ" || { echo "sdd-verificar: projeto sem sdd/." >&2; exit 1; }
 
 falhas=(); avisos=()
 

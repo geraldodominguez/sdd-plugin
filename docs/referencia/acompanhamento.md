@@ -50,7 +50,7 @@ rende:
 | Os testes | "Os testes dizem o que a spec diz?" | teste passando antes da implementação, critério sem teste |
 | A revisão de segurança | "Corrijo, ou aceito o risco por escrito?" | achado alto sem correção, segredo no código, dado pessoal em log |
 | A auditoria | "Aceito o desvio, ou o código volta?" | achado crítico, teste alterado depois da red |
-| A consolidação | "A spec do sistema diz agora o que o sistema faz?" | requisito da feature sem linha em `sistema/`, linha antiga contraditória que ficou |
+| A consolidação | "A spec do sistema diz agora o que o sistema faz?" | requisito da feature sem linha em `sdd/sistema/`, linha antiga contraditória que ficou |
 | A homologação (aceite) | "O cliente viu e aprovou cada passo do roteiro?" | passo pendente, aceite dado por quem não é dono do produto |
 | O go de produção | "Há plano de rollback testado e janela combinada?" | rollback em branco, migração irreversível sem plano |
 | O post-mortem | "A ação evita que volte a acontecer?" | ação sem dono, causa raiz que é "erro humano" |
@@ -124,8 +124,8 @@ encerramento.
 | O que é | Fica no git? | Por quê |
 |---|---|---|
 | Backlog, sprints, specs, estado e histórico de cada feature | sim | o quadro e as aprovações são do time |
-| `sistema/`, `releases/`, `incidentes/` | sim | são o retrato do produto, das entregas e da operação |
-| `.sdd/estado` (a feature ativa e a sprint atual de cada pessoa) | não | cada pessoa trabalha numa feature |
+| `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/` | sim | são o retrato do produto, das entregas e da operação |
+| `sdd/estado` (a feature ativa e a sprint atual de cada pessoa) | não | cada pessoa trabalha numa feature |
 
 Cada feature vive na sua branch, `feature/NNN-slug`, criada a partir de
 `develop` pelo `/sdd:especificar`. Duas pessoas em duas features não se
@@ -135,7 +135,7 @@ quando fica pronta (ver [Git Flow](git-flow.md)).
 O autor de cada aprovação é o nome configurado no git (`git config user.name`).
 Configure-o em cada máquina antes de aprovar.
 
-Os arquivos de histórico (`.sdd/historico.md` e o `historico.md` de cada
+Os arquivos de histórico (`sdd/historico.md` e o `historico.md` de cada
 feature e release) usam o merge por união, configurado no `.gitattributes` pelo
 `/sdd:iniciar`: num merge, o git junta as linhas dos dois lados em vez de dar
 conflito. Se ainda assim aparecer um conflito (num repositório sem essa linha),

@@ -22,7 +22,7 @@
 - 2026-10-22T19:08:12Z | aprovacao | spec.md | hash=e92c10b4f733 | nota: delta da auditoria (RNF-004, CA-010, CA-011) | por: Geraldo Dominguez
 - 2026-10-22T19:10:42Z | aprovacao | auditoria.md | hash=5a77c3e1b209 | decisao: delta | por: Geraldo Dominguez
 - 2026-10-22T19:10:42Z | fase | auditoria para pronta (auditoria.md: delta) | por: Geraldo Dominguez
-- 2026-10-22T19:31:06Z | consolidacao | sistema/autenticacao.md | hash=0c2e7d94b815 | por: Geraldo Dominguez
+- 2026-10-22T19:31:06Z | consolidacao | sdd/sistema/autenticacao.md | hash=0c2e7d94b815 | por: Geraldo Dominguez
 - 2026-10-28T09:12:47Z | release | incluída na release 0.1.0 | por: Geraldo Dominguez
 - 2026-10-29T10:03:22Z | fase | pronta para homologacao (release 0.1.0 em homologação) | por: Geraldo Dominguez
 - 2026-11-04T15:12:40Z | fase | homologacao para producao (release 0.1.0 em produção) | por: Geraldo Dominguez

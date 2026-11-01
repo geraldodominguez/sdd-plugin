@@ -10,7 +10,7 @@ A spec versionada da feature. Numa divergência, ela prevalece até ser alterada
 _Evite_: documentação (sugere algo secundário, escrito depois)
 
 **Constituição**:
-As regras inegociáveis de um projeto (stack, arquitetura, testes, segurança, convenções), em `.sdd/constituicao.md`. Todo **plano** é checado contra ela.
+As regras inegociáveis de um projeto (stack, arquitetura, testes, segurança, convenções), em `sdd/constituicao.md`. Todo **plano** é checado contra ela.
 _Evite_: guia de estilo, padrões
 
 **Versão**:
@@ -18,7 +18,7 @@ O número SemVer `MAJOR.MINOR.PATCH` de uma release, com a tag `vX.Y.Z` em `main
 _Evite_: build, número da sprint
 
 **Layout**:
-Os lugares fixos de cada artefato de processo: `specs/NNN-slug/`, `docs/adr/NNNN-slug.md`, `.sdd/`, `sistema/`, `releases/`, `incidentes/`, `docs/arquitetura/` e `docs/legado/`. Um contrato: o hook bloqueia criar artefato fora dele.
+Os lugares fixos de cada artefato de processo: `sdd/specs/NNN-slug/`, `sdd/adr/NNNN-slug.md`, `sdd/`, `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/`, `sdd/arquitetura/`, `sdd/docs/` e `sdd/legado/`. Um contrato: o hook bloqueia criar artefato fora dele.
 _Evite_: estrutura de pastas (sugere algo que cada um decide)
 
 **Adoção**:
@@ -42,7 +42,7 @@ O modelo de branches do plugin, com os mesmos nomes em todo projeto: `main` (pro
 _Evite_: `master`, `development`, `feat/`, `bugfix/` (nomes fora do padrão)
 
 **Feature**:
-Uma unidade de mudança, com pasta própria `specs/NNN-slug/` e um **nível de rigor**.
+Uma unidade de mudança, com pasta própria `sdd/specs/NNN-slug/` e um **nível de rigor**.
 _Evite_: história, épico, ticket
 
 **Spec**:
@@ -101,7 +101,7 @@ _Evite_: desvio de escopo (drift pode acontecer dentro do escopo)
 A proposta formal de mudança na **spec** para absorver um **drift** considerado correto. Só entra com aprovação humana.
 
 **ADR**:
-Architecture Decision Record. O registro curto de uma decisão durável, em `docs/adr/`.
+Architecture Decision Record. O registro curto de uma decisão durável, em `sdd/adr/`.
 
 **Teste enfraquecido**:
 Um teste que passa sem verificar de fato o **critério de aceitação** que diz verificar.
@@ -114,18 +114,18 @@ _Evite_: ok, aceite verbal
 Uma impressão curta do conteúdo aprovado. Se o artefato muda, o hash deixa de bater, e a **aprovação** é invalidada.
 
 **Histórico**:
-O registro de eventos de uma **feature** (`specs/NNN/historico.md`) ou do projeto (`.sdd/historico.md`): criação, **fases**, **aprovações**, backlog e sprints. Escrito só pelos utilitários.
+O registro de eventos de uma **feature** (`sdd/specs/NNN/historico.md`) ou do projeto (`sdd/historico.md`): criação, **fases**, **aprovações**, backlog e sprints. Escrito só pelos utilitários.
 _Evite_: log (genérico demais)
 
 **Item de backlog** (`B`):
-Uma ideia, pedido, bug relatado ou pendência que ainda não tem **spec**, em `.sdd/backlog.md`. Vira **feature** quando é promovido.
+Uma ideia, pedido, bug relatado ou pendência que ainda não tem **spec**, em `sdd/backlog.md`. Vira **feature** quando é promovido.
 _Evite_: história, tarefa (uma **tarefa** pertence a uma feature)
 
 **Backlog**:
 A fila priorizada de **itens de backlog**.
 
 **Sprint**:
-Um período com um objetivo e um compromisso (features e itens de backlog), em `.sdd/sprints/<id>.md`.
+Um período com um objetivo e um compromisso (features e itens de backlog), em `sdd/sprints/<id>.md`.
 _Evite_: ciclo, iteração
 
 **Quadro**:
@@ -135,7 +135,7 @@ A visão de todas as **features** por coluna (especificação, planejamento, imp
 Algo que espera uma decisão humana: **incidente** aberto, **release** esperando **aceite** ou **go**, **aprovação**, **revisão de segurança** devida, dúvida na spec, **delta spec** ou ADR proposto, **consolidação** pendente, item a triar, item da sprint sem spec, **transição** a aprovar, artefato fora do padrão, problema de Git Flow. Listado pelo `/sdd:pendencias`.
 
 **Feature ativa**:
-A feature em que a pessoa está trabalhando agora, apontada em `.sdd/estado`. Cada pessoa tem a sua.
+A feature em que a pessoa está trabalhando agora, apontada em `sdd/estado`. Cada pessoa tem a sua.
 
 **Pronta**:
 A **fase** de uma **feature** com tudo aprovado e inalterado (spec, testes, plano no nível 2, **revisão de segurança** quando obrigatória). Está pronta para entrar numa **release**, ainda não está em produção.
@@ -148,7 +148,7 @@ A **fase** de uma **feature** que não vai mais ser feita. Fica no histórico, c
 Volta de uma feature **pronta** ou **cancelada** para `especificacao` ou `green` (a cancelada, sempre `especificacao`), com motivo. Uma feature em **homologação** só volta pela reprovação na release (`sdd-release reprovar`), e sempre para o `green`. Invalida as **aprovações** dos artefatos da fase de reabertura em diante.
 
 **Área sensível**:
-Um caminho do código (glob em `areas_sensiveis`, no `.sdd/config.yml`) cuja alteração torna a **revisão de segurança** obrigatória, mesmo no nível 1.
+Um caminho do código (glob em `areas_sensiveis`, no `sdd/config.yml`) cuja alteração torna a **revisão de segurança** obrigatória, mesmo no nível 1.
 
 **Revisão de segurança**:
 A análise independente da mudança como um atacante a veria: ameaças, varreduras (dependências, segredos, análise estática) e LGPD. Feita pelo subagent `revisor-de-seguranca`, gravada em `seguranca.md`, decidida pela pessoa.
@@ -162,14 +162,14 @@ Uma área de comportamento do sistema, do ponto de vista de quem usa (autentica�
 _Evite_: módulo, serviço (são divisões do código, não do comportamento)
 
 **Spec do sistema**:
-O comportamento **vigente** de cada **capacidade**, em `sistema/<capacidade>.md`, com cada item ligado à feature e ao requisito de origem. Diferente da spec da feature, que descreve uma mudança.
+O comportamento **vigente** de cada **capacidade**, em `sdd/sistema/<capacidade>.md`, com cada item ligado à feature e ao requisito de origem. Diferente da spec da feature, que descreve uma mudança.
 _Evite_: documentação do sistema, spec mestre
 
 **Consolidação**:
 Atualizar a **spec do sistema** com o que uma feature **pronta** mudou, registrada no histórico da feature pelo `sdd-sistema consolidar`.
 
 **Release**:
-Um conjunto de **features** prontas levado junto à produção, com versão SemVer, em `releases/<versão>/`. Tem o seu próprio ciclo: `preparacao`, `homologacao`, `aceita`, `implantacao`, `producao` (ou `cancelada`, `revertida`).
+Um conjunto de **features** prontas levado junto à produção, com versão SemVer, em `sdd/releases/<versão>/`. Tem o seu próprio ciclo: `preparacao`, `homologacao`, `aceita`, `implantacao`, `producao` (ou `cancelada`, `revertida`).
 _Evite_: deploy (o deploy é um passo da release)
 
 **Testes de sistema**:
@@ -190,7 +190,7 @@ _Evite_: deploy aprovado (vago sobre quem aprovou o quê)
 O procedimento, escrito antes do go em `implantacao.md`, para voltar à versão anterior se a implantação der errado.
 
 **Incidente** (`INC`):
-Uma falha em produção, registrada em `incidentes/INC-NNN.md` com **severidade**, situação (`aberto`, `mitigado`, `resolvido`, `encerrado`) e linha do tempo.
+Uma falha em produção, registrada em `sdd/incidentes/INC-NNN.md` com **severidade**, situação (`aberto`, `mitigado`, `resolvido`, `encerrado`) e linha do tempo.
 
 **Severidade**:
 O impacto de um **incidente**: S1 (fora do ar ou perda de dados), S2 (função importante quebrada, sem contorno), S3 (quebrada com contorno), S4 (incômodo).
@@ -229,4 +229,4 @@ A análise de um **incidente** resolvido, sem culpados: linha do tempo, causa ra
 - "Pendência" era usado para o que o agente achava fora do escopo. Resolvido: isso vira **item de backlog** (origem "pendência da NNN"); **pendência** é o que espera decisão humana.
 - "Concluída" queria dizer tanto "o código está pronto" quanto "está em produção". Resolvido: **pronta** é o fim do ciclo da feature; **producao** só vem da **release**.
 - "Spec" era usado para a mudança e para o sistema. Resolvido: a **spec** é da feature (uma mudança); a **spec do sistema** é o comportamento vigente.
-- "Estado" queria dizer tanto a feature ativa quanto a fase. Resolvido: a **feature ativa** é pessoal (`.sdd/estado`); a fase é da feature (`specs/NNN/estado`).
+- "Estado" queria dizer tanto a feature ativa quanto a fase. Resolvido: a **feature ativa** é pessoal (`sdd/estado`); a fase é da feature (`sdd/specs/NNN/estado`).

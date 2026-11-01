@@ -26,8 +26,8 @@
 #   sdd-gitflow esperada                 a branch em que a feature ativa deve estar
 #
 # Nunca faz push, nunca apaga branch remota, nunca reescreve histórico. Ao
-# trocar de branch, as alterações pendentes nos arquivos do SDD (specs/,
-# sistema/, releases/, incidentes/, docs/, .sdd/, CLAUDE.md, AGENTS.md,
+# trocar de branch, as alterações pendentes nos arquivos do SDD (sdd/specs/,
+# sdd/sistema/, sdd/releases/, sdd/incidentes/, docs/, sdd/, CLAUDE.md, AGENTS.md,
 # .gitattributes, CHANGELOG.md) vão
 # junto; em código, recusa. Os merges (integrar, finalizar) exigem tudo
 # commitado. Não escreve nos históricos do SDD: o registro de branches, merges
@@ -54,15 +54,15 @@ existe_branch() { g show-ref --verify --quiet "refs/heads/$1"; }
 existe_remota() { g show-ref --verify --quiet "refs/remotes/origin/$1"; }
 
 # Alterações em arquivos versionados, fora dos caminhos que o próprio SDD acabou
-# de escrever (a pasta da feature nova e o .sdd/), impedem trocar de branch.
+# de escrever (a pasta da feature nova e o sdd/), impedem trocar de branch.
 # Arquivos versionados com alterações pendentes, um por linha.
 pendentes() { g status --porcelain --untracked-files=no | sed -E 's/^...//; s/^.* -> //'; }
 
 # exige_limpo: para merges (integrar, finalizar), nada pode estar pendente,
-# fora do .sdd/ (o estado pessoal e o histórico do projeto).
+# fora do sdd/ (o estado pessoal e o histórico do projeto).
 exige_limpo() {
   local sujos
-  sujos="$(pendentes | grep -v '^\.sdd/' || true)"
+  sujos="$(pendentes | grep -v '^\sdd/' || true)"
   [ -z "$sujos" ] || erro "há alterações não commitadas. Faça o commit antes (o merge precisa da árvore limpa):
 $(printf '%s\n' "$sujos" | sed 's/^/  /')"
 }
@@ -82,7 +82,7 @@ so_codigo() {
   rel="$(sdd_pasta_releases "$RAIZ")"; inc="$(sdd_pasta_incidentes "$RAIZ")"
   while IFS= read -r f; do
     case "$f" in
-      .sdd/*|"$specs"/*|"$sist"/*|"$rel"/*|"$inc"/*|docs/*|CLAUDE.md|AGENTS.md|.gitattributes|CHANGELOG.md) continue ;;
+      sdd/*|"$specs"/*|"$sist"/*|"$rel"/*|"$inc"/*|docs/*|CLAUDE.md|AGENTS.md|.gitattributes|CHANGELOG.md) continue ;;
     esac
     printf '%s\n' "$f"
   done
@@ -134,7 +134,7 @@ conferir() {
       problemas+=("$b está fora do padrão${sug:+: renomeie para $sug (sdd-gitflow renomear $b $sug)}")
       continue
     fi
-    if [ "$tipo" = "feature" ] && [ -d "$RAIZ/.sdd" ] && [ ! -f "$RAIZ/$(sdd_pasta_specs "$RAIZ")/${b#feature/}/estado" ]; then
+    if [ "$tipo" = "feature" ] && sdd_projeto_usa "$RAIZ" && [ ! -f "$RAIZ/$(sdd_pasta_specs "$RAIZ")/${b#feature/}/estado" ]; then
       avisos+=("$b não corresponde a nenhuma feature em $(sdd_pasta_specs "$RAIZ")/")
     fi
   done < <(g for-each-ref --format='%(refname:short)' refs/heads/)
@@ -146,7 +146,7 @@ conferir() {
   atual="$(sdd_branch_atual "$RAIZ")"
   esperada="$(branch_esperada)"
   if [ -n "$esperada" ] && [ -n "$atual" ] && [ "$atual" != "$esperada" ]; then
-    avisos+=("a feature ativa é feita em $esperada, e você está em $atual (sdd-gitflow feature $(sdd_kv_ler "$RAIZ/.sdd/estado" feature))")
+    avisos+=("a feature ativa é feita em $esperada, e você está em $atual (sdd-gitflow feature $(sdd_kv_ler "$RAIZ/sdd/estado" feature))")
   fi
   echo "Git Flow: $(basename "$RAIZ")"
   local rotulo="$atual"
@@ -166,9 +166,9 @@ conferir() {
 }
 
 branch_esperada() {
-  [ -d "$RAIZ/.sdd" ] || return 0
+  sdd_projeto_usa "$RAIZ" || return 0
   local f fase
-  f="$(sdd_kv_ler "$RAIZ/.sdd/estado" feature)"
+  f="$(sdd_kv_ler "$RAIZ/sdd/estado" feature)"
   [ -n "$f" ] && [ -f "$RAIZ/$(sdd_pasta_specs "$RAIZ")/$f/estado" ] || return 0
   fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
   case "$fase" in pronta|homologacao|producao|cancelada) return 0 ;; esac
@@ -218,7 +218,7 @@ renomear() {
   existe_branch "$antiga" || erro "a branch local '$antiga' não existe."
   exige_padrao "$nova"
   existe_branch "$nova" && erro "a branch '$nova' já existe."
-  if [ "$(sdd_branch_tipo "$nova")" = "feature" ] && [ -d "$RAIZ/.sdd" ] && [ ! -f "$RAIZ/$(sdd_pasta_specs "$RAIZ")/${nova#feature/}/estado" ]; then
+  if [ "$(sdd_branch_tipo "$nova")" = "feature" ] && sdd_projeto_usa "$RAIZ" && [ ! -f "$RAIZ/$(sdd_pasta_specs "$RAIZ")/${nova#feature/}/estado" ]; then
     erro "a feature ${nova#feature/} não existe. Crie (ou adote) a feature antes de dar o nome dela a uma branch."
   fi
   g branch -m "$antiga" "$nova" || erro "não consegui renomear."
@@ -248,7 +248,7 @@ criar_ou_ativar() { # criar_ou_ativar <branch> <base> [caminho a ignorar]
 
 feature() {
   local f="${1:?uso: sdd-gitflow feature <NNN-slug>}" specs b
-  [ -d "$RAIZ/.sdd" ] || erro "este projeto ainda não usa SDD. Rode /sdd:iniciar."
+  sdd_projeto_usa "$RAIZ" || erro "este projeto ainda não usa SDD. Rode /sdd:iniciar."
   specs="$(sdd_pasta_specs "$RAIZ")"
   if [ ! -f "$RAIZ/$specs/$f/estado" ]; then
     # A pasta da feature só existe na branch dela (ainda não integrada): procure
@@ -354,7 +354,7 @@ finalizar() {
   sdd_semver_valida "$v" || erro "versão inválida: $v"
   case "$v" in *-*) erro "$v é um pré-lançamento: ele só é homologado e não vai para $P. Prepare a versão final (${v%%-*})." ;; esac
   exige_git
-  [ -d "$RAIZ/.sdd" ] || erro "este projeto ainda não usa SDD."
+  sdd_projeto_usa "$RAIZ" || erro "este projeto ainda não usa SDD."
   dir="$RAIZ/$(sdd_pasta_releases "$RAIZ")/$v"
   [ -f "$dir/estado" ] || erro "a release $v não existe (sdd-release nova)."
   fase="$(sdd_kv_ler "$dir/estado" fase)"

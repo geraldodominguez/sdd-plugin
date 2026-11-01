@@ -27,7 +27,7 @@ AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
-if [ ! -d "$RAIZ/.sdd" ]; then
+if ! sdd_projeto_usa "$RAIZ"; then
   [ "${1:-}" = "--contar" ] && { echo 0; exit 0; }
   echo "Este projeto ainda não usa SDD. Rode /sdd:iniciar."
   exit 0
@@ -82,19 +82,19 @@ for f in $(sdd_features "$RAIZ"); do
   fi
 done
 
-for a in "$RAIZ"/docs/adr/*.md "$RAIZ/$PASTA_SPECS"/*/adr-*.md; do
+for a in "$RAIZ"/sdd/adr/*.md "$RAIZ/$PASTA_SPECS"/*/adr-*.md; do
   [ -f "$a" ] || continue
   if grep -qE '^\| Situação \| proposta \|' "$a"; then
     adrs+=("${a#"$RAIZ"/}: $(head -1 "$a" | sed 's/^# //')")
   fi
 done
 
-if [ -f "$RAIZ/.sdd/backlog.md" ]; then
+if [ -f "$RAIZ/sdd/backlog.md" ]; then
   while IFS= read -r l; do
     id="$(printf '%s' "$l" | grep -oE 'B-[0-9]{3}' | head -1)"
     t="$(printf '%s' "$l" | sed -E 's/^- \[.\] B-[0-9]{3} //; s/ \([^()]*\)$//')"
     triar+=("$id: $t")
-  done < <(grep -E '^- \[ \] B-[0-9]{3} .*nivel: \?' "$RAIZ/.sdd/backlog.md" || true)
+  done < <(grep -E '^- \[ \] B-[0-9]{3} .*nivel: \?' "$RAIZ/sdd/backlog.md" || true)
 fi
 
 PASTA_REL="$(sdd_pasta_releases "$RAIZ")"
@@ -123,11 +123,11 @@ if [ -d "$RAIZ/$PASTA_INC" ]; then
   done
 fi
 
-sprint="$(sdd_kv_ler "$RAIZ/.sdd/estado" sprint)"
-if [ -n "$sprint" ] && [ -f "$RAIZ/.sdd/sprints/$sprint.md" ]; then
+sprint="$(sdd_kv_ler "$RAIZ/sdd/estado" sprint)"
+if [ -n "$sprint" ] && [ -f "$RAIZ/sdd/sprints/$sprint.md" ]; then
   while IFS= read -r item; do
     case "$item" in
-      B-*) grep -qE "^- \[ \] $item " "$RAIZ/.sdd/backlog.md" 2>/dev/null && semspec+=("$item está na sprint $sprint e ainda não tem spec") ;;
+      B-*) grep -qE "^- \[ \] $item " "$RAIZ/sdd/backlog.md" 2>/dev/null && semspec+=("$item está na sprint $sprint e ainda não tem spec") ;;
     esac
   done < <("$AQUI/sdd-sprint" itens "$sprint" 2>/dev/null || true)
 fi

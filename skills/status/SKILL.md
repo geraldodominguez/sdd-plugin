@@ -24,7 +24,7 @@ Argumentos: `$ARGUMENTS`
 
 | Situação | Próximo comando |
 |---|---|
-| sem `.sdd/` | `/sdd:iniciar` |
+| sem `sdd/` | `/sdd:iniciar` |
 | incidente S1 ou S2 aberto | `/sdd:incidente` |
 | release em homologação, aceita ou em implantação | `/sdd:release` |
 | artefato alterado depois de aprovado | `/sdd:aprovar` na feature (ou reverter a mudança) |

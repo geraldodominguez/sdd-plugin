@@ -1,5 +1,7 @@
 # O layout é contrato, e projetos alheios são adotados por um mapa aprovado
 
+> Os lugares citados abaixo (`specs/`, `.sdd/`, `sistema/`, `docs/adr/` e outros) passaram a morar dentro de `sdd/` na [ADR 0017](0017-tudo-do-sdd-em-uma-pasta.md). O resto da decisão continua valendo.
+
 ## Decisão
 
 - Cada artefato de processo tem um único lugar: `specs/NNN-slug/` (com `estado`), `docs/adr/NNNN-slug.md`, `.sdd/`, `sistema/`, `releases/`, `incidentes/`, `docs/arquitetura/` e `docs/legado/`. Um classificador único em `lib/sdd-comum.sh` (`sdd_fora_do_layout`) decide o que é artefato e se está no lugar, e é usado pelo hook, pelo `sdd-adotar` e pelo `sdd-verificar`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sdd-sprint: gerencia sprints (.sdd/sprints/<id>.md).
+# sdd-sprint: gerencia sprints (sdd/sprints/<id>.md).
 #
 # Uso:
 #   sdd-sprint nova [id] --objetivo "texto" [--inicio AAAA-MM-DD] [--fim AAAA-MM-DD | --dias N]
@@ -21,14 +21,14 @@ AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
-[ -d "$RAIZ/.sdd" ] || { echo "sdd-sprint: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
-DIR="$RAIZ/.sdd/sprints"
+sdd_projeto_usa "$RAIZ" || { echo "sdd-sprint: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+DIR="$RAIZ/sdd/sprints"
 PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 HOJE="$(date +%Y-%m-%d)"
 
 arquivo() { printf '%s\n' "$DIR/$1.md"; }
 existe() { [ -f "$(arquivo "$1")" ] || { echo "sdd-sprint: a sprint '$1' não existe." >&2; exit 1; }; }
-atual() { sdd_kv_ler "$RAIZ/.sdd/estado" sprint; }
+atual() { sdd_kv_ler "$RAIZ/sdd/estado" sprint; }
 id_ou_atual() {
   local id="${1:-}"
   [ -n "$id" ] || id="$(atual)"
@@ -74,7 +74,7 @@ reescrever_itens() {
 item_valido() {
   case "$1" in
     B-[0-9][0-9][0-9])
-      grep -qE "^- \[[ xX-]\] $1 " "$RAIZ/.sdd/backlog.md" 2>/dev/null || { echo "sdd-sprint: $1 não está no backlog." >&2; exit 1; } ;;
+      grep -qE "^- \[[ xX-]\] $1 " "$RAIZ/sdd/backlog.md" 2>/dev/null || { echo "sdd-sprint: $1 não está no backlog." >&2; exit 1; } ;;
     [0-9][0-9][0-9]-*)
       [ -d "$RAIZ/$PASTA_SPECS/$1" ] || { echo "sdd-sprint: a feature $1 não existe." >&2; exit 1; } ;;
     *) echo "sdd-sprint: item inválido '$1' (use NNN-slug ou B-NNN)." >&2; exit 1 ;;
@@ -84,7 +84,7 @@ item_valido() {
 # resolve <item>: feature correspondente (B promovido vira a feature) ou vazio.
 resolve() {
   case "$1" in
-    B-*) grep -E "^- \[[xX]\] $1 " "$RAIZ/.sdd/backlog.md" 2>/dev/null | grep -oE 'feature: [0-9]{3}-[^;)]*' | sed 's/feature: //' | head -1 || true ;;
+    B-*) grep -E "^- \[[xX]\] $1 " "$RAIZ/sdd/backlog.md" 2>/dev/null | grep -oE 'feature: [0-9]{3}-[^;)]*' | sed 's/feature: //' | head -1 || true ;;
     *) printf '%s\n' "$1" ;;
   esac
 }
@@ -94,7 +94,7 @@ descrever() { # descrever <item>: uma linha de andamento
   f="$(resolve "$item")"
   if [ -z "$f" ]; then
     local l
-    l="$(grep -E "^- \[[ -]\] $item " "$RAIZ/.sdd/backlog.md" 2>/dev/null | head -1 || true)"
+    l="$(grep -E "^- \[[ -]\] $item " "$RAIZ/sdd/backlog.md" 2>/dev/null | head -1 || true)"
     case "$l" in
       "- [-]"*) printf '  %-34s %s\n' "$item" "descartado" ;;
       *) printf '  %-34s %s\n' "$item" "no backlog, ainda sem spec: $(printf '%s' "$l" | sed -E 's/^- \[.\] B-[0-9]{3} //; s/ \([^()]*\)$//')" ;;
@@ -135,12 +135,12 @@ case "$cmd" in
     [ -n "$id" ] && [ -n "$fim" ] || { echo "sdd-sprint nova: não consegui calcular datas; informe o id e --fim." >&2; exit 1; }
     [ ! -f "$(arquivo "$id")" ] || { echo "sdd-sprint: a sprint '$id' já existe." >&2; exit 1; }
     mkdir -p "$DIR"
-    t="$RAIZ/.sdd/templates/sprint.md"
+    t="$RAIZ/sdd/templates/sprint.md"
     [ -f "$t" ] || t="$(sdd_raiz_plugin)/skills/metodologia/templates/sprint.md"
     obj_sed="$(printf '%s' "$objetivo" | sed 's/[\/&|]/\\&/g')"
     sed -e "s/{{SPRINT}}/$id/g" -e "s/{{OBJETIVO}}/$obj_sed/g" -e "s/{{INICIO}}/$inicio/g" -e "s/{{FIM}}/$fim/g" "$t" > "$(arquivo "$id")"
     sdd_registrar "$RAIZ" "" sprint "$id criada: $objetivo ($inicio a $fim)"
-    echo "Sprint $id criada ($inicio a $fim): .sdd/sprints/$id.md"
+    echo "Sprint $id criada ($inicio a $fim): sdd/sprints/$id.md"
     ;;
 
   incluir)
@@ -169,7 +169,7 @@ case "$cmd" in
     id="${1:?uso: sdd-sprint iniciar <id>}"
     existe "$id"
     gravar_campo "$id" "Situação" "ativa"
-    sdd_kv_gravar "$RAIZ/.sdd/estado" sprint "$id"
+    sdd_kv_gravar "$RAIZ/sdd/estado" sprint "$id"
     sdd_registrar "$RAIZ" "" sprint "$id iniciada"
     echo "Sprint $id ativa."
     ;;
@@ -193,7 +193,7 @@ case "$cmd" in
       printf 'Entregue: %s de %s itens.\n\n' "$entregues" "$total"
       printf '%s' "$resumo"
     } >> "$(arquivo "$id")"
-    [ "$(atual)" = "$id" ] && sdd_kv_gravar "$RAIZ/.sdd/estado" sprint ""
+    [ "$(atual)" = "$id" ] && sdd_kv_gravar "$RAIZ/sdd/estado" sprint ""
     sdd_registrar "$RAIZ" "" sprint "$id encerrada: $entregues de $total entregues"
     echo "Sprint $id encerrada: $entregues de $total itens entregues."
     ;;

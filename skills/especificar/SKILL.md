@@ -16,7 +16,7 @@ contexto.
 ## Processo
 
 1. **Pré-condições.** Rode `sdd-estado ver`.
-   - Sem `.sdd/`: diga ao usuário para rodar `/sdd:iniciar` e pare.
+   - Sem `sdd/`: diga ao usuário para rodar `/sdd:iniciar` e pare.
    - Pedido vazio: pergunte o que deve mudar, ou mostre `sdd-backlog listar`
      para ele escolher um item, e pare.
    - Se o pedido é um item do backlog (`B-NNN`), leia-o com `sdd-backlog ver B-NNN`:
@@ -36,11 +36,11 @@ contexto.
 3. **Defina a capacidade e a segurança.**
    - **Capacidade:** qual parte do sistema esta mudança toca? Veja as que
      existem com `sdd-sistema listar` e leia a capacidade escolhida em
-     `sistema/<capacidade>.md`: ela diz o que o sistema faz **hoje**, e a spec
+     `sdd/sistema/<capacidade>.md`: ela diz o que o sistema faz **hoje**, e a spec
      vai descrever a diferença. Sem capacidade adequada, proponha um nome novo.
    - **Revisão de segurança:** obrigatória no nível 2. No nível 1, proponha
      `obrigatoria` se a mudança toca autenticação, autorização, dados pessoais,
-     pagamentos, criptografia ou as `areas_sensiveis` do `.sdd/config.yml`.
+     pagamentos, criptografia ou as `areas_sensiveis` do `sdd/config.yml`.
 
 4. **Crie a feature** com `sdd-estado nova "<título curto>" --nivel <N>
    --capacidade <nome> [--seguranca obrigatoria]`, acrescentando
@@ -54,14 +54,20 @@ contexto.
    pergunte o que fazer (commit, stash) antes de seguir. Toda a feature, da
    spec ao código, é commitada nesta branch.
 
-5. **Contexto, em projeto existente.**
+5. **Documentos do projeto.** Antes de perguntar ao usuário sobre uma API
+   externa, um cliente ou uma regra de negócio, veja se `sdd/docs/` já tem o
+   material (`Glob` e `Grep` por `sdd/docs/**`) e leia o que for do pedido. Cite
+   o caminho na spec onde ela se apoia nele. Se o material não existe e o
+   usuário o fornece, proponha guardá-lo em `sdd/docs/` (só texto versionável).
+
+6. **Contexto, em projeto existente.**
    - Nível 2: chame a ferramenta Agent com o subagent `mapeador-de-contexto`,
-     passando o pedido e o destino `specs/NNN-slug/contexto.md`. Ele grava o
+     passando o pedido e o destino `sdd/specs/NNN-slug/contexto.md`. Ele grava o
      mapa e devolve um resumo curto.
    - Nível 1: uma busca sua (Grep, Glob) basta. Cite os arquivos afetados no
      objetivo.
 
-6. **Escreva a spec** seguindo a metodologia:
+7. **Escreva a spec** seguindo a metodologia:
    - só o quê e por quê, sem tecnologia;
    - requisitos em EARS, com IDs `RF-NNN` e `RNF-NNN`;
    - critérios em Dado, Quando, Então, com IDs `CA-NNN`, cobrindo caminho
@@ -73,9 +79,9 @@ contexto.
      regra de negócio;
    - apague os campos `{{...}}` e os exemplos não usados.
 
-7. **Revise** com o `QUALIDADE-DA-SPEC.md` e corrija o que falhar.
+8. **Revise** com o `QUALIDADE-DA-SPEC.md` e corrija o que falhar.
 
-8. **Gate.** Apresente:
+9. **Gate.** Apresente:
    - um resumo de três a cinco linhas (objetivo, quantos RFs e CAs, escopo);
    - os marcadores em aberto;
    - o próximo comando:
@@ -95,7 +101,7 @@ contexto.
 
 ## Pronto quando
 
-- `specs/NNN-slug/spec.md` existe, sem campos `{{...}}`.
+- `sdd/specs/NNN-slug/spec.md` existe, sem campos `{{...}}`.
 - Todo RF tem pelo menos um CA.
 - Toda dúvida está marcada, não presumida.
 - O usuário sabe qual é o próximo comando.

@@ -84,12 +84,12 @@ No Windows, o Claude Code roda os hooks no Git Bash: instale o
 
 Uma vez por repositório. Ele:
 
-- cria `.sdd/` (configuração, backlog, sprints, templates), `specs/`, `sistema/` e `docs/adr/`;
+- cria `sdd/` (configuração, backlog, sprints, templates), `sdd/specs/`, `sdd/sistema/` e `sdd/adr/`;
 - lê o seu código e rascunha a **constituição**, as regras que valem para todas as features (arquitetura, testes, segurança, ambientes, operação);
 - injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md`;
 - num projeto que não nasceu com o plugin, lê as specs, planos, tarefas e ADRs que outros processos e agentes deixaram (em `docs/specs/`, `tasks/`, `TODO.md`, `.kiro/`, `.specify/`...) e, com a sua aprovação do mapa, os renomeia e converte para o padrão. Cada feature em andamento entra numa **transição** que mostra como era e como fica, com as tarefas feitas fora do plugin marcadas `[O]`; aprovada a transição, o plugin continua de onde o outro processo parou. Ver [projetos existentes](docs/referencia/projetos-existentes.md#projeto-com-artefatos-de-outro-processo).
 
-Depois, revise a constituição e preencha no `.sdd/config.yml` o que o plugin não
+Depois, revise a constituição e preencha no `sdd/config.yml` o que o plugin não
 adivinha: `areas_sensiveis` (caminhos que exigem revisão de segurança) e os
 comandos de teste, varredura de segurança e deploy. Para o CI, rode
 `/sdd:pipeline` uma vez.
@@ -240,7 +240,7 @@ pula todo o processo e some sem registro.
 
 **A solução** é uma spec viva e uma trilha de manutenção:
 
-- [`/sdd:sistema`](skills/sistema/SKILL.md) mantém `sistema/<capacidade>.md`, o comportamento **vigente** de cada capacidade, com cada item ligado à feature e ao requisito que o originou. Toda feature pronta é **consolidada** nela, e toda spec nova parte dela;
+- [`/sdd:sistema`](skills/sistema/SKILL.md) mantém `sdd/sistema/<capacidade>.md`, o comportamento **vigente** de cada capacidade, com cada item ligado à feature e ao requisito que o originou. Toda feature pronta é **consolidada** nela, e toda spec nova parte dela;
 - [`/sdd:incidente`](skills/incidente/SKILL.md) registra o incidente com severidade, cuida da mitigação, abre o **hotfix** (teste de regressão primeiro, spec retroativa aprovada antes de entregar) e conduz o **post-mortem** sem culpados, com as ações virando itens de backlog.
 
 ### Resumo
@@ -316,14 +316,14 @@ isso de fora.
 
 | Decisão | Quem | Onde fica registrada |
 |---|---|---|
-| O que entra e em que ordem | dono do produto | `.sdd/backlog.md`, `.sdd/sprints/` |
+| O que entra e em que ordem | dono do produto | `sdd/backlog.md`, `sdd/sprints/` |
 | O que a feature faz (spec) | dono do produto, com o dev | `historico.md` da feature, com hash |
 | Como a feature é feita (plano, tarefas, testes) | dev ou tech lead | idem |
 | Aceitar um risco de segurança | tech lead ou responsável por segurança | `seguranca.md` e `historico.md` |
 | Aceitar um desvio da spec | tech lead | `auditoria.md`, `delta-spec.md`, `historico.md` |
-| A release funciona para o negócio (aceite) | quem homologa (cliente, dono do produto) | `releases/<versão>/historico.md` |
+| A release funciona para o negócio (aceite) | quem homologa (cliente, dono do produto) | `sdd/releases/<versão>/historico.md` |
 | Ir para produção (go) | quem responde pela produção | idem |
-| Causa e ações de um incidente | o time, sem culpados | `incidentes/INC-NNN.md` |
+| Causa e ações de um incidente | o time, sem culpados | `sdd/incidentes/INC-NNN.md` |
 
 Um passo a passo com uma feature real, do pedido ao incidente, está em
 [docs/referencia/passo-a-passo.md](docs/referencia/passo-a-passo.md), e os
@@ -366,7 +366,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Invocadas pelo usuário: fluxo da feature
 
-- **[iniciar](skills/iniciar/SKILL.md)**: Prepara o repositório: estrutura `.sdd/`, constituição rascunhada a partir do código e regras no `CLAUDE.md` e no `AGENTS.md`. Uma vez por repositório.
+- **[iniciar](skills/iniciar/SKILL.md)**: Prepara o repositório: estrutura `sdd/`, constituição rascunhada a partir do código e regras no `CLAUDE.md` e no `AGENTS.md`. Uma vez por repositório.
 - **[especificar](skills/especificar/SKILL.md)**: Abre uma feature, a partir de um pedido ou de um item do backlog, e escreve a spec (o quê e por quê), classificando o nível de rigor e marcando o que precisa ser esclarecido.
 - **[clarificar](skills/clarificar/SKILL.md)**: Perguntas com opções e uma recomendação sobre as ambiguidades da spec, incorporadas antes de qualquer decisão técnica.
 - **[planejar](skills/planejar/SKILL.md)**: Plano técnico e contratos da feature (nível 2), num subagent isolado, checados contra a constituição.
@@ -385,7 +385,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Invocadas pelo modelo
 
-- **[metodologia](skills/metodologia/SKILL.md)**: A disciplina do SDD: fases, níveis, rastreabilidade e como escrever specs (EARS), critérios de aceitação, planos e tarefas. O agente carrega sozinho em qualquer projeto com `.sdd/`.
+- **[metodologia](skills/metodologia/SKILL.md)**: A disciplina do SDD: fases, níveis, rastreabilidade e como escrever specs (EARS), critérios de aceitação, planos e tarefas. O agente carrega sozinho em qualquer projeto com `sdd/`.
 
 ### Subagents
 
@@ -403,6 +403,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 ### Guias
 
+- [Estrutura de pastas: o que o SDD cria e para que serve cada uma](docs/referencia/estrutura-de-pastas.md)
 - [Começar um projeto novo, passo a passo](docs/referencia/projeto-novo.md)
 - [Adotar o SDD num projeto em andamento, passo a passo](docs/referencia/projeto-em-andamento.md)
 - [Git Flow: as branches de cada momento do ciclo](docs/referencia/git-flow.md)
@@ -422,14 +423,18 @@ faz, quando usar, perguntas frequentes e como saber que está funcionando.
 ## Onde fica cada coisa no seu projeto
 
 ```
-.sdd/                    configuração, constituição, backlog, sprints, templates
-specs/NNN-slug/          uma feature: spec, plano, contratos, tarefas, segurança, auditoria, estado, histórico
-sistema/<capacidade>.md  o que o sistema faz hoje (spec viva)
-releases/<versão>/       uma release: testes, homologação, implantação, notas, estado, histórico
-incidentes/INC-NNN.md    um incidente, com linha do tempo e post-mortem
-docs/adr/NNNN-slug.md    decisões de arquitetura
-docs/arquitetura/        documentos e diagramas de arquitetura, como referência
-docs/legado/             o que veio de outro processo e não entra no fluxo
+sdd/                         tudo do SDD mora aqui; na raiz só ficam CLAUDE.md, AGENTS.md e .claude/
+  config.yml, constituicao.md, backlog.md, sprints/, templates/   configuração e acompanhamento
+  specs/NNN-slug/            uma feature: spec, plano, contratos, tarefas, segurança, auditoria, estado, histórico
+  sistema/<capacidade>.md    o que o sistema faz hoje (spec viva)
+  releases/<versão>/         uma release: testes, homologação, implantação, notas, estado, histórico
+  incidentes/INC-NNN.md      um incidente, com linha do tempo e post-mortem
+  adr/NNNN-slug.md           decisões de arquitetura
+  arquitetura/               documentos e diagramas de arquitetura, como referência
+  docs/                      documentos do projeto: API externa, levantamentos de clientes, normas
+  legado/                    o que veio de outro processo e não entra no fluxo
+.claude/                     settings.json (permissões de leitura dos sdd-*) e as pastas
+                             agents/, skills/, commands/ e rules/ do Claude Code
 ```
 
 E as branches, sempre com estes nomes:
@@ -437,7 +442,7 @@ E as branches, sempre com estes nomes:
 ```
 main                     produção; só recebe merge de release/ e hotfix/, com a tag vX.Y.Z
 develop                  integração; recebe as features prontas
-feature/NNN-slug         uma por feature, com o id da pasta em specs/
+feature/NNN-slug         uma por feature, com o id da pasta em sdd/specs/
 release/X.Y.Z            uma por release, de develop para main
 hotfix/X.Y.Z             uma por hotfix, de main para main e develop
 ```

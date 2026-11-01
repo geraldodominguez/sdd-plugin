@@ -76,7 +76,7 @@ ele valida.
 
 ## 10. Impacto na spec do sistema
 
-> Quais comportamentos vigentes (em `sistema/<capacidade>.md`) esta feature
+> Quais comportamentos vigentes (em `sdd/sistema/<capacidade>.md`) esta feature
 > acrescenta, muda ou remove. É o que será consolidado quando ela ficar pronta.
 
 - **Acrescenta:** {{...}}

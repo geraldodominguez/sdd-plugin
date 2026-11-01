@@ -10,7 +10,7 @@ allowed-tools: Bash(sdd-sprint *), Bash(sdd-sprint), Bash(sdd-backlog *), Bash(s
 
 Pedido: `$ARGUMENTS` (vazio significa ver a sprint atual)
 
-Uma sprint fica em `.sdd/sprints/<id>.md`: objetivo, datas, situação
+Uma sprint fica em `sdd/sprints/<id>.md`: objetivo, datas, situação
 (`planejada`, `ativa`, `encerrada`), o **compromisso** (features e itens de
 backlog) e a **revisão**. O id padrão é a semana ISO do início (`2026-S44`).
 

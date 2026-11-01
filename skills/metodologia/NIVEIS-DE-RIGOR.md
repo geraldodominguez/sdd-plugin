@@ -21,7 +21,7 @@ descobrir na auditoria que faltou spec não é.
 
 | Etapa | Nível 0 | Nível 1 | Nível 2 |
 |---|---|---|---|
-| Feature em `specs/` | não | sim | sim |
+| Feature em `sdd/specs/` | não | sim | sim |
 | `contexto.md` | não | opcional | sim, em projeto existente |
 | Spec | não | `spec-leve` | `spec` completa |
 | Clarificação | não | se houver dúvida | sempre |

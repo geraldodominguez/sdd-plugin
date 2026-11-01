@@ -52,7 +52,7 @@
 ## 5. Rastreabilidade (`sdd-rastrear`)
 
 ```
-Rastreabilidade: specs/001-redefinicao-de-senha
+Rastreabilidade: sdd/specs/001-redefinicao-de-senha
   requisitos: 8 | critérios: 9 | arquivos de teste: 3
   ✓ Nenhuma lacuna encontrada.
 ```

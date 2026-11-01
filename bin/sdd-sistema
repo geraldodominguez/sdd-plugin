@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# sdd-sistema: a spec viva do sistema (sistema/<capacidade>.md).
+# sdd-sistema: a spec viva do sistema (sdd/sistema/<capacidade>.md).
 #
-# As specs das features (specs/NNN/) contam o que MUDOU. A spec do sistema diz
+# As specs das features (sdd/specs/NNN/) contam o que MUDOU. A spec do sistema diz
 # o que o sistema FAZ HOJE, organizada por capacidade (cadastro, autenticação,
 # faturamento...). Quando uma feature fica pronta, os requisitos dela são
 # consolidados na capacidade que ela toca.
 #
 # Uso:
 #   sdd-sistema listar                         capacidades, com a última feature consolidada
-#   sdd-sistema nova <capacidade> "título"     cria sistema/<capacidade>.md
+#   sdd-sistema nova <capacidade> "título"     cria sdd/sistema/<capacidade>.md
 #   sdd-sistema ver <capacidade>               mostra o arquivo
 #   sdd-sistema consolidar <NNN-slug> [--sem-mudanca] [--nota "texto"]
 #                                              registra que a feature foi consolidada nas suas
@@ -23,7 +23,7 @@ AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
 
 RAIZ="$(sdd_raiz_projeto)"
-[ -d "$RAIZ/.sdd" ] || { echo "sdd-sistema: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
+sdd_projeto_usa "$RAIZ" || { echo "sdd-sistema: este projeto ainda não usa SDD. Rode /sdd:iniciar." >&2; exit 1; }
 PASTA="$(sdd_pasta_sistema "$RAIZ")"
 DIR="$RAIZ/$PASTA"
 

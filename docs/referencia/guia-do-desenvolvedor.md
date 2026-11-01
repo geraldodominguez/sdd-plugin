@@ -45,8 +45,8 @@ E duas pastas que você vai consultar sempre:
 
 | Pasta | Responde |
 |---|---|
-| `specs/NNN-slug/` | o que uma mudança alterou, por quê, e quem aprovou |
-| `sistema/<capacidade>.md` | o que o sistema faz **hoje** |
+| `sdd/specs/NNN-slug/` | o que uma mudança alterou, por quê, e quem aprovou |
+| `sdd/sistema/<capacidade>.md` | o que o sistema faz **hoje** |
 
 ## 2. Instalação
 
@@ -81,10 +81,10 @@ Uma vez por repositório, normalmente feito pelo tech lead:
 
 | O agente faz | Você decide |
 |---|---|
-| cria `.sdd/`, `specs/`, `sistema/`, `docs/adr/` | o nível padrão (1 ou 2) e a proteção (`desligada`, `leve` ou `estrita`) |
+| cria `sdd/`, `sdd/specs/`, `sdd/sistema/`, `sdd/adr/` | o nível padrão (1 ou 2) e a proteção (`desligada`, `leve` ou `estrita`) |
 | prepara o **Git Flow**: renomeia `master` e `development` (com o seu "sim"), cria `develop` e muda para ela | como as branches se juntam: `integracao: local` (o plugin faz o merge) ou `pr` (pull request) |
 | lê o código e rascunha a **constituição** só com o que observou | revisa e completa as regras: stack, arquitetura, testes, segurança, ambientes, operação |
-| propõe as **áreas sensíveis** e os comandos (teste, lint, segurança, deploy) | confirma ou corrige no `.sdd/config.yml` |
+| propõe as **áreas sensíveis** e os comandos (teste, lint, segurança, deploy) | confirma ou corrige no `sdd/config.yml` |
 | injeta as regras do SDD no `CLAUDE.md` e no `AGENTS.md` | nada |
 | acha specs, planos, tarefas e ADRs de outros processos, lê tudo e propõe um mapa para o padrão | **aprova o mapa**: nada se move sem isso |
 
@@ -99,7 +99,7 @@ o go registrado. Num sistema que já está em produção, comece também a
 **spec do sistema** pela área que mais muda: `/sdd:sistema mapear`.
 
 Faça commit de tudo em `develop` (`chore: sdd iniciado`) e publique as duas
-branches (`git push -u origin main develop`). O `.sdd/estado` (sua feature
+branches (`git push -u origin main develop`). O `sdd/estado` (sua feature
 ativa) já fica fora do git. Daqui em diante, `main` não recebe commit: só o
 merge de uma release depois do go (ver [Git Flow](git-flow.md)).
 
@@ -115,7 +115,7 @@ merge de uma release depois do go (ver [Git Flow](git-flow.md)).
 ```
 
 O agente classifica o nível e pede sua confirmação, escolhe a capacidade
-(`sistema/`), decide se a revisão de segurança será obrigatória, e escreve a
+(`sdd/sistema/`), decide se a revisão de segurança será obrigatória, e escreve a
 spec. Tudo que ele não sabe vira `[PRECISA ESCLARECER]`.
 
 **Sua parte:** ler a spec e responder "é isso que eu quero?". Se o agente disse
@@ -191,7 +191,7 @@ nasceu.
 ### 4.7 Pronta
 
 Quando a feature fica pronta, o `/sdd:aprovar` conduz a **consolidação** na spec
-do sistema: o agente atualiza `sistema/<capacidade>.md` para descrever o
+do sistema: o agente atualiza `sdd/sistema/<capacidade>.md` para descrever o
 comportamento vigente e mostra o diff para você confirmar. Depois, faz o commit
 na branch da feature (`docs(004): feature pronta`) e pergunta se pode levá-la
 para `develop`: com o seu "sim", `sdd-gitflow integrar 004-slug` faz o merge
@@ -223,7 +223,7 @@ para `develop`: com o seu "sim", `sdd-gitflow integrar 004-slug` faz o merge
 |---|---|
 | lista as prontas (já em `develop`) e propõe o conjunto | quais entram |
 | calcula a versão pelos commits (`sdd-release analisar`) e mostra o motivo | a versão: confirma ou escolhe outra |
-| cria a branch `release/X.Y.Z` a partir de `develop` (`sdd-gitflow release X.Y.Z`) e só depois `releases/X.Y.Z/` | nada |
+| cria a branch `release/X.Y.Z` a partir de `develop` (`sdd-gitflow release X.Y.Z`) e só depois `sdd/releases/X.Y.Z/` | nada |
 | chama o `testador-de-sistema`: regressão, ponta a ponta, RNFs | o que fazer com falhas: corrigir ou tirar a feature |
 | escreve o roteiro de homologação em linguagem de negócio e as notas | quem vai homologar |
 
@@ -328,7 +328,7 @@ determinística. Ver [proteção por hooks](protecao-por-hooks.md).
 |---|---|---|
 | "spec.md não está aprovado ou mudou depois da aprovação" | alguém editou a spec depois de aprovar | `git diff` para ver a mudança; aprove de novo ou reverta |
 | "testes não está aprovado ou mudou depois da aprovação" | um teste da feature mudou depois da fase red | se foi intencional, volte à spec, corrija o critério e reaprove os testes |
-| o hook bloqueou um arquivo que não é teste | `globs_de_teste` amplo demais | ajuste no `.sdd/config.yml` |
+| o hook bloqueou um arquivo que não é teste | `globs_de_teste` amplo demais | ajuste no `sdd/config.yml` |
 | `sdd-rastrear` diz que um CA não tem teste | marca sem o número da feature | use `sdd:004:CA-003`, não `sdd:CA-003` |
 | "a feature X está em 'pronta'" ao tentar mudar a fase | ela já saiu da construção | `sdd-estado reabrir --motivo` |
 | o CI falha em `sdd-verificar` | aprovação invalidada ou lacuna | rode `sdd-verificar` localmente e siga a lista |
@@ -338,6 +338,6 @@ determinística. Ver [proteção por hooks](protecao-por-hooks.md).
 | commit bloqueado em `main` | `main` só recebe merge de release | mude para `develop` ou para a branch da feature |
 | o repositório tem `master` (o padrão do `git init`) | o nome fora do padrão | `sdd-gitflow renomear master main` (o `/sdd:iniciar` propõe isso) |
 | "há alterações não commitadas em código" ao trocar de branch | o `sdd-gitflow` leva só os arquivos do SDD | faça o commit (ou `git stash`) do código antes |
-| conflito no `.sdd/historico.md` num merge | repositório sem o `.gitattributes` do SDD | rode `/sdd:iniciar` de novo (sem `--forcar`); ele acrescenta o merge por união e não mexe no config nem na constituição |
+| conflito no `sdd/historico.md` num merge | repositório sem o `.gitattributes` do SDD | rode `/sdd:iniciar` de novo (sem `--forcar`); ele acrescenta o merge por união e não mexe no config nem na constituição |
 
 Mais em [FAQ e projetos existentes](projetos-existentes.md).

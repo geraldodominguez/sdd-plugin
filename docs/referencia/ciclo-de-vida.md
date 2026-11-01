@@ -48,8 +48,8 @@ O processo tem dois ciclos encaixados:
 
 | Ciclo | Unidade | Começa | Termina | Pasta |
 |---|---|---|---|---|
-| **Feature** | uma mudança | um pedido ou item de backlog | `pronta`: especificada, implementada, revisada, consolidada | `specs/NNN-slug/` |
-| **Release** | um conjunto de features prontas | a escolha das features | `producao`: testada, homologada, implantada e verificada | `releases/<versão>/` |
+| **Feature** | uma mudança | um pedido ou item de backlog | `pronta`: especificada, implementada, revisada, consolidada | `sdd/specs/NNN-slug/` |
+| **Release** | um conjunto de features prontas | a escolha das features | `producao`: testada, homologada, implantada e verificada | `sdd/releases/<versão>/` |
 
 Separar os dois evita colocar etapas de implantação dentro de cada feature e
 permite entregar várias features juntas, com um único aceite e uma única janela
@@ -96,11 +96,11 @@ aprovada, sem decidir nada técnico.
 | **Pronto quando** | nenhum `[PRECISA ESCLARECER]` em aberto e a spec aprovada |
 
 **Como funciona.** Pedidos que não são para agora vão para o backlog
-(`.sdd/backlog.md`), com prioridade e nível estimado. No começo de cada sprint,
+(`sdd/backlog.md`), com prioridade e nível estimado. No começo de cada sprint,
 o time escolhe o que entra. Cada item escolhido vira feature pelo
 `/sdd:especificar B-NNN`, que classifica o nível, define a **capacidade** (a
 parte do sistema que muda) e a obrigatoriedade da revisão de segurança, lê o
-comportamento vigente em `sistema/` e escreve a spec. O que o agente não sabe
+comportamento vigente em `sdd/sistema/` e escreve a spec. O que o agente não sabe
 vira pergunta, respondida no `/sdd:clarificar`.
 
 **Erros comuns.**
@@ -177,7 +177,7 @@ o que reaprovar.
 
 ### 5.1 Consolidação na spec do sistema
 
-Assim que fica pronta, a feature é consolidada em `sistema/<capacidade>.md`
+Assim que fica pronta, a feature é consolidada em `sdd/sistema/<capacidade>.md`
 (`/sdd:sistema consolidar`, conduzido pelo próprio `/sdd:aprovar`). A spec da
 feature conta o que mudou; a do sistema passa a dizer o que o sistema faz
 **hoje**. É ela que a próxima pessoa lê antes de mexer na área.
@@ -204,7 +204,7 @@ stateDiagram-v2
 
 | Passo | O que acontece | Artefato | Gate e quem decide |
 |---|---|---|---|
-| Preparar | escolher as prontas (já em `develop`); calcular a versão SemVer pelos commits (`sdd-release analisar`) e decidir; criar a branch `release/X.Y.Z` (`sdd-gitflow release`) e só então `releases/X.Y.Z/`; rodar os testes de sistema, escrever o roteiro de homologação e as notas | `release.md`, `testes.md`, `homologacao.md`, `notas.md` | a versão (dev) e os testes de sistema aprovados (dev) |
+| Preparar | escolher as prontas (já em `develop`); calcular a versão SemVer pelos commits (`sdd-release analisar`) e decidir; criar a branch `release/X.Y.Z` (`sdd-gitflow release`) e só então `sdd/releases/X.Y.Z/`; rodar os testes de sistema, escrever o roteiro de homologação e as notas | `release.md`, `testes.md`, `homologacao.md`, `notas.md` | a versão (dev) e os testes de sistema aprovados (dev) |
 | Homologar | o push de `release/X.Y.Z` implanta em homologação; quem homologa executa o roteiro, passo a passo, em linguagem de negócio | `homologacao.md` preenchido | aceite do negócio (dono do produto ou cliente) |
 | Implantar | gerar e revisar a seção do `CHANGELOG.md` (`sdd-release changelog X.Y.Z --escrever`, commit `docs(release): changelog X.Y.Z` na branch da release); escrever o plano com verificação e rollback; decidir; depois do go (`sdd-release autorizar` e o commit `chore(release): X.Y.Z autorizada`), `sdd-gitflow finalizar X.Y.Z` (merge em `main`, tag `vX.Y.Z`, merge em `develop`) e `git push origin main develop vX.Y.Z`, que dispara a implantação | `implantacao.md`, `CHANGELOG.md` | **go/no-go** (tech lead e operação) |
 | Concluir | verificar em produção e encerrar; commit em `develop` (`chore(release): X.Y.Z em produção`) e apagar a branch local `release/X.Y.Z`. A tag já existe: veio do `finalizar` | `historico.md` da release | verificação pós-implantação |
@@ -258,7 +258,7 @@ stateDiagram-v2
 ### Mudanças em features que já estão em produção
 
 Uma feature em produção não se reabre. Mudança de comportamento é **feature
-nova** (que atualiza a mesma capacidade em `sistema/`); defeito é **incidente**.
+nova** (que atualiza a mesma capacidade em `sdd/sistema/`); defeito é **incidente**.
 Isso mantém o histórico de cada feature imutável depois de entregue.
 
 ### Feature pronta que ainda não foi para produção
@@ -318,15 +318,15 @@ condições de cada uma, está em [utilitários](utilitarios.md#sdd-estado).
 
 | Decisão | Papel | Onde fica registrada |
 |---|---|---|
-| Prioridade e o que entra na sprint | dono do produto | `.sdd/backlog.md`, `.sdd/sprints/` |
-| A spec está certa | dono do produto | `specs/NNN/historico.md` (aprovação de `spec.md`) |
+| Prioridade e o que entra na sprint | dono do produto | `sdd/backlog.md`, `sdd/sprints/` |
+| A spec está certa | dono do produto | `sdd/specs/NNN/historico.md` (aprovação de `spec.md`) |
 | O plano e os contratos | tech lead | aprovação de `plano.md`, ADRs |
 | As tarefas e os testes | dev | aprovação de `tarefas.md` e dos testes |
 | Risco de segurança aceitável | responsável por segurança | decisão em `seguranca.md`, com nota |
 | O desvio da spec é aceitável | tech lead | decisão em `auditoria.md`, delta spec |
-| A release atende o negócio | dono do produto ou cliente | aceite em `releases/<v>/historico.md` |
-| Pode ir para produção agora | tech lead e operação | go em `releases/<v>/historico.md` |
-| Severidade e mitigação | plantão | `incidentes/INC-NNN.md` |
+| A release atende o negócio | dono do produto ou cliente | aceite em `sdd/releases/<v>/historico.md` |
+| Pode ir para produção agora | tech lead e operação | go em `sdd/releases/<v>/historico.md` |
+| Severidade e mitigação | plantão | `sdd/incidentes/INC-NNN.md` |
 
 Num time pequeno, a mesma pessoa ocupa vários papéis. Os gates continuam
 valendo: eles separam **momentos de decisão**, não pessoas.
@@ -335,13 +335,13 @@ valendo: eles separam **momentos de decisão**, não pessoas.
 
 | Pergunta | Onde |
 |---|---|
-| O que o sistema faz hoje? | `sistema/<capacidade>.md` |
-| Por que o sistema faz isso? | siga a `origem:` até `specs/NNN/spec.md` e os ADRs |
-| O que mudou na versão X? | `releases/X/notas.md` e `release.md` |
-| Quem aprovou o quê, e quando? | `specs/NNN/historico.md`, `releases/X/historico.md` |
-| O que deu errado em produção? | `incidentes/INC-NNN.md` |
-| O que vem depois? | `.sdd/backlog.md` |
-| De onde veio este artefato antigo? | `.sdd/adocao.md` e `docs/legado/` |
+| O que o sistema faz hoje? | `sdd/sistema/<capacidade>.md` |
+| Por que o sistema faz isso? | siga a `origem:` até `sdd/specs/NNN/spec.md` e os ADRs |
+| O que mudou na versão X? | `sdd/releases/X/notas.md` e `release.md` |
+| Quem aprovou o quê, e quando? | `sdd/specs/NNN/historico.md`, `sdd/releases/X/historico.md` |
+| O que deu errado em produção? | `sdd/incidentes/INC-NNN.md` |
+| O que vem depois? | `sdd/backlog.md` |
+| De onde veio este artefato antigo? | `sdd/adocao.md` e `sdd/legado/` |
 | Como está tudo agora? | `/sdd:status` |
 
 Cada artefato de processo tem um único lugar, e o layout é contrato: o hook

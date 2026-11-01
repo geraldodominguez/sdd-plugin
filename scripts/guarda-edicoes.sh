@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # guarda-edicoes.sh: hook PreToolUse para Edit, Write, MultiEdit e NotebookEdit.
 #
-# Decide, pela fase da feature ativa (.sdd/estado) e pela proteção configurada
-# (.sdd/config.yml), se o arquivo pode ser editado agora.
+# Decide, pela fase da feature ativa (sdd/estado) e pela proteção configurada
+# (sdd/config.yml), se o arquivo pode ser editado agora.
 #
 # Saída: 0 permite, 2 bloqueia (o stderr é mostrado ao agente).
 # Qualquer falha inesperada permite a edição: o hook protege contra deslizes,
@@ -39,7 +39,7 @@ RAIZ="${CLAUDE_PROJECT_DIR:-}"
 RAIZ="${RAIZ//\\//}"
 
 # Projeto sem SDD: o plugin não interfere.
-[ -d "$RAIZ/.sdd" ] || exit 0
+sdd_projeto_usa "$RAIZ" || exit 0
 
 PROTECAO="$(sdd_config "$RAIZ" protecao leve)"
 [ "$PROTECAO" = "desligada" ] && exit 0
@@ -62,7 +62,7 @@ PASTA_INCIDENTES="$(sdd_pasta_incidentes "$RAIZ")"
 # Histórico e estado são escritos só pelos utilitários. Editar à mão permitiria
 # forjar uma aprovação ou pular uma fase, em qualquer fase.
 case "$REL" in
-  "$PASTA_SPECS"/*/historico.md|"$PASTA_SPECS"/*/estado|"$PASTA_RELEASES"/*/historico.md|"$PASTA_RELEASES"/*/estado|.sdd/historico.md|.sdd/estado|.sdd/adocao.md)
+  "$PASTA_SPECS"/*/historico.md|"$PASTA_SPECS"/*/estado|"$PASTA_RELEASES"/*/historico.md|"$PASTA_RELEASES"/*/estado|sdd/historico.md|sdd/estado|sdd/adocao.md)
     {
       echo "SDD (proteção $PROTECAO) bloqueou a edição de '$REL'."
       echo "Histórico, estado e registro de adoção são gravados só pelos utilitários (sdd-estado, sdd-backlog, sdd-sprint, sdd-release, sdd-adotar). Aprovações passam pelo /sdd:aprovar e pelo /sdd:release, que são do usuário."
@@ -87,7 +87,7 @@ if [ "$FERRAMENTA" = "Write" ] && [ ! -e "$RAIZ/$REL" ]; then
         *)
           echo "Lugar do padrão para $TIPO: $(sdd_destino_do_tipo "$TIPO" "$RAIZ")." ;;
       esac
-      echo "Não invente pastas nem nomes. Se este arquivo não é um artefato do SDD, o usuário pode listá-lo em excecoes_de_layout no .sdd/config.yml."
+      echo "Não invente pastas nem nomes. Se este arquivo não é um artefato do SDD, o usuário pode listá-lo em excecoes_de_layout no sdd/config.yml."
       echo "Não contorne este bloqueio. Explique a situação ao usuário e pergunte como seguir."
     } >&2
     exit 2
@@ -104,7 +104,7 @@ GLOBS_CONTRATO="$(sdd_config "$RAIZ" globs_de_contrato "")"
 
 e_artefato() {
   case "$1" in
-    .sdd/*|"$PASTA_SPECS"/*|"$PASTA_SISTEMA"/*|"$PASTA_RELEASES"/*|"$PASTA_INCIDENTES"/*|docs/*|CLAUDE.md|AGENTS.md|.claude/*) return 0 ;;
+    sdd/*|"$PASTA_SPECS"/*|"$PASTA_SISTEMA"/*|"$PASTA_RELEASES"/*|"$PASTA_INCIDENTES"/*|docs/*|CLAUDE.md|AGENTS.md|.claude/*) return 0 ;;
   esac
   return 1
 }
@@ -135,7 +135,7 @@ fi
 # PROTECAO = estrita
 case "$FASE" in
   especificacao|clarificacao|tarefas)
-    bloquear "Antes da implementação só se editam artefatos (.sdd/, $PASTA_SPECS/, docs/). Termine a fase atual e siga o fluxo até /sdd:implementar."
+    bloquear "Antes da implementação só se editam artefatos (sdd/, $PASTA_SPECS/, docs/). Termine a fase atual e siga o fluxo até /sdd:implementar."
     ;;
   plano)
     e_contrato "$REL" && exit 0

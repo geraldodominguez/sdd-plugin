@@ -6,13 +6,13 @@ deve parar e explicar a situação a você.
 
 Nos dois hooks, valem as mesmas regras de base:
 
-- **Só agem em projetos com `.sdd/`.** O plugin pode ficar instalado de forma global sem afetar quem não usa SDD.
+- **Só agem em projetos com `sdd/`.** O plugin pode ficar instalado de forma global sem afetar quem não usa SDD.
 - **Sem feature ativa, ou com ela pronta, em homologação, em produção ou cancelada, a fase não bloqueia nada.**
 - **Fail-open:** qualquer erro inesperado permite a ação.
 
 ## Modos
 
-Em `.sdd/config.yml`:
+Em `sdd/config.yml`:
 
 ```yaml
 protecao: leve   # desligada | leve | estrita
@@ -30,11 +30,11 @@ Intercepta `Edit`, `Write`, `MultiEdit` e `NotebookEdit`.
 
 **Nunca editáveis à mão**, em qualquer fase (proteção leve ou estrita): o
 `estado` e o `historico.md` de cada feature e de cada release, e o
-`.sdd/estado`, o `.sdd/historico.md` e o `.sdd/adocao.md`. Eles são escritos só pelos utilitários. É isso que impede
+`sdd/estado`, o `sdd/historico.md` e o `sdd/adocao.md`. Eles são escritos só pelos utilitários. É isso que impede
 o agente de forjar uma aprovação ou de pular uma fase editando um arquivo.
 
 **Sempre editáveis pela regra de fase**, em qualquer modo e fase: o resto de
-`.sdd/`, `specs/`, `sistema/`, `releases/` e `incidentes/`, e também `docs/`,
+`sdd/`, `sdd/specs/`, `sdd/sistema/`, `sdd/releases/` e `sdd/incidentes/`, e também `docs/`,
 `CLAUDE.md`, `AGENTS.md`, `.claude/` e qualquer arquivo fora do projeto. (Criar
 um arquivo novo nessas pastas ainda passa pela regra de layout, abaixo.)
 
@@ -58,9 +58,10 @@ mensagem dizendo onde ele mora:
 | Tentativa | Resultado |
 |---|---|
 | `docs/specs/login.md`, `tasks/fazer.md`, `TODO.md`, `PLAN.md` | bloqueada: feature nova só pelo `/sdd:especificar` |
-| `specs/009-feita-a-mao/spec.md`, numa pasta sem `estado` | bloqueada: a pasta não foi criada pelo `sdd-estado nova` |
-| `docs/adr/usar-redis.md` | bloqueada: ADR é `docs/adr/NNNN-slug.md` |
-| `docs/adr/0002-usar-redis.md`, `specs/001-login/contexto.md` | permitida |
+| `sdd/specs/009-feita-a-mao/spec.md`, numa pasta sem `estado` | bloqueada: a pasta não foi criada pelo `sdd-estado nova` |
+| `sdd/adr/usar-redis.md` | bloqueada: ADR é `sdd/adr/NNNN-slug.md` |
+| `sdd/adr/0002-usar-redis.md`, `sdd/specs/001-login/contexto.md` | permitida |
+| `sdd/docs/requisitos-do-cliente.md`, `sdd/docs/apis/pagamentos.md` | permitida: `sdd/docs/` é material de entrada do projeto e fica isenta, mesmo com nome de requisito |
 | `docs/guia.md`, `src/qualquer.ts` | permitida: não é artefato de processo |
 
 Um arquivo é artefato de processo pelo nome ou pela pasta (spec, PRD,
@@ -145,7 +146,7 @@ Com `gitflow: ativo` no config (o padrão), nas proteções `leve` e `estrita`:
 | Tentativa | Resultado |
 |---|---|
 | criar ou renomear uma branch com nome fora do padrão (`git checkout -b feat-x`, `git switch -c bugfix/x`, `git branch -m dev2`) | bloqueada |
-| criar `feature/NNN-slug` de uma feature que não existe em `specs/` | bloqueada |
+| criar `feature/NNN-slug` de uma feature que não existe em `sdd/specs/` | bloqueada |
 | `git commit` em `main` | bloqueado: `main` só recebe merge, pelo `sdd-gitflow finalizar` |
 | `git commit` numa branch fora do padrão | bloqueado |
 | `git commit` com uma feature ativa em andamento, fora da branch dela (em `develop`, ou na branch de outra feature) | bloqueado |
