@@ -11,7 +11,7 @@ allowed-tools: Bash(sdd-sistema *), Bash(sdd-sistema), Bash(sdd-estado *), Read,
 Pedido: `$ARGUMENTS` (vazio significa listar as capacidades e as consolidações pendentes)
 
 As specs das features contam **o que mudou**. A spec do sistema, em
-`sistema/<capacidade>.md`, diz **o que o sistema faz hoje**. Sem ela, depois de
+`sdd/sistema/<capacidade>.md`, diz **o que o sistema faz hoje**. Sem ela, depois de
 dez features ninguém sabe qual spec descreve o cadastro: cada uma descreve uma
 mudança. Ela é a primeira leitura de quem vai mexer numa área.
 
@@ -35,7 +35,7 @@ Para cada feature pronta (ou além) ainda não consolidada, ou a informada:
    (`sdd-sistema listar`) ou uma nova, confirme e rode
    `sdd-estado usar <feature>` e `sdd-estado definir capacidade=<nome>`.
    Capacidade nova: `sdd-sistema nova <nome> "Título"`.
-3. **Edite `sistema/<capacidade>.md`** para que ela descreva o comportamento
+3. **Edite `sdd/sistema/<capacidade>.md`** para que ela descreva o comportamento
    vigente:
    - requisitos **novos** entram na seção certa, com `(origem: NNN/RF-NNN)`;
    - requisitos **alterados** substituem o texto antigo, e a origem passa a ser

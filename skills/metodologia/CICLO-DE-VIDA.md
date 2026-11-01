@@ -7,7 +7,7 @@ ANÁLISE        backlog -> sprint -> especificar -> clarificar -> [aprovar spec]
 DESENHO        planejar (nível 2) -> [aprovar plano] -> tarefas -> [aprovar tarefas]
 CONSTRUÇÃO     implementar: red -> [aprovar testes] -> green
 REVISÃO        seguranca -> [decisão] -> auditar -> [decisão]  ==> feature PRONTA
-               consolidação na spec do sistema (sistema/)
+               consolidação na spec do sistema (sdd/sistema/)
 ENTREGA        release: preparar (testes de sistema, roteiro, notas)
                -> homologar -> [aceite do negócio] -> plano de implantação
                -> [go/no-go] -> implantar -> verificar -> concluir  ==> PRODUÇÃO

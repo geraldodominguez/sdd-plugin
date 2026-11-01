@@ -6,7 +6,7 @@ caminho completo ou ponha `bin/` no PATH. Os comandos `/sdd:*` usam esses
 utilitários por baixo; você raramente precisa chamá-los direto, mas eles servem
 para scripts, para o CI e para conferir algo rápido. Todos aceitam `--ajuda`.
 
-A configuração de cada projeto (todas as chaves do `.sdd/config.yml`) está em
+A configuração de cada projeto (todas as chaves do `sdd/config.yml`) está em
 [A configuração](#a-configuração-sddconfigyml).
 
 | Utilitário | Para quê |
@@ -29,20 +29,20 @@ A configuração de cada projeto (todas as chaves do `.sdd/config.yml`) está em
 
 | Arquivo | Conteúdo | Escrito por |
 |---|---|---|
-| `.sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual); fora do git | `sdd-estado`, `sdd-sprint` |
-| `specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `adocao` (só nas adotadas: `transicao` ou `regularizada`), `branch` (a do Git Flow: `feature/NNN-slug`, ou `hotfix/X.Y.Z` num hotfix), `atualizado` | `sdd-estado`, `sdd-release`, `sdd-adotar`, `sdd-incidente` |
-| `specs/NNN-slug/historico.md` | eventos da feature: `criada`, `fase`, `aprovacao` (inclusive a da transição), `reabertura`, `cancelamento`, `nivel`, `seguranca`, `capacidade`, `release` (inclusão e remoção), `consolidacao`, `incidente` (os ligados a ela) e `adocao` (com o hash de cada original) | `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-adotar` |
-| `releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix), `atualizado` | `sdd-release` |
-| `releases/<versão>/historico.md` | `criada`, `inclusao`, `remocao`, `testes`, `aceite`, `reprovacao`, `autorizacao` (o go), `verificacao` e `situacao` (cada mudança de situação, inclusive para `cancelada` e `revertida`) | `sdd-release` |
-| `.sdd/historico.md` | eventos do projeto: `backlog`, `sprint`, `release`, `incidente`, `sistema` (capacidades) e `adocao` | `sdd-backlog`, `sdd-sprint`, `sdd-release`, `sdd-incidente`, `sdd-sistema`, `sdd-adotar` (o `sdd-gitflow` não escreve histórico) |
-| `.sdd/backlog.md`, `.sdd/sprints/<id>.md` | itens e sprints | `sdd-backlog`, `sdd-sprint`, e você |
-| `sistema/<capacidade>.md` | comportamento vigente | o agente, com a sua confirmação; `sdd-sistema` registra |
-| `incidentes/INC-NNN.md` | um incidente | `sdd-incidente`, e você |
-| `.sdd/adocao.md` | de onde veio cada artefato adotado | `sdd-adotar` |
+| `sdd/estado` | ponteiros pessoais: `feature=` (ativa) e `sprint=` (atual); fora do git | `sdd-estado`, `sdd-sprint` |
+| `sdd/specs/NNN-slug/estado` | `fase`, `nivel`, `origem`, `tipo`, `seguranca`, `capacidade`, `release`, `adocao` (só nas adotadas: `transicao` ou `regularizada`), `branch` (a do Git Flow: `feature/NNN-slug`, ou `hotfix/X.Y.Z` num hotfix), `atualizado` | `sdd-estado`, `sdd-release`, `sdd-adotar`, `sdd-incidente` |
+| `sdd/specs/NNN-slug/historico.md` | eventos da feature: `criada`, `fase`, `aprovacao` (inclusive a da transição), `reabertura`, `cancelamento`, `nivel`, `seguranca`, `capacidade`, `release` (inclusão e remoção), `consolidacao`, `incidente` (os ligados a ela) e `adocao` (com o hash de cada original) | `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-adotar` |
+| `sdd/releases/<versão>/estado` | `fase` da release, `tipo` (normal ou hotfix), `atualizado` | `sdd-release` |
+| `sdd/releases/<versão>/historico.md` | `criada`, `inclusao`, `remocao`, `testes`, `aceite`, `reprovacao`, `autorizacao` (o go), `verificacao` e `situacao` (cada mudança de situação, inclusive para `cancelada` e `revertida`) | `sdd-release` |
+| `sdd/historico.md` | eventos do projeto: `backlog`, `sprint`, `release`, `incidente`, `sistema` (capacidades) e `adocao` | `sdd-backlog`, `sdd-sprint`, `sdd-release`, `sdd-incidente`, `sdd-sistema`, `sdd-adotar` (o `sdd-gitflow` não escreve histórico) |
+| `sdd/backlog.md`, `sdd/sprints/<id>.md` | itens e sprints | `sdd-backlog`, `sdd-sprint`, e você |
+| `sdd/sistema/<capacidade>.md` | comportamento vigente | o agente, com a sua confirmação; `sdd-sistema` registra |
+| `sdd/incidentes/INC-NNN.md` | um incidente | `sdd-incidente`, e você |
+| `sdd/adocao.md` | de onde veio cada artefato adotado | `sdd-adotar` |
 
 Os arquivos `estado` e `historico.md` (de features e de releases), o
-`.sdd/estado`, o `.sdd/historico.md` e o `.sdd/adocao.md` são protegidos pelo
-hook: o agente não consegue editá-los à mão. O resto do `.sdd/` (config,
+`sdd/estado`, o `sdd/historico.md` e o `sdd/adocao.md` são protegidos pelo
+hook: o agente não consegue editá-los à mão. O resto do `sdd/` (config,
 constituição, backlog, sprints, templates) é editável. Linha
 do histórico:
 
@@ -54,7 +54,7 @@ O autor é o `git config user.name` (ou a variável `SDD_AUTOR`).
 
 ---
 
-## A configuração: .sdd/config.yml
+## A configuração: sdd/config.yml
 
 Uma chave por linha (`chave: valor`); `#` começa um comentário. Todas as
 chaves, com o valor que o `/sdd:iniciar` grava:
@@ -88,14 +88,28 @@ mova as pastas junto, ou os utilitários não as encontram.
 ## sdd-iniciar
 
 ```
-sdd-iniciar [--forcar] [--nivel 1|2] [--protecao desligada|leve|estrita]
+sdd-iniciar [--forcar] [--nivel 1|2] [--protecao desligada|leve|estrita] [--sem-git] [--sem-claude]
 ```
 
-Cria `.sdd/` (config, constituição, estado, backlog, sprints, templates),
-`specs/`, `sistema/` e `docs/adr/` no diretório atual (ou em
-`$CLAUDE_PROJECT_DIR`), injeta o bloco de regras no `CLAUDE.md` e no
-`AGENTS.md`, e acrescenta ao `.gitattributes` o merge por união dos históricos
-(para os merges do Git Flow). Não sobrescreve nada sem `--forcar`.
+Cria `sdd/` (config, constituição, estado, backlog, sprints, templates,
+`specs/`, `sistema/`, `adr/` e `docs/`, com um `README.md` que explica a pasta) no diretório atual (ou em `$CLAUDE_PROJECT_DIR`),
+injeta o bloco de regras no `CLAUDE.md` e no `AGENTS.md`, e acrescenta ao
+`.gitattributes` o merge por união dos históricos (para os merges do Git Flow).
+Não sobrescreve nada sem `--forcar`.
+
+Cria também o que o projeto precisa em volta do SDD, se faltar:
+
+- `.claude/` com `settings.json` (permissões de leitura dos `sdd-*`) e as
+  pastas `agents/`, `skills/`, `commands/` e `rules/` (`--sem-claude` pula);
+- o repositório git: `git init` na branch `main`, o `.gitignore` (lixo do
+  sistema, `.env`, `.claude/settings.local.json`), o commit inicial vazio
+  `chore: início` (só com `user.name` e `user.email` configurados) e o aviso de
+  que falta o remoto (`--sem-git` pula). Ele recusa criar o repositório em
+  `$HOME` ou em `/`.
+
+Recusa seguir se encontra a pasta `.sdd/` do layout anterior à 2.0 ou uma `sdd/`
+que não é do SDD. O `sdd/.gitignore` ignora só o `sdd/estado` (ponteiro
+pessoal); o `estado` de cada feature é versionado.
 
 **Num projeto que já usa o SDD**, rodar de novo sem `--forcar` é a
 atualização: cria só o que falta (como um template novo), atualiza o bloco de
@@ -106,8 +120,8 @@ padrão que vale enquanto elas faltam:
 
 ```
 Templates diferentes dos do plugin (compare antes de trocar: o projeto pode tê-los customizado):
-  ~ .sdd/templates/tarefas.md
-Chaves que o .sdd/config.yml não tem (até serem acrescentadas, vale o padrão do plugin):
+  ~ sdd/templates/tarefas.md
+Chaves que o sdd/config.yml não tem (até serem acrescentadas, vale o padrão do plugin):
   ? gitflow: ativo
   ? commits: convencional
 
@@ -217,7 +231,7 @@ Sem `ref`, a base é o início da feature: com o Git Flow, o ponto em que a bran
 dela saiu de `develop`; sem ele, o commit anterior ao que criou a pasta da
 feature. Saída 0 quando encontrou, 1 quando não.
 
-**Número da feature nova:** o próximo livre, contando as pastas em `specs/` e,
+**Número da feature nova:** o próximo livre, contando as pastas em `sdd/specs/` e,
 com o Git Flow, as features que só existem nas suas branches (`feature/NNN-*`,
 locais e remotas, e as pastas de `hotfix/` e `release/`). Duas features criadas
 em paralelo a partir de `develop` nunca recebem o mesmo número.
@@ -406,6 +420,8 @@ que o Git Flow não permite, lido das variáveis do CI (`GITHUB_HEAD_REF` e
 sdd-adotar inventario [--tsv]
 sdd-adotar contar
 sdd-adotar aplicar <mapa> [--simular]
+sdd-adotar estrutura [--so-verificar]
+sdd-adotar docs [--simular]
 ```
 
 Traz para o padrão os artefatos de processo que outro processo ou outro agente
@@ -421,12 +437,12 @@ dependências e saídas de build, e o que casar com `excecoes_de_layout`.
 
 | Lugar do padrão | O que mora lá |
 |---|---|
-| `specs/NNN-slug/` (com `estado`) | feature: `spec.md`, `plano.md`, `tarefas.md`, `contexto.md`, `contratos/`, e os demais artefatos da feature |
-| `docs/adr/NNNN-slug.md` | ADR, numerado com 4 dígitos |
-| `.sdd/` | constituição, backlog, sprints, templates |
-| `sistema/`, `releases/`, `incidentes/` | spec viva, entregas, incidentes |
-| `docs/arquitetura/` | documentos e diagramas de arquitetura (C4, por exemplo), como referência |
-| `docs/legado/` | o que veio de outro processo e não entra no fluxo: preservado, nunca apagado |
+| `sdd/specs/NNN-slug/` (com `estado`) | feature: `spec.md`, `plano.md`, `tarefas.md`, `contexto.md`, `contratos/`, e os demais artefatos da feature |
+| `sdd/adr/NNNN-slug.md` | ADR, numerado com 4 dígitos |
+| `sdd/` | constituição, backlog, sprints, templates |
+| `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/` | spec viva, entregas, incidentes |
+| `sdd/arquitetura/` | documentos e diagramas de arquitetura (C4, por exemplo), como referência |
+| `sdd/legado/` | o que veio de outro processo e não entra no fluxo: preservado, nunca apagado |
 
 Uma pasta com nome de feature, mas sem o arquivo `estado`, conta como fora do
 padrão: foi criada à mão, e não pelo `sdd-estado nova`.
@@ -437,17 +453,18 @@ do padrão ou um atalho que o utilitário numera:
 
 | Destino | Vira |
 |---|---|
-| `feature:<slug>/<arquivo>` | `specs/NNN-slug/<arquivo>`; o mesmo slug, a mesma feature. `<arquivo>`: `spec.md`, `plano.md`, `tarefas.md`, `contexto.md` ou `contratos/<nome>` |
-| `adr:<slug>` | `docs/adr/NNNN-slug.md` |
-| `legado:<caminho>` | `docs/legado/<caminho>` |
-| `arquitetura:<caminho>` | `docs/arquitetura/<caminho>` |
+| `feature:<slug>/<arquivo>` | `sdd/specs/NNN-slug/<arquivo>`; o mesmo slug, a mesma feature. `<arquivo>`: `spec.md`, `plano.md`, `tarefas.md`, `contexto.md` ou `contratos/<nome>` |
+| `adr:<slug>` | `sdd/adr/NNNN-slug.md` |
+| `legado:<caminho>` | `sdd/legado/<caminho>` |
+| `arquitetura:<caminho>` | `sdd/arquitetura/<caminho>` |
+| `docs:<caminho>` | `sdd/docs/<caminho>`: material de entrada do projeto (API externa, levantamento de cliente), que não é artefato de processo |
 | outro caminho | só se for do padrão (ex.: um arquivo novo numa feature que já existe) |
 
 O mapa inteiro é conferido antes de mover qualquer arquivo: origem
 inexistente ou repetida, destino existente, repetido ou fora do padrão, e
 feature nova sem o atalho recusam tudo (saída 1). Com `--simular`, mostra os
 destinos resolvidos e para. Na aplicação, usa `git mv` para arquivos
-versionados (o histórico do arquivo segue), registra cada movimento no histórico do projeto e em `.sdd/adocao.md` e, quando
+versionados (o histórico do arquivo segue), registra cada movimento no histórico do projeto e em `sdd/adocao.md` e, quando
 o destino é uma feature, no histórico dela com o hash do original (que também
 vai para o `transicao.md`),
 remove só as pastas que ficaram vazias e lista os arquivos que ainda citam os
@@ -459,6 +476,40 @@ Cada feature nova nasce na **situação de transição**: `adocao=transicao`, fa
 converte os arquivos para o padrão e preenche o "como vai ficar"; o usuário
 aprova a transição (ver [sdd-estado](#sdd-estado)), e a feature segue da fase de
 destino. Tarefas feitas fora do plugin ficam `[O]`; as abertas, `[ ]`.
+
+**Estrutura.** Confere o projeto contra o que o SDD precisa e completa o que
+falta, em três grupos, uma linha por item:
+
+| Marca | Significa |
+|---|---|
+| `+` | criado agora |
+| `=` | já existia e está no padrão |
+| `-` | falta (só com `--so-verificar`, que não cria nada) |
+| `!` | existe, mas fora do padrão; nunca é alterado sozinho |
+| `?` | depende de uma resposta sua |
+
+- `sdd/`: `config.yml`, `constituicao.md`, `backlog.md`, `estado`,
+  `.gitignore`, `sprints/`, `templates/`, `adr/`, `docs/`, `specs/`, `sistema/` e os
+  templates do plugin. Recria as pastas; o que tem conteúdo do projeto
+  (config, constituição) só se completa pelo `sdd-iniciar`.
+- `.claude/`: `agents/`, `skills/`, `commands/`, `rules/` e `settings.json`. Um
+  `settings.json` que já existe é conferido (JSON válido, com as permissões de
+  leitura dos `sdd-*`) e apontado com `!`, nunca reescrito.
+- git: repositório e branch `main`, `.gitignore`, `user.name` e `user.email`,
+  commit inicial e remoto `origin`.
+
+Sai com 0 quando tudo está no padrão e com 1 quando há alguma linha `-`, `!` ou
+`?`.
+
+**Docs.** Leva a `docs/` da raiz para `sdd/docs/`, o **último** passo da
+adoção: recusa rodar (saída 1) enquanto o `sdd-adotar contar` não der 0, porque
+specs, planos, tarefas e ADRs têm destino próprio e podem estar dentro da
+`docs/`. Move cada arquivo com `git mv`, no mesmo caminho relativo, pelo mesmo
+caminho do `aplicar`: registra em `sdd/adocao.md` e no histórico do projeto, lista os
+arquivos que ainda citam o caminho antigo e nunca sobrescreve nem apaga. Um
+arquivo que colide com um que já existe em `sdd/docs/` (o `README.md`) vira
+`<nome>-original`. Se o `excecoes_de_layout` do config citar `docs/`, ele avisa
+para trocar por `sdd/docs/`. `--simular` mostra o plano sem mover nada.
 
 ## sdd-gitflow
 
@@ -488,13 +539,13 @@ completo, com cada momento do ciclo, está em [Git Flow](git-flow.md).
 | `renomear` | `git branch -m` local para um nome do padrão; imprime os passos do remoto | o nome novo está fora do padrão, já existe, ou é `feature/` de uma feature que não existe |
 | `feature` | cria a branch da feature (de `develop`; de `main` num hotfix) ou muda para ela. Se a pasta da feature não existe na branch atual (ela ainda não foi integrada), procura a branch local que a tem (`feature/`, `hotfix/` ou `release/`) e muda para ela; se ela só existe em `origin/feature/NNN-slug`, cria a local rastreando a remota. Numa feature reprovada na homologação, a branch é a `release/X.Y.Z`; terminada a release, volta a ser `feature/NNN-slug` | a feature não existe em nenhuma branch local; alteração pendente em código |
 | `release`, `hotfix` | cria `release/X.Y.Z` (de `develop`) ou `hotfix/X.Y.Z` (de `main`) | versão inválida; alteração pendente em código |
-| `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; foi corrigida numa `release/` (volta pela release, com `sdd-release incluir`); a branch não existe localmente; alteração não commitada (fora do `.sdd/`); conflito (o merge fica em andamento) |
+| `integrar` | merge `--no-ff` de `feature/NNN-slug` em `develop` | a feature não está pronta; é um hotfix; foi corrigida numa `release/` (volta pela release, com `sdd-release incluir`); a branch não existe localmente; alteração não commitada (fora do `sdd/`); conflito (o merge fica em andamento) |
 | `finalizar` | merge da `release/` (ou `hotfix/`) em `main`, tag `vX.Y.Z`, merge de `main` em `develop`; com `--apos-pr`, só a tag e o `develop`, depois do merge feito na plataforma | a versão é um pré-lançamento; a release não tem o go (`implantacao` ou `producao`); a branch não existe localmente; com `--apos-pr`, a branch ainda não está em `main`; alteração não commitada; conflito |
 | `pode-integrar` | saída 0 se o fluxo é permitido (`feature/*` para `develop`; `release/*` e `hotfix/*` para `main` ou `develop`; `main` para `develop`) | saída 3 nos demais |
 
 **Ao trocar de branch** (`iniciar`, `feature`, `release`, `hotfix`), as
-alterações pendentes nos arquivos do SDD (`.sdd/`, `specs/`, `sistema/`,
-`releases/`, `incidentes/`, `docs/`, `CLAUDE.md`, `AGENTS.md`,
+alterações pendentes nos arquivos do SDD (`sdd/`, `sdd/specs/`, `sdd/sistema/`,
+`sdd/releases/`, `sdd/incidentes/`, `docs/`, `CLAUDE.md`, `AGENTS.md`,
 `.gitattributes`, `CHANGELOG.md`) vão junto para a branch nova; alteração
 pendente em código é recusada (faça o commit, ou o stash). Se o git recusar a
 troca, a mensagem dele aparece com o que fazer.
@@ -503,7 +554,7 @@ Nunca faz push, nunca apaga branch remota, nunca reescreve histórico e não
 escreve nos históricos do SDD. Com `gitflow: desligado` no config, os hooks e o
 `sdd-verificar` não conferem branches.
 
-**Configuração** (`.sdd/config.yml`): `gitflow` (`ativo` ou `desligado`) e
+**Configuração** (`sdd/config.yml`): `gitflow` (`ativo` ou `desligado`) e
 `integracao` (`local`: o `sdd-gitflow` faz os merges; `pr`: os merges são
 pull requests na plataforma). O `conferir` também avisa quando nenhuma tag
 segue `vX.Y.Z` (a base do cálculo de versão).

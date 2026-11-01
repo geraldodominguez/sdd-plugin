@@ -28,7 +28,7 @@ outro nome ou faça commit no lugar errado.
 |---|---|---|---|---|
 | `main` | o que está em produção; cada versão é uma tag `vX.Y.Z` | (a primeira) | | você, no primeiro commit |
 | `develop` | integração: tudo que está pronto e espera uma release | `main` | | `/sdd:iniciar` |
-| `feature/NNN-slug` | uma feature do SDD; o nome é o id da pasta `specs/NNN-slug/` | `develop` | `develop` | `/sdd:especificar` |
+| `feature/NNN-slug` | uma feature do SDD; o nome é o id da pasta `sdd/specs/NNN-slug/` | `develop` | `develop` | `/sdd:especificar` |
 | `release/X.Y.Z` | uma release, da preparação ao go/no-go; vai para homologação | `develop` | `main` (com a tag) e `develop` | `/sdd:release preparar` |
 | `hotfix/X.Y.Z` | a correção de um incidente em produção | `main` | `main` (com a tag) e `develop` | `/sdd:incidente hotfix` |
 
@@ -58,7 +58,7 @@ Por isso o plugin não tem chave de configuração para os nomes. É `main`,
 `develop`, `feature/`, `release/`, `hotfix/` e `vX.Y.Z` em todo projeto. O
 que se escolhe por projeto é só:
 
-| Chave do `.sdd/config.yml` | Valores | Para quê |
+| Chave do `sdd/config.yml` | Valores | Para quê |
 |---|---|---|
 | `gitflow` | `ativo` (padrão) ou `desligado` | desligar o Git Flow num projeto que não o usa (o plugin não cria nem confere branches) |
 | `integracao` | `local` (padrão) ou `pr` | como uma branch entra em outra: merge feito pelo plugin, ou pull request na plataforma |
@@ -171,7 +171,7 @@ push (proteja só contra force-push). O `/sdd:pipeline` lembra disso.
 | Você | O agente | No git |
 |---|---|---|
 | `/sdd:incidente abrir` | registra o incidente | commit do registro em `develop` |
-| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit do registro em `develop` **sem** a pasta nova em `specs/` (`git add -A ':!specs/NNN-slug/'`, mensagem `docs(NNN): INC-NNN hotfix aberto`); `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`**, levando a pasta do hotfix, que é commitada lá |
+| `/sdd:incidente hotfix` | `sdd-incidente hotfix` reserva `hotfix/X.Y.Z` (a próxima patch); commit do registro em `develop` **sem** a pasta nova em `sdd/specs/` (`git add -A ':!sdd/specs/NNN-slug/'`, mensagem `docs(NNN): INC-NNN hotfix aberto`); `sdd-gitflow feature NNN-slug` | cria `hotfix/X.Y.Z` a partir de **`main`**, levando a pasta do hotfix, que é commitada lá |
 | red, green, spec retroativa | commits `test(NNN): ...` e `fix(NNN): ...` (o hotfix não tem `tarefas.md`: o número no escopo basta) | em `hotfix/X.Y.Z` |
 | release de correção (`--hotfix`, mesma versão) e "go" | `sdd-gitflow finalizar X.Y.Z` | merge em `main`, tag `vX.Y.Z`, merge em `develop` |
 
@@ -207,8 +207,8 @@ ativo:
 | `git commit` durante um merge com conflito | permitido: é a resolução |
 
 Ao trocar de branch, o `sdd-gitflow` leva junto as alterações pendentes nos
-arquivos do SDD (`specs/`, `sistema/`, `releases/`, `incidentes/`, `docs/`,
-`.sdd/`, `CLAUDE.md`, `AGENTS.md`, `.gitattributes`, `CHANGELOG.md`), que são commitadas na branch nova, e
+arquivos do SDD (`sdd/specs/`, `sdd/sistema/`, `sdd/releases/`, `sdd/incidentes/`, `docs/`,
+`sdd/`, `CLAUDE.md`, `AGENTS.md`, `.gitattributes`, `CHANGELOG.md`), que são commitadas na branch nova, e
 **recusa** se houver alteração pendente em código, para que o trabalho de uma
 branch não vaze para outra. Se o git não conseguir levar um arquivo (ele é
 diferente na outra branch), o `sdd-gitflow` explica e pede o commit (ou o
@@ -282,17 +282,17 @@ atualizar (`git fetch --prune` e `git branch -u origin/main main`).
 
 ## 9. Os históricos do SDD e os merges
 
-Os históricos (`.sdd/historico.md`, `specs/*/historico.md`,
-`releases/*/historico.md`) só recebem linhas novas. Com o Git Flow, duas
+Os históricos (`sdd/historico.md`, `sdd/specs/*/historico.md`,
+`sdd/releases/*/historico.md`) só recebem linhas novas. Com o Git Flow, duas
 branches acrescentam linhas ao mesmo histórico (o registro de um incidente em
 `develop` e o do hotfix em `hotfix/X.Y.Z`, por exemplo), e o merge daria
 conflito. Por isso o `/sdd:iniciar` acrescenta ao `.gitattributes`:
 
 ```
 # sdd:inicio (históricos do SDD só recebem linhas: o merge junta os dois lados)
-.sdd/historico.md merge=union
-specs/*/historico.md merge=union
-releases/*/historico.md merge=union
+sdd/historico.md merge=union
+sdd/specs/*/historico.md merge=union
+sdd/releases/*/historico.md merge=union
 # sdd:fim
 ```
 

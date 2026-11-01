@@ -31,7 +31,7 @@ body:
     id: configuracao
     attributes:
       label: Nível e proteção
-      description: O nível da feature e o valor de `protecao` no `.sdd/config.yml`.
+      description: O nível da feature e o valor de `protecao` no `sdd/config.yml`.
   - type: textarea
     id: aconteceu
     attributes:

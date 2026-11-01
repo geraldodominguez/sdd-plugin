@@ -24,7 +24,7 @@ decide.
 
 | Padrão | Para quê | No plugin |
 |---|---|---|
-| [SemVer 2.0.0](https://semver.org/lang/pt-BR/) | o número da versão: `MAJOR.MINOR.PATCH` | a tag `vX.Y.Z` em `main`, a pasta `releases/X.Y.Z/`, a branch `release/X.Y.Z` |
+| [SemVer 2.0.0](https://semver.org/lang/pt-BR/) | o número da versão: `MAJOR.MINOR.PATCH` | a tag `vX.Y.Z` em `main`, a pasta `sdd/releases/X.Y.Z/`, a branch `release/X.Y.Z` |
 | [Conventional Commits 1.0.0](https://www.conventionalcommits.org/pt-br/v1.0.0/) | a mensagem de commit diz o tipo da mudança | o hook confere a mensagem; o `sdd-release` lê os tipos |
 | [Keep a Changelog 1.1.0](https://keepachangelog.com/pt-BR/1.1.0/) | o formato do `CHANGELOG.md` | o `sdd-release changelog` gera a seção de cada versão |
 
@@ -92,12 +92,12 @@ Não contorne este bloqueio. Explique a situação ao usuário e pergunte como s
 Mensagens `Merge ...` e `Revert ...` (as que o git gera) e commits feitos pelo
 editor, sem mensagem no comando, não são conferidos; a mensagem de arquivo
 (`-F`) é lida e conferida. Num projeto que não quer o padrão, `commits: livre`
-no `.sdd/config.yml` desliga a conferência; a versão automática continua, mas
+no `sdd/config.yml` desliga a conferência; a versão automática continua, mas
 só enxerga os commits que, por acaso, seguirem o padrão.
 
 ## 4. Como o plugin calcula a próxima versão
 
-1. **A versão de referência** é a maior entre a última release em produção ou com o go (`releases/X.Y.Z/` na situação `producao` ou `implantacao`: com o go, ela já está em `main` com a tag) e a última tag `vX.Y.Z` final alcançável (uma versão revertida continua com a tag em `main`, e a próxima não pode andar para trás). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
+1. **A versão de referência** é a maior entre a última release em produção ou com o go (`sdd/releases/X.Y.Z/` na situação `producao` ou `implantacao`: com o go, ela já está em `main` com a tag) e a última tag `vX.Y.Z` final alcançável (uma versão revertida continua com a tag em `main`, e a próxima não pode andar para trás). Sem nenhuma, a última tag `vX.Y.Z` alcançável; tags de pré-lançamento (`v1.3.0-rc.1`) não contam.
 2. **Os commits** são os desde a tag dessa versão, sem os merges. Se essa
    versão não tem tag, contam os desde a última tag `vX.Y.Z` final; sem tag
    nenhuma, o histórico inteiro.
@@ -111,7 +111,7 @@ só enxerga os commits que, por acaso, seguirem o padrão.
 | só manutenção | patch | 1.4.3 |
 | (não há versão anterior) | 0.1.0 | |
 
-Uma versão já usada não se repete: se a calculada já tem pasta em `releases/`
+Uma versão já usada não se repete: se a calculada já tem pasta em `sdd/releases/`
 (uma release cancelada, por exemplo), tag ou branch `release/` ou `hotfix/`
 reservada, o plugin sobe o patch até achar uma livre.
 
@@ -201,7 +201,7 @@ Changelog se não existir), logo abaixo de `## [Não lançado]`, acima das
 versões anteriores. Ele recusa gravar uma versão que já está lá.
 
 O `CHANGELOG.md` é técnico, para quem desenvolve ou integra. As **notas da
-versão** (`releases/X.Y.Z/notas.md`) continuam sendo o texto em linguagem de
+versão** (`sdd/releases/X.Y.Z/notas.md`) continuam sendo o texto em linguagem de
 negócio, para quem usa o sistema.
 
 ## 7. Na release, passo a passo
@@ -209,7 +209,7 @@ negócio, para quem usa o sistema.
 | Momento | O que acontece |
 |---|---|
 | `/sdd:release preparar` | o agente roda `sdd-release analisar` e propõe a versão, com o motivo; você confirma ou escolhe outra |
-| a versão está decidida | `sdd-gitflow release X.Y.Z` cria `release/X.Y.Z`; `sdd-release nova X.Y.Z` cria `releases/X.Y.Z/` |
+| a versão está decidida | `sdd-gitflow release X.Y.Z` cria `release/X.Y.Z`; `sdd-release nova X.Y.Z` cria `sdd/releases/X.Y.Z/` |
 | `/sdd:release implantar`, antes do go | `sdd-release changelog X.Y.Z --escrever`, revisado com você, e o commit `docs(release): changelog X.Y.Z` na branch da release |
 | o go | `sdd-release autorizar X.Y.Z` e o commit `chore(release): X.Y.Z autorizada` na branch da release |
 | depois do go | `sdd-gitflow finalizar X.Y.Z`: a tag `vX.Y.Z` em `main`, que o pipeline implanta |

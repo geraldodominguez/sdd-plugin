@@ -24,7 +24,7 @@ O [`/sdd:iniciar`](iniciar.md) rodado. Um backlog com itens ajuda no planejament
 
 ## A sprint
 
-Cada sprint é um arquivo em `.sdd/sprints/`, com id padrão na semana ISO do
+Cada sprint é um arquivo em `sdd/sprints/`, com id padrão na semana ISO do
 início (`2026-S44`):
 
 | Parte | Conteúdo |

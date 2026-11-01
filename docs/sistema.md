@@ -3,7 +3,7 @@
 ## O que faz
 
 Mantém a **spec viva do sistema**: um arquivo por capacidade em
-`sistema/<capacidade>.md`, descrevendo o que o sistema faz **hoje**. As specs
+`sdd/sistema/<capacidade>.md`, descrevendo o que o sistema faz **hoje**. As specs
 das features contam o que cada mudança alterou; esta diz o resultado de todas
 elas. Cada item cita a origem (`origem: 004/RF-002`), então dá para ir do
 comportamento atual até a decisão que o criou. Ele consolida a feature só
@@ -58,7 +58,7 @@ Se ela só faz o sistema cumprir o que já estava descrito, consolide com
 
 ## Está funcionando se
 
-- Para entender uma área, você lê `sistema/` antes de ler código.
+- Para entender uma área, você lê `sdd/sistema/` antes de ler código.
 - `sdd-sistema pendentes` costuma estar vazio.
 - Toda linha de comportamento tem uma origem rastreável.
 

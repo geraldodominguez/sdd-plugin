@@ -8,7 +8,7 @@
 | Última feature | nenhuma |
 
 > **Spec viva do sistema.** Este arquivo diz o que o sistema FAZ HOJE nesta
-> capacidade. Ele não conta a história (isso está nas features, em `specs/`):
+> capacidade. Ele não conta a história (isso está nas features, em `sdd/specs/`):
 > mostra só o comportamento vigente. Quando uma feature que toca esta
 > capacidade fica pronta, os requisitos dela entram aqui, substituindo os que
 > ela mudou. Cada item cita a origem no formato `origem: NNN/ID`.
@@ -35,7 +35,7 @@
 
 | Contrato | Onde está | Origem |
 |---|---|---|
-| {{ex.: POST /auth/password-reset}} | {{specs/NNN/contratos/api.yaml}} | {{NNN}} |
+| {{ex.: POST /auth/password-reset}} | {{sdd/specs/NNN/contratos/api.yaml}} | {{NNN}} |
 
 ## Fora desta capacidade
 

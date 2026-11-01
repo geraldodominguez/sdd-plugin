@@ -7,26 +7,47 @@
 #   sdd-adotar inventario [--tsv]           artefatos fora do padrão, com o tipo e o lugar certo
 #   sdd-adotar contar                       quantos são (0: o projeto está no padrão)
 #   sdd-adotar aplicar <mapa> [--simular]   move os arquivos conforme o mapa aprovado
+#   sdd-adotar estrutura [--so-verificar]   confere sdd/, .claude/ e o repositório git
+#                                           e cria o que falta (.claude/ e git)
+#   sdd-adotar docs [--simular]             leva a docs/ da raiz para sdd/docs/, DEPOIS de
+#                                           adotados os artefatos de processo
 #
 # O inventário funciona antes do /sdd:iniciar: é ele que detecta um projeto
-# que não nasceu com o plugin. O aplicar exige .sdd/.
+# que não nasceu com o plugin. O aplicar exige sdd/.
+#
+# O docs é o último passo da adoção: recusa rodar enquanto houver artefato de
+# processo fora do padrão (specs, planos, tarefas, ADRs, backlog), porque esses
+# têm destino próprio. Move cada arquivo de docs/ para sdd/docs/ (mesmo caminho
+# relativo, com git mv), pelo mesmo caminho do aplicar: registra em sdd/adocao.md
+# e lista os arquivos que ainda citam o caminho antigo. Um arquivo que colide com
+# um que já existe em sdd/docs/ (o README.md, por exemplo) ganha o sufixo
+# -original. Nunca sobrescreve nem apaga.
+#
+# A estrutura confere o que o projeto precisa para o SDD: a pasta sdd/ (itens
+# que faltam), a pasta .claude/ (settings.json e as pastas agents, skills,
+# commands e rules) e o repositório git (branch main, .gitignore, identidade,
+# commit inicial, remoto). Cria o que falta, menos o que tem conteúdo do projeto:
+# um settings.json existente nunca é alterado, só apontado. Saída: 0 tudo no
+# padrão, 1 há o que decidir (linhas "!" e "?").
 #
 # Mapa: uma linha por arquivo, "origem -> destino". Linhas vazias e as que
 # começam com # são ignoradas. O destino é um caminho do padrão ou um atalho
 # que o utilitário numera:
-#   feature:<slug>/<arquivo>   specs/NNN-slug/<arquivo>; o mesmo slug, a mesma feature.
+#   feature:<slug>/<arquivo>   sdd/specs/NNN-slug/<arquivo>; o mesmo slug, a mesma feature.
 #                              <arquivo>: spec.md, plano.md, tarefas.md, contexto.md
 #                              ou contratos/<nome>
-#   adr:<slug>                 docs/adr/NNNN-slug.md
-#   legado:<caminho>           docs/legado/<caminho> (preservado, fora do fluxo)
-#   arquitetura:<caminho>      docs/arquitetura/<caminho>
-#   <caminho do padrão>        ex.: sistema/clientes.md, ou um arquivo novo numa
+#   adr:<slug>                 sdd/adr/NNNN-slug.md
+#   legado:<caminho>           sdd/legado/<caminho> (preservado, fora do fluxo)
+#   arquitetura:<caminho>      sdd/arquitetura/<caminho>
+#   docs:<caminho>             sdd/docs/<caminho> (material de entrada do projeto: API
+#                              externa, levantamento de cliente; não é artefato de processo)
+#   <caminho do padrão>        ex.: sdd/sistema/clientes.md, ou um arquivo novo numa
 #                              feature que já existe
 #
 # O aplicar confere o mapa inteiro antes de mover qualquer coisa. Nunca
 # sobrescreve nem apaga: recusa destino existente, usa git mv quando o arquivo
 # está no git, cria o estado e o histórico das features novas, registra cada
-# movimento no histórico do projeto e em .sdd/adocao.md, remove só as pastas
+# movimento no histórico do projeto e em sdd/adocao.md, remove só as pastas
 # que ficaram vazias e lista os arquivos que ainda citam os caminhos antigos.
 #
 # Toda feature nova nasce na situação de transição (adocao=transicao, fase
@@ -47,6 +68,8 @@ PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 
 uso() { sdd_ajuda "$0"; }
 
+docs_da_raiz() { sdd_listar_arquivos "$RAIZ" | grep '^docs/' | sort; }
+
 aparar() { printf '%s' "$1" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | tr -d '\r'; }
 
 # ---------------------------------------------------------------------------
@@ -62,13 +85,16 @@ inventario() {
     [ -n "$linhas" ] && printf '%s\n' "$linhas"
     return 0
   fi
+  local ndocs
+  ndocs="$(docs_da_raiz | grep -c . || true)"
   if [ -z "$linhas" ]; then
     echo "Nenhum artefato fora do padrão."
+    [ "$ndocs" -gt 0 ] && echo "docs/ da raiz: $ndocs arquivo(s), que a adoção leva para sdd/docs/ (sdd-adotar docs)."
     return 0
   fi
   local total
   total="$(printf '%s\n' "$linhas" | grep -c . || true)"
-  if [ -d "$RAIZ/.sdd" ]; then
+  if sdd_projeto_usa "$RAIZ"; then
     echo "Artefatos fora do padrão: $total"
   else
     echo "Este projeto não foi preparado pelo SDD e tem $total artefato(s) de outro processo."
@@ -83,6 +109,7 @@ inventario() {
     printf '%s\n' "$deste" | sed 's/^/  - /'
     echo
   done
+  [ "$ndocs" -gt 0 ] && echo "docs/ da raiz: $ndocs arquivo(s). Depois dos artefatos acima, a adoção os leva para sdd/docs/ (sdd-adotar docs)." && echo
   echo "Para trazer ao padrão: /sdd:iniciar --adotar (lê cada arquivo, propõe o mapa e pede a sua aprovação)."
 }
 
@@ -131,17 +158,22 @@ resolver_destino() {
       [ -n "$slug" ] || { RES_ERRO="use adr:<slug>"; return; }
       num="$PROX_ADR"
       PROX_ADR="$(printf '%04d' $((10#$num + 1)))"
-      RES_CAMINHO="docs/adr/$num-$slug.md"
+      RES_CAMINHO="sdd/adr/$num-$slug.md"
       ;;
     legado:*)
       d="${d#legado:}"; d="${d#/}"
       [ -n "$d" ] || { RES_ERRO="use legado:<caminho>"; return; }
-      RES_CAMINHO="docs/legado/$d"
+      RES_CAMINHO="sdd/legado/$d"
       ;;
     arquitetura:*)
       d="${d#arquitetura:}"; d="${d#/}"
       [ -n "$d" ] || { RES_ERRO="use arquitetura:<caminho>"; return; }
-      RES_CAMINHO="docs/arquitetura/$d"
+      RES_CAMINHO="sdd/arquitetura/$d"
+      ;;
+    docs:*)
+      d="${d#docs:}"; d="${d#/}"
+      [ -n "$d" ] || { RES_ERRO="use docs:<caminho>"; return; }
+      RES_CAMINHO="sdd/docs/$d"
       ;;
     *)
       RES_CAMINHO="${d#./}"
@@ -165,7 +197,7 @@ aplicar() {
   done
   [ -n "$mapa" ] || { echo "uso: sdd-adotar aplicar <mapa> [--simular]" >&2; exit 1; }
   [ -f "$mapa" ] || { echo "sdd-adotar: mapa não encontrado: $mapa" >&2; exit 1; }
-  [ -d "$RAIZ/.sdd" ] || { echo "sdd-adotar: rode /sdd:iniciar antes de aplicar o mapa." >&2; exit 1; }
+  sdd_projeto_usa "$RAIZ" || { echo "sdd-adotar: rode /sdd:iniciar antes de aplicar o mapa." >&2; exit 1; }
 
   PROX_FEATURE="$(sdd_proximo_numero_feature "$RAIZ")"
   PROX_ADR="$(sdd_proximo_numero_adr "$RAIZ")"
@@ -199,7 +231,7 @@ aplicar() {
       /*|[A-Za-z]:/*|../*|*/../*) erros+=("linha $n: o destino '$caminho' está fora do projeto"); continue ;;
     esac
     case "$caminho" in
-      estado|historico.md|*/estado|*/historico.md|.sdd/adocao.md)
+      estado|historico.md|*/estado|*/historico.md|sdd/adocao.md)
         erros+=("linha $n: '$caminho' é escrito só pelos utilitários"); continue ;;
     esac
     if [ -e "$RAIZ/$caminho" ]; then erros+=("linha $n: o destino '$caminho' já existe"); continue; fi
@@ -214,7 +246,7 @@ aplicar() {
           [ -f "$RAIZ/$PASTA_SPECS/$p/estado" ] || { erros+=("linha $n: a feature '$p' não existe; para uma feature nova, use feature:<slug>/<arquivo>"); continue; }
           ;;
         *)
-          sdd_no_layout "$RAIZ" "$caminho" || { erros+=("linha $n: '$caminho' não é um lugar do padrão (use feature:, adr:, legado: ou arquitetura:)"); continue; }
+          sdd_no_layout "$RAIZ" "$caminho" || { erros+=("linha $n: '$caminho' não é um lugar do padrão (use feature:, adr:, legado:, arquitetura: ou docs:)"); continue; }
           ;;
       esac
     fi
@@ -269,7 +301,7 @@ aplicar() {
     done <<< "$features_novas"
   fi
 
-  local relatorio="$RAIZ/.sdd/adocao.md" hoje
+  local relatorio="$RAIZ/sdd/adocao.md" hoje
   hoje="$(date +%Y-%m-%d)"
   if [ ! -s "$relatorio" ]; then
     {
@@ -287,9 +319,9 @@ aplicar() {
     hashes[i]="$(sdd_hash_stdin < "$RAIZ/$o")"
     mkdir -p "$RAIZ/$(dirname "$d")"
     if no_git "$o"; then
-      git -C "$RAIZ" mv -- "$o" "$d" || { echo "sdd-adotar: falha ao mover '$o'. Os anteriores já foram movidos (ver .sdd/adocao.md)." >&2; exit 1; }
+      git -C "$RAIZ" mv -- "$o" "$d" || { echo "sdd-adotar: falha ao mover '$o'. Os anteriores já foram movidos (ver sdd/adocao.md)." >&2; exit 1; }
     else
-      mv -- "$RAIZ/$o" "$RAIZ/$d" || { echo "sdd-adotar: falha ao mover '$o'. Os anteriores já foram movidos (ver .sdd/adocao.md)." >&2; exit 1; }
+      mv -- "$RAIZ/$o" "$RAIZ/$d" || { echo "sdd-adotar: falha ao mover '$o'. Os anteriores já foram movidos (ver sdd/adocao.md)." >&2; exit 1; }
     fi
     movidos=$((movidos + 1))
     printf '| %s | `%s` | `%s` |\n' "$hoje" "$o" "$d" >> "$relatorio"
@@ -311,7 +343,7 @@ aplicar() {
   local alvo linhas
   for feat in $(printf '%s\n' "${destinos[@]}" | sed -n "s#^$PASTA_SPECS/\\([^/]*\\)/.*#\\1#p" | sort -u); do
     [ "$(sdd_feature_ler "$RAIZ" "$feat" adocao)" = "transicao" ] || continue
-    linhas="$RAIZ/.sdd/.transicao.$$"
+    linhas="$RAIZ/sdd/.transicao.$$"
     : > "$linhas"
     for i in "${!origens[@]}"; do
       case "${destinos[$i]}" in
@@ -334,7 +366,7 @@ aplicar() {
     rm -f "$linhas"
   done
 
-  echo "Adotados: $movidos arquivo(s). Registro em .sdd/adocao.md."
+  echo "Adotados: $movidos arquivo(s). Registro em sdd/adocao.md."
   if [ -n "$features_novas" ]; then
     echo
     echo "Features em transição (converta os arquivos para o padrão, preencha o transicao.md e aprove a transição com /sdd:aprovar):"
@@ -342,14 +374,14 @@ aplicar() {
   fi
 
   # Referências que ficaram apontando para o caminho antigo. Ficam de fora os
-  # registros da própria adoção (.sdd/, históricos, transicao.md) e o bloco de
+  # registros da própria adoção (sdd/, históricos, transicao.md) e o bloco de
   # regras do SDD no CLAUDE.md e no AGENTS.md, que cita nomes como TODO.md de
   # propósito. O caminho só conta inteiro: "TODO.md" não casa com
-  # "docs/legado/TODO.md".
+  # "sdd/legado/TODO.md".
   local refs=() arq re texto
   while IFS= read -r arq; do
     [ -n "$arq" ] || continue
-    case "$arq" in .sdd/*|*/historico.md|*/transicao.md) continue ;; esac
+    case "$arq" in sdd/*|*/historico.md|*/transicao.md) continue ;; esac
     case "$arq" in *.md|*.mdx|*.markdown|*.yml|*.yaml|*.json|*.txt) ;; *) continue ;; esac
     [ -f "$RAIZ/$arq" ] || continue
     texto="$(awk '$0 == "<!-- sdd:inicio -->" { p = 1; next } $0 == "<!-- sdd:fim -->" { p = 0; next } !p' "$RAIZ/$arq")"
@@ -368,11 +400,70 @@ aplicar() {
   return 0
 }
 
+docs() {
+  local simular=0
+  [ "${1:-}" = "--simular" ] && simular=1
+  sdd_projeto_usa "$RAIZ" || { echo "sdd-adotar docs: rode /sdd:iniciar antes." >&2; exit 1; }
+  local pend
+  pend="$(sdd_artefatos_fora_do_layout "$RAIZ" | grep -c . || true)"
+  if [ "$pend" -gt 0 ]; then
+    echo "sdd-adotar docs: ainda há $pend artefato(s) de processo fora do padrão (veja sdd-adotar inventario). Adote primeiro specs, tarefas e ADRs; a docs/ é o último passo." >&2
+    exit 1
+  fi
+  local arquivos f rel dest base ext vistos="" mapa n=0
+  arquivos="$(docs_da_raiz)"
+  if [ -z "$arquivos" ]; then
+    echo "Não há docs/ na raiz para migrar."
+    return 0
+  fi
+  mapa="$(mktemp "${TMPDIR:-/tmp}/sdd-docs-mapa.XXXXXX")"
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    rel="${f#docs/}"; dest="$rel"
+    while [ -e "$RAIZ/sdd/docs/$dest" ] || printf '%s' "$vistos" | grep -qxF "$dest"; do
+      base="${dest%.*}"; ext="${dest##*.}"
+      if [ "$base" = "$dest" ]; then dest="$dest-original"; else dest="$base-original.$ext"; fi
+    done
+    vistos="$vistos$dest"$'\n'
+    [ "$dest" = "$rel" ] || echo "Colisão: $f vira sdd/docs/$dest"
+    printf '%s -> docs:%s\n' "$f" "$dest" >> "$mapa"
+    n=$((n + 1))
+  done <<< "$arquivos"
+  if [ "$simular" -eq 1 ]; then aplicar "$mapa" --simular; else aplicar "$mapa"; fi
+  rm -f "$mapa"
+  local exc
+  exc="$(sdd_config "$RAIZ" excecoes_de_layout "")"
+  case "$exc" in
+    *docs/*) echo; echo "Atenção: excecoes_de_layout cita docs/ ($exc). Troque por sdd/docs/ no sdd/config.yml, ou o hook volta a apontar esses arquivos." ;;
+  esac
+  return 0
+}
+
+estrutura() {
+  local criar=1
+  [ "${1:-}" = "--so-verificar" ] && criar=0
+  local saida pendente=0
+  echo "sdd/:"
+  saida="$(sdd_estrutura_sdd "$RAIZ" "$criar")"; printf '%s\n' "$saida" | sed 's/^/  /'
+  printf '%s\n' "$saida" | grep -qE '^[!?-]' && pendente=1
+  echo ".claude/:"
+  saida="$(sdd_claude_estrutura "$RAIZ" "$criar")"; printf '%s\n' "$saida" | sed 's/^/  /'
+  printf '%s\n' "$saida" | grep -qE '^[!?-]' && pendente=1
+  echo "Git:"
+  saida="$(sdd_git_preparar "$RAIZ" "$criar")"; printf '%s\n' "$saida" | sed 's/^/  /'
+  printf '%s\n' "$saida" | grep -qE '^[!?-]' && pendente=1
+  echo
+  echo "Legenda: + criado agora · = no padrão · - falta · ! fora do padrão (decida) · ? precisa de uma resposta sua"
+  return "$pendente"
+}
+
 cmd="${1:-}"; shift || true
 case "$cmd" in
   inventario) inventario "$@" ;;
   contar) sdd_artefatos_fora_do_layout "$RAIZ" | grep -c . || true ;;
   aplicar) aplicar "$@" ;;
+  estrutura) estrutura "$@" ;;
+  docs) docs "$@" ;;
   -h|--ajuda|--help|"") uso ;;
   *) echo "sdd-adotar: comando desconhecido: $cmd" >&2; uso >&2; exit 1 ;;
 esac

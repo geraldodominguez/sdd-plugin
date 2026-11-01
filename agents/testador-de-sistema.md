@@ -1,6 +1,6 @@
 ---
 name: testador-de-sistema
-description: Escreve e roda os testes do sistema inteiro para uma release SDD, que o TDD de cada feature não cobre (regressão completa, ponta a ponta dos fluxos afetados, medição dos requisitos não funcionais com número) e preenche releases/<versão>/testes.md. Não altera código de produção. Use na preparação da release.
+description: Escreve e roda os testes do sistema inteiro para uma release SDD, que o TDD de cada feature não cobre (regressão completa, ponta a ponta dos fluxos afetados, medição dos requisitos não funcionais com número) e preenche sdd/releases/<versão>/testes.md. Não altera código de produção. Use na preparação da release.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 ---
@@ -12,14 +12,14 @@ já estava em produção.
 
 ## Entrada
 
-- a pasta da release (`releases/<versão>/`);
-- as pastas das features incluídas (`specs/NNN-slug/`);
-- a pasta `sistema/` (spec viva por capacidade);
+- a pasta da release (`sdd/releases/<versão>/`);
+- as pastas das features incluídas (`sdd/specs/NNN-slug/`);
+- a pasta `sdd/sistema/` (spec viva por capacidade);
 - `comando_teste` e `comando_teste_sistema`.
 
 ## Processo
 
-1. Leia as specs das features e as capacidades que elas tocam em `sistema/`.
+1. Leia as specs das features e as capacidades que elas tocam em `sdd/sistema/`.
    Identifique os **fluxos de ponta a ponta** afetados (ex.: "cliente se
    cadastra, confirma o e-mail e faz o primeiro pedido") e os **RNFs com número**
    (latência, volume, disponibilidade).
@@ -34,7 +34,7 @@ já estava em produção.
    tempo de uma chamada) e registre como mediu. Se o ambiente não permite medir
    de forma representativa, diga isso em vez de inventar um número.
 5. Rode o `comando_teste_sistema`, se existir.
-6. Preencha `releases/<versão>/testes.md`. **Resultado** é `aprovado` só se não
+6. Preencha `sdd/releases/<versão>/testes.md`. **Resultado** é `aprovado` só se não
    houver falha na regressão, nem fluxo ponta a ponta falhando, nem RNF fora da
    meta. Caso contrário, `reprovado`, com cada falha atribuída à feature provável.
 

@@ -49,7 +49,7 @@ RAIZ="${CLAUDE_PROJECT_DIR:-}"
 [ -n "$RAIZ" ] || RAIZ="$(sdd_json_campo "$ENTRADA" cwd)"
 [ -n "$RAIZ" ] || exit 0
 RAIZ="${RAIZ//\\//}"
-[ -d "$RAIZ/.sdd" ] || exit 0
+sdd_projeto_usa "$RAIZ" || exit 0
 
 PROTECAO="$(sdd_config "$RAIZ" protecao leve)"
 [ "$PROTECAO" = "desligada" ] && exit 0

@@ -10,7 +10,7 @@ ela não conduz o fluxo, ensina o agente a seguir o fluxo bem.
 ## Quando usar
 
 Digite `/sdd:metodologia`, ou o agente recorre a ela quando a tarefa pede: num
-projeto com `.sdd/`, ao escrever ou revisar specs e planos, ou quando você pede
+projeto com `sdd/`, ao escrever ou revisar specs e planos, ou quando você pede
 uma mudança de comportamento sem usar um comando. Os comandos `/sdd:especificar`,
 `/sdd:clarificar`, `/sdd:planejar`, `/sdd:tarefas`, `/sdd:implementar` e
 `/sdd:seguranca` a carregam no início.
@@ -29,7 +29,7 @@ uma mudança de comportamento sem usar um comando. Os comandos `/sdd:especificar
 | `VERSIONAMENTO.md` | SemVer, Conventional Commits e o `CHANGELOG.md`: como o tipo do commit decide a versão |
 | `templates/` | constituição, specs (completa, leve e hotfix), contexto, plano, tarefas, transição (adoção), segurança, ADR, auditoria, delta spec, capacidade, backlog, sprint, incidente, release (`release/`) e pipeline (`pipeline/`) |
 
-Os templates são copiados para `.sdd/templates/` pelo `/sdd:iniciar`, para
+Os templates são copiados para `sdd/templates/` pelo `/sdd:iniciar`, para
 cada projeto poder adaptar os seus.
 
 ## Invariantes
@@ -46,7 +46,7 @@ sprint, a fase de cada feature e o histórico.
 
 ## Está funcionando se
 
-- Num projeto com `.sdd/`, um pedido informal ("adiciona o campo X") recebe uma classificação de nível antes de virar código.
+- Num projeto com `sdd/`, um pedido informal ("adiciona o campo X") recebe uma classificação de nível antes de virar código.
 - Os requisitos que o agente escreve seguem os padrões EARS.
 
 ## Onde se encaixa

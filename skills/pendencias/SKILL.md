@@ -18,7 +18,7 @@ allowed-tools: Bash(sdd-gitflow *), Bash(sdd-pendencias *), Bash(sdd-pendencias)
    | 3 | Aprovação de artefato alterado depois de aprovado | é sinal de drift em andamento |
    | 4 | Aprovações, dúvidas e revisões de segurança de features da sprint | travam o compromisso da sprint |
    | 5 | Delta specs propostas | a spec está desatualizada até você decidir |
-   | 6 | Spec do sistema não consolidada | quem ler `sistema/` vai ver um comportamento antigo |
+   | 6 | Spec do sistema não consolidada | quem ler `sdd/sistema/` vai ver um comportamento antigo |
    | 7 | Prontas fora de release, itens da sprint sem spec | trabalho feito ou combinado que não anda |
    | 8 | Git Flow: feature pronta não integrada em `develop`, release com o go fora de `main`, branch fora do padrão | trabalho pronto que não chega a quem vai usá-lo |
    | 9 | ADRs propostos, incidentes sem post-mortem | decisões e lições que outras features herdam |

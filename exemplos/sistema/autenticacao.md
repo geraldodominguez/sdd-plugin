@@ -8,7 +8,7 @@
 | Última feature | 003-invalidar-link-apos-o-uso |
 
 > **Spec viva do sistema.** Este arquivo diz o que o sistema FAZ HOJE nesta
-> capacidade. Ele não conta a história (isso está nas features, em `specs/`):
+> capacidade. Ele não conta a história (isso está nas features, em `sdd/specs/`):
 > mostra só o comportamento vigente. Quando uma feature que toca esta
 > capacidade fica pronta, os requisitos dela entram aqui, substituindo os que
 > ela mudou. Cada item cita a origem no formato `origem: NNN/ID`.
@@ -45,9 +45,9 @@ mapeados; esta capacidade cobre, por enquanto, a recuperação de acesso.
 
 | Contrato | Onde está | Origem |
 |---|---|---|
-| `POST /auth/password-reset` | `specs/001-redefinicao-de-senha/contratos/api.yaml` | 001 |
-| `POST /auth/password-reset/confirm` | `specs/001-redefinicao-de-senha/contratos/api.yaml` | 001 |
-| tabela `password_reset_tokens` | `specs/001-redefinicao-de-senha/contratos/persistencia.sql` | 001 |
+| `POST /auth/password-reset` | `sdd/specs/001-redefinicao-de-senha/contratos/api.yaml` | 001 |
+| `POST /auth/password-reset/confirm` | `sdd/specs/001-redefinicao-de-senha/contratos/api.yaml` | 001 |
+| tabela `password_reset_tokens` | `sdd/specs/001-redefinicao-de-senha/contratos/persistencia.sql` | 001 |
 
 ## Fora desta capacidade
 

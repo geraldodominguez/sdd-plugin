@@ -37,10 +37,10 @@ integracao: local
 commits: convencional
 
 # Pastas, relativas à raiz do projeto.
-pasta_specs: specs             # uma pasta por feature: o que cada mudança alterou
-pasta_sistema: sistema         # spec viva do sistema, por capacidade: o que ele faz hoje
-pasta_releases: releases       # uma pasta por release
-pasta_incidentes: incidentes   # um arquivo por incidente
+pasta_specs: sdd/specs             # uma pasta por feature: o que cada mudança alterou
+pasta_sistema: sdd/sistema         # spec viva do sistema, por capacidade: o que ele faz hoje
+pasta_releases: sdd/releases       # uma pasta por release
+pasta_incidentes: sdd/incidentes   # um arquivo por incidente
 
 # Globs, separados por vírgula, que identificam arquivos de teste.
 # Ajuste para a convenção do seu projeto.
@@ -48,7 +48,7 @@ globs_de_teste: tests/**,test/**,__tests__/**,spec/**,**/*.test.*,**/*.spec.*,**
 
 # Globs de contratos em código (tipos, interfaces, schemas, migrations) que o
 # arquiteto-de-contratos pode materializar nas fases plano e red, na proteção
-# estrita. Vazio mantém os contratos apenas em specs/NNN/contratos/.
+# estrita. Vazio mantém os contratos apenas em sdd/specs/NNN/contratos/.
 globs_de_contrato:
 
 # Áreas sensíveis: globs (separados por vírgula) de código cuja alteração torna

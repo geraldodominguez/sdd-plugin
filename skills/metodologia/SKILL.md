@@ -1,11 +1,11 @@
 ---
 name: metodologia
-description: "Disciplina do Specification-Driven Development (SDD) do pedido à manutenção: fases da feature e da release, gates, níveis de rigor, rastreabilidade, segurança, spec viva do sistema, incidentes, e como escrever specs, critérios de aceitação, planos e tarefas. Use ao trabalhar num projeto com pasta .sdd/, ao escrever ou revisar spec.md, plano.md, tarefas.md, seguranca.md, ADRs, a constituição ou a spec do sistema, quando o usuário pedir uma mudança de comportamento num projeto SDD, ou mencionar spec, requisito, critério de aceitação, EARS, drift, delta spec, release, homologação, deploy, hotfix ou incidente."
+description: "Disciplina do Specification-Driven Development (SDD) do pedido à manutenção: fases da feature e da release, gates, níveis de rigor, rastreabilidade, segurança, spec viva do sistema, incidentes, e como escrever specs, critérios de aceitação, planos e tarefas. Use ao trabalhar num projeto com pasta sdd/, ao escrever ou revisar spec.md, plano.md, tarefas.md, seguranca.md, ADRs, a constituição ou a spec do sistema, quando o usuário pedir uma mudança de comportamento num projeto SDD, ou mencionar spec, requisito, critério de aceitação, EARS, drift, delta spec, release, homologação, deploy, hotfix ou incidente."
 ---
 
 # SDD: Specification-Driven Development
 
-Num projeto com `.sdd/`, **a spec é a fonte de verdade**. O código deriva dela.
+Num projeto com `sdd/`, **a spec é a fonte de verdade**. O código deriva dela.
 Mudança de comportamento começa na spec, nunca no código. O ciclo completo
 está em [CICLO-DE-VIDA.md](CICLO-DE-VIDA.md): leia quando precisar decidir o
 próximo passo fora do comum.
@@ -14,17 +14,18 @@ próximo passo fora do comum.
 
 | Caminho | O que é |
 |---|---|
-| `.sdd/constituicao.md` | Regras inegociáveis, inclusive segurança, ambientes e operação. Todo plano é checado contra ela. |
-| `.sdd/config.yml` | Nível padrão, proteção, globs de teste, contrato e áreas sensíveis, comandos (teste, lint, segurança, deploy). |
-| `.sdd/estado` | Ponteiros pessoais: feature ativa e sprint atual. |
-| `.sdd/backlog.md`, `.sdd/sprints/` | O que vem depois, e o que entra neste período. |
-| `specs/NNN-slug/` | Uma pasta por feature: `estado`, `historico.md`, `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `seguranca.md`, `auditoria.md`, `delta-spec.md`, e `transicao.md` nas features adotadas. |
-| `sistema/<capacidade>.md` | A spec viva: o que o sistema faz **hoje**, por capacidade. Leia antes de mudar uma área. |
-| `releases/<versão>/` | `release.md`, `testes.md`, `homologacao.md`, `implantacao.md`, `notas.md`, `historico.md`. |
-| `incidentes/INC-NNN.md` | Um incidente, da abertura ao post-mortem. |
-| `docs/adr/NNNN-slug.md` | Decisões arquiteturais duráveis, numeradas com 4 dígitos. |
-| `docs/arquitetura/` | Documentos e diagramas de arquitetura, como referência. |
-| `docs/legado/` | O que veio de outro processo e não entra no fluxo. Não é fonte de verdade. |
+| `sdd/constituicao.md` | Regras inegociáveis, inclusive segurança, ambientes e operação. Todo plano é checado contra ela. |
+| `sdd/config.yml` | Nível padrão, proteção, globs de teste, contrato e áreas sensíveis, comandos (teste, lint, segurança, deploy). |
+| `sdd/estado` | Ponteiros pessoais: feature ativa e sprint atual. |
+| `sdd/backlog.md`, `sdd/sprints/` | O que vem depois, e o que entra neste período. |
+| `sdd/specs/NNN-slug/` | Uma pasta por feature: `estado`, `historico.md`, `contexto.md`, `spec.md`, `plano.md`, `contratos/`, `tarefas.md`, `seguranca.md`, `auditoria.md`, `delta-spec.md`, e `transicao.md` nas features adotadas. |
+| `sdd/sistema/<capacidade>.md` | A spec viva: o que o sistema faz **hoje**, por capacidade. Leia antes de mudar uma área. |
+| `sdd/releases/<versão>/` | `release.md`, `testes.md`, `homologacao.md`, `implantacao.md`, `notas.md`, `historico.md`. |
+| `sdd/incidentes/INC-NNN.md` | Um incidente, da abertura ao post-mortem. |
+| `sdd/adr/NNNN-slug.md` | Decisões arquiteturais duráveis, numeradas com 4 dígitos. |
+| `sdd/arquitetura/` | Documentos e diagramas de arquitetura, como referência. |
+| `sdd/docs/` | Material de entrada do projeto: documentação de API externa, levantamentos de clientes, normas. Leia antes de perguntar ao usuário; não é artefato de processo e o hook não a confere. |
+| `sdd/legado/` | O que veio de outro processo e não entra no fluxo. Não é fonte de verdade. |
 
 Esses são os únicos lugares de artefatos de processo. Não crie pastas ou nomes
 próprios (`docs/specs/`, `tasks/`, `TODO.md`, `PLAN.md`): o hook bloqueia, e o
@@ -36,7 +37,7 @@ que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 - `sdd-sistema listar | nova | ver | consolidar | consolidada | pendentes`
 - `sdd-release proxima | analisar | changelog | nova | incluir | remover | homologar | aceitar | reprovar | autorizar | pode-implantar | concluir | reverter | cancelar | ver | listar | atual`
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
-- `sdd-adotar inventario | contar | aplicar` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
+- `sdd-adotar inventario | contar | aplicar | estrutura` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
 - `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | valido | pode-integrar | nome`
 - `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
 
@@ -51,8 +52,8 @@ que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 | `green` | Fazer passar | código | sessão principal | entrega (nível 1 sem segurança) |
 | `seguranca` | É seguro? | `seguranca.md` | `revisor-de-seguranca` | decisão: aprovar, aceitar-risco, corrigir |
 | `auditoria` | Bate com a spec? | `auditoria.md` | `auditor-de-drift` | decisão: aprovar, delta, corrigir |
-| `pronta` | | consolidação em `sistema/` | sessão principal | |
-| `homologacao`, `producao` | | `releases/<versão>/` | `/sdd:release`, `testador-de-sistema` | aceite do negócio, go/no-go |
+| `pronta` | | consolidação em `sdd/sistema/` | sessão principal | |
+| `homologacao`, `producao` | | `sdd/releases/<versão>/` | `/sdd:release`, `testador-de-sistema` | aceite do negócio, go/no-go |
 | `cancelada` | | | | |
 
 Revisão de segurança: **sempre** no nível 2; no nível 1 quando a mudança toca
@@ -141,6 +142,6 @@ nunca à mão; o commit de uma feature ativa vai na branch dela.
 | ideia para depois | `/sdd:backlog adicionar` |
 | "está quebrado em produção" | `/sdd:incidente abrir` |
 | "sobe isso para produção" | `/sdd:release` (nunca deploy direto) |
-| "o que o sistema faz em X?" | leia `sistema/` |
+| "o que o sistema faz em X?" | leia `sdd/sistema/` |
 
 Os comandos são do usuário: diga qual rodar, não tente rodá-los.

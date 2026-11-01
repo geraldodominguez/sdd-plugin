@@ -3,7 +3,7 @@
 ## O que faz
 
 Gera, ou confere, o pipeline de CI/CD do projeto a partir da constituição e do
-`.sdd/config.yml`, para GitHub Actions ou GitLab CI. O pipeline roda lint,
+`sdd/config.yml`, para GitHub Actions ou GitLab CI. O pipeline roda lint,
 testes, a verificação do processo SDD (`sdd-verificar`) e as varreduras de
 segurança em todo push, implanta em homologação no push de `release/**` e
 `hotfix/**` (Git Flow), recusa pull request fora do Git Flow, e só

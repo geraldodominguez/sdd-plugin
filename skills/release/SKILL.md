@@ -12,7 +12,7 @@ Pedido: `$ARGUMENTS` (vazio significa ver a release em andamento)
 
 Uma release agrupa features **prontas** e as leva por quatro gates humanos:
 testes de sistema, aceite do negócio, go/no-go e verificação em produção. Tudo
-fica em `releases/<versão>/`. A situação muda só pelo `sdd-release`.
+fica em `sdd/releases/<versão>/`. A situação muda só pelo `sdd-release`.
 
 ```
 preparacao -> homologacao -> aceita -> implantacao -> producao
@@ -62,7 +62,7 @@ mostre num bloco de código. Acrescente o próximo passo em uma linha.
    (um passo por critério do hotfix), mas continua com aceite e go.
 4. **Testes de sistema.** Chame a ferramenta Agent com o subagent
    `testador-de-sistema`, passando: a pasta da release, as features incluídas
-   (pastas em `specs/`), a pasta `sistema/`, o `comando_teste` e o
+   (pastas em `sdd/specs/`), a pasta `sdd/sistema/`, o `comando_teste` e o
    `comando_teste_sistema`. Ele escreve e roda a regressão, os testes ponta a
    ponta dos fluxos afetados e as medições dos RNFs com número, e preenche
    `testes.md`. Com falha, mostre ao usuário e decida com ele: corrigir a feature

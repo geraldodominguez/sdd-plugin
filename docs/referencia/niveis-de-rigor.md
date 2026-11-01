@@ -23,7 +23,7 @@ Na dúvida, o maior. O `/sdd:especificar` faz a classificação e pede a sua con
 
 | Etapa | Nível 0 | Nível 1 | Nível 2 |
 |---|---|---|---|
-| Feature em `specs/` | não | sim | sim |
+| Feature em `sdd/specs/` | não | sim | sim |
 | `contexto.md` | não | opcional | sim, em projeto existente |
 | Spec | não | `spec-leve` | `spec` completa |
 | `/sdd:clarificar` | não | se houver dúvida | sim |
@@ -33,7 +33,7 @@ Na dúvida, o maior. O `/sdd:especificar` faz a classificação e pede a sua con
 | `/sdd:seguranca` | não | se tocar área sensível | sempre |
 | `/sdd:auditar` | não | opcional | sim |
 | Commit com `T-XXX` | não | sim | sim |
-| Consolidar em `sistema/` | não | sim | sim |
+| Consolidar em `sdd/sistema/` | não | sim | sim |
 | Entrar numa release (`/sdd:release`) | não, vai no próximo deploy | sim | sim |
 
 O **hotfix** é um caso à parte: nível 1, nasce de um incidente, começa no red
@@ -42,7 +42,7 @@ O **hotfix** é um caso à parte: nível 1, nasce de um incidente, começa no re
 
 ## Área sensível
 
-`areas_sensiveis`, no `.sdd/config.yml`, lista os globs que tornam a revisão de
+`areas_sensiveis`, no `sdd/config.yml`, lista os globs que tornam a revisão de
 segurança obrigatória (ex.: `src/auth/**`, `src/pagamentos/**`,
 `migrations/**`). No fim do green, o `/sdd:implementar` roda
 `sdd-estado sensivel`: se a feature tocou um desses caminhos, mesmo sendo nível
@@ -68,5 +68,5 @@ sempre obrigatória.
 | Era maior do que parecia | `sdd-estado definir nivel=2` (isso também torna a revisão de segurança obrigatória), troque a spec pelo template completo (`sdd-estado template spec.md`) e siga com `/sdd:clarificar` e `/sdd:planejar` |
 | Era menor do que parecia | `sdd-estado definir nivel=1`. A fase não muda sozinha: se a feature estava no `plano`, `sdd-estado definir fase=tarefas` e siga para `/sdd:tarefas`. A revisão de segurança continua obrigatória (ela foi marcada no nível 2); se a mudança não toca área sensível, `sdd-estado definir seguranca=dispensada` |
 
-O nível padrão de novas features fica em `.sdd/config.yml` (`nivel_padrao`). É
+O nível padrão de novas features fica em `sdd/config.yml` (`nivel_padrao`). É
 só a sugestão inicial.
