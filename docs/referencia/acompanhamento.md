@@ -11,6 +11,8 @@ cada comando.
 |---|---|---|
 | Como está o projeto? | `/sdd:status` | todo dia, ao começar |
 | O que depende de mim? | `/sdd:pendencias` | todo dia, ao começar |
+| Quais tarefas e critérios estão abertos? | `/sdd:listar tarefas --abertas`, `/sdd:listar criterios --abertas` | quando o quadro não basta |
+| O que falta para esta feature ficar pronta? | `/sdd:listar falta` | ao decidir onde pôr a atenção |
 | O que aconteceu nesta feature? | `/sdd:retomar` | ao voltar a uma feature |
 | Isto está certo para seguir? | `/sdd:aprovar` | no fim de cada fase |
 | Onde guardo esta ideia? | `/sdd:backlog adicionar` | sempre que surgir |

@@ -31,7 +31,7 @@ As versões seguem o SemVer e são **calculadas pelos commits** (Conventional
 Commits), com o `CHANGELOG.md` no formato Keep a Changelog. Ver
 [versionamento](docs/referencia/versionamento.md).
 
-É pequeno de propósito: vinte skills, seis subagents, dois hooks e treze
+É pequeno de propósito: vinte e uma skills, seis subagents, dois hooks e quatorze
 utilitários em bash. Tudo em markdown legível. Adapte à vontade.
 
 > **Primeira vez?** Escolha o guia passo a passo da sua situação:
@@ -197,6 +197,7 @@ ninguém consegue provar depois o que foi aprovado e quando.
 
 - [`/sdd:aprovar`](skills/aprovar/SKILL.md) é o gate formal: registra quem aprovou, quando, e o **hash** do que foi aprovado. Se o artefato muda depois, os comandos seguintes param e o auditor acusa;
 - [`/sdd:status`](skills/status/SKILL.md) mostra o **quadro**: sprint, features por coluna, topo do backlog e quanto espera você;
+- [`/sdd:listar`](skills/listar/SKILL.md) abre o detalhe que o quadro resume (tarefas, specs, planos, critérios com o teste de cada um, ADRs) e mostra o que falta para uma feature ficar pronta;
 - [`/sdd:pendencias`](skills/pendencias/SKILL.md) é a sua caixa de entrada; [`/sdd:retomar`](skills/retomar/SKILL.md) conta o que aconteceu enquanto você estava fora;
 - [`/sdd:backlog`](skills/backlog/SKILL.md) guarda o que é para depois, e [`/sdd:sprint`](skills/sprint/SKILL.md) organiza o que é para agora.
 
@@ -359,6 +360,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 
 - **[ajuda](skills/ajuda/SKILL.md)**: Qual comando ou fluxo serve para a sua situação. Um roteador sobre os comandos do plugin.
 - **[status](skills/status/SKILL.md)**: O quadro do projeto: sprint, features por coluna, backlog e o que espera você, com o próximo comando.
+- **[listar](skills/listar/SKILL.md)**: As tarefas, specs, planos, critérios de aceitação (com a tarefa e o teste de cada um) e ADRs de todas as features, com filtros, e o que falta para uma feature ficar pronta.
 - **[pendencias](skills/pendencias/SKILL.md)**: A caixa de entrada: incidentes, releases, aprovações (inclusive transições), dúvidas, ADRs, delta specs, backlog a triar, itens da sprint sem spec, artefatos fora do padrão e problemas de Git Flow.
 - **[retomar](skills/retomar/SKILL.md)**: O que aconteceu numa feature desde a última vez e qual é o próximo passo.
 - **[backlog](skills/backlog/SKILL.md)**: Ideias e pedidos ainda sem spec: listar, adicionar, priorizar, descartar.
@@ -399,7 +401,7 @@ chamar skills do modelo, nunca outra skill do usuário.
 ### Hooks e utilitários
 
 - **[Proteção por hooks](docs/referencia/protecao-por-hooks.md)**: o que é bloqueado em cada fase, nos modos `desligada`, `leve` e `estrita`, os artefatos novos fora do lugar do padrão, e o que o `guarda-commits` confere nos commits (Git Flow e Conventional Commits).
-- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-adotar` e `sdd-gitflow`, as transições de fase e onde o estado e o histórico moram.
+- **[Utilitários](docs/referencia/utilitarios.md)**: `sdd-iniciar`, `sdd-estado`, `sdd-sistema`, `sdd-release`, `sdd-incidente`, `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-listar`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-adotar` e `sdd-gitflow`, as transições de fase e onde o estado e o histórico moram.
 
 ### Guias
 

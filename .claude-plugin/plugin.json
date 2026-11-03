@@ -25,6 +25,7 @@
     "./skills/ajuda",
     "./skills/status",
     "./skills/pendencias",
+    "./skills/listar",
     "./skills/retomar",
     "./skills/backlog",
     "./skills/sprint",

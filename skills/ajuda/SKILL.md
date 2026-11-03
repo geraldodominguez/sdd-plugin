@@ -95,6 +95,8 @@ Para quem pede um passo a passo, aponte o guia da situação:
 |---|---|
 | Como está o projeto? | **`/sdd:status`**: quadro com sprint, colunas, release, incidentes, backlog |
 | O que está esperando por mim? | **`/sdd:pendencias`** |
+| Quais são as tarefas, os critérios, as specs, os planos, as ADRs? | **`/sdd:listar <tipo>`**, com filtros |
+| O que falta para esta feature ficar pronta? | **`/sdd:listar falta`** (ou `sdd-status NNN-slug --falta`) |
 | O que aconteceu enquanto eu estava fora? | **`/sdd:retomar`** |
 | Onde guardo uma ideia para depois? | **`/sdd:backlog adicionar <ideia>`** |
 | O que vem primeiro? | **`/sdd:backlog priorizar`** |

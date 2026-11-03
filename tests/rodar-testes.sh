@@ -147,6 +147,59 @@ out="$(cd "$P" && sdd-status --ativa 2>&1)"
 echo "$out" | grep -q 'tarefas: 0/3' && ok "conta tarefas" || fail "conta tarefas" "$out"
 echo "$out" | grep -q '\[clarificacao\]' && ok "destaca fase atual" || fail "destaca fase" "$out"
 
+echo "sdd-listar"
+cat > "$P/sdd/specs/$F/tarefas.md" <<'EOF'
+- [x] T-001 gera token (atende: RF-001, CA-001; depende de: nada)
+- [ ] T-002 valida expiração (atende: RF-002, CA-002; depende de: T-001)
+- [O] T-003 mede latência (atende: RNF-001; depende de: T-002)
+EOF
+out="$(cd "$P" && sdd-listar tarefas 2>&1)"
+echo "$out" | grep -q "$F (clarificacao) · 2/3 feitas" && ok "listar tarefas agrupa por feature com o progresso" || fail "listar tarefas" "$out"
+out="$(cd "$P" && sdd-listar tarefas --abertas 2>&1)"
+{ echo "$out" | grep -q '\[ \] T-002' && ! echo "$out" | grep -qE '\[[xO]\]'; } && ok "listar tarefas --abertas só traz as não feitas" || fail "listar tarefas --abertas" "$out"
+out="$(cd "$P" && sdd-listar criterios 2>&1)"
+echo "$out" | grep -q 'CA-001 .*tarefa: T-001 · teste: tests/reset.test.ts' && ok "listar criterios mostra tarefa e teste" || fail "listar criterios" "$out"
+echo "$out" | grep -q 'CA-002 .*tarefa: T-002 · ' && ok "a tarefa do critério não confunde com a dependência" || fail "tarefa do critério" "$out"
+mv "$P/tests/reset.test.ts" "$P/reset.guardado"
+out="$(cd "$P" && sdd-listar criterios --abertas 2>&1)"
+echo "$out" | grep -q 'CA-001 .*teste: ✗ nenhum' && ok "listar criterios --abertas aponta o critério sem teste" || fail "criterios sem teste" "$out"
+mv "$P/reset.guardado" "$P/tests/reset.test.ts"
+out="$(cd "$P" && sdd-listar criterios --abertas 2>&1)"
+echo "$out" | grep -q 'nada com esses filtros' && ok "criterios --abertas vazio diz que nada casa" || fail "criterios --abertas vazio" "$out"
+out="$(cd "$P" && sdd-listar specs 2>&1)"
+echo "$out" | grep -q "$F .*n2 · clarificacao · spec ainda não aprovada" && ok "listar specs mostra nível, fase e aprovação" || fail "listar specs" "$out"
+out="$(cd "$P" && sdd-listar planos 2>&1)"
+echo "$out" | grep -q 'plano ainda não existe (nível 2' && ok "listar planos aponta o plano que falta no nível 2" || fail "listar planos" "$out"
+out="$(cd "$P" && sdd-listar specs --fase red 2>&1)"
+echo "$out" | grep -q 'nada com esses filtros' && ok "--fase filtra as features" || fail "--fase" "$out"
+out="$(cd "$P" && sdd-listar tarefas --feature 001 2>&1)"
+echo "$out" | grep -q 'T-001' && ok "--feature aceita só o número" || fail "--feature com número" "$out"
+out="$(cd "$P" && sdd-listar tarefas --feature 999 2>&1)"
+echo "$out" | grep -q 'nada com esses filtros' && ok "--feature desconhecida não lista nada" || fail "--feature desconhecida" "$out"
+mkdir -p "$P/sdd/adr"
+printf '# ADR-0001: usar fila\n\n| Campo | Valor |\n|---|---|\n| Situação | proposta |\n' > "$P/sdd/adr/0001-fila.md"
+printf '# ADR-0002: usar cache\n\n| Campo | Valor |\n|---|---|\n| Situação | aceita |\n' > "$P/sdd/adr/0002-cache.md"
+out="$(cd "$P" && sdd-listar adrs --abertas 2>&1)"
+{ echo "$out" | grep -q 'ADR-0001' && ! echo "$out" | grep -q 'ADR-0002'; } && ok "listar adrs --abertas só traz as propostas" || fail "listar adrs --abertas" "$out"
+rm -rf "$P/sdd/adr"
+(cd "$P" && assert_exit 1 "listar recusa tipo desconhecido" sdd-listar foo)
+(cd "$P" && assert_exit 1 "listar recusa fase inválida" sdd-listar specs --fase xx)
+(cd "$P" && assert_exit 1 "listar recusa opção desconhecida" sdd-listar tarefas --nada)
+(cd "$P" && assert_exit 1 "listar sem tipo é erro de uso" sdd-listar)
+(cd "$P" && assert_exit 0 "listar --ajuda" sdd-listar --ajuda)
+mkdir -p "$TMP/sem-sdd"
+out="$(cd "$TMP/sem-sdd" && sdd-listar tarefas 2>&1)"
+echo "$out" | grep -q 'ainda não usa SDD' && ok "listar fora de um projeto SDD avisa" || fail "listar sem SDD" "$out"
+
+echo "sdd-status --falta"
+out="$(cd "$P" && sdd-status "$F" --falta 2>&1)"
+echo "$out" | grep -q "Falta para $F ficar pronta" && ok "--falta abre com a feature" || fail "--falta" "$out"
+{ echo "$out" | grep -q 'tarefas abertas (1)' && echo "$out" | grep -q 'T-002'; } && ok "--falta lista as tarefas abertas" || fail "--falta tarefas" "$out"
+echo "$out" | grep -q 'fases à frente: plano tarefas red green seguranca auditoria pronta' && ok "--falta mostra as fases à frente" || fail "--falta fases" "$out"
+out="$(cd "$P" && sdd-status --ativa --falta 2>&1)"
+echo "$out" | grep -q "Falta para $F" && ok "--ativa --falta usa a feature ativa" || fail "--ativa --falta" "$out"
+(cd "$P" && assert_exit 1 "--falta recusa feature inexistente" sdd-status 999-nada --falta)
+
 for parser in jq python grep; do
   if [ "$parser" = "jq" ] && ! command -v jq >/dev/null; then continue; fi
   if [ "$parser" = "python" ] && ! command -v python3 >/dev/null; then continue; fi
