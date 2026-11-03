@@ -4,6 +4,12 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
+## Não lançado
+
+### Correções
+
+- **Dúvidas contadas em dobro (#4):** o `sdd-status` e o `sdd-pendencias` contavam as linhas com o marcador `[PRECISA ESCLARECER]`, e cada dúvida aparece no requisito e na seção "Dúvidas em aberto". Agora contam perguntas distintas.
+
 ## 2.1.0 - 2026-11-03
 
 ### Novo

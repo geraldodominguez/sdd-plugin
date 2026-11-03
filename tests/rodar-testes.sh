@@ -200,6 +200,25 @@ out="$(cd "$P" && sdd-status --ativa --falta 2>&1)"
 echo "$out" | grep -q "Falta para $F" && ok "--ativa --falta usa a feature ativa" || fail "--ativa --falta" "$out"
 (cd "$P" && assert_exit 1 "--falta recusa feature inexistente" sdd-status 999-nada --falta)
 
+echo "dúvidas distintas"
+cp "$P/sdd/specs/$F/spec.md" "$P/spec.guardada"
+cat > "$P/sdd/specs/$F/spec.md" <<'EOF'
+# Spec
+- **RF-001**: o prazo é de [PRECISA ESCLARECER: quantos dias?]
+- **RF-002**: o valor é [PRECISA ESCLARECER: arredonda para cima?]
+> Marque [PRECISA ESCLARECER: pergunta] quando faltar informação.
+## 9. Dúvidas em aberto
+- [PRECISA ESCLARECER: quantos dias?]
+- [PRECISA ESCLARECER: arredonda para cima?]
+- [PRECISA ESCLARECER: {{pergunta}}]
+EOF
+n="$(cd "$P" && . "$PLUGIN/lib/sdd-comum.sh" && sdd_duvidas_abertas "$P" "$F")"
+[ "$n" = "2" ] && ok "a mesma dúvida no requisito e na seção 9 conta uma vez" || fail "dúvidas distintas" "obtido: $n"
+printf '# Spec\n- **RF-001**: ok\n' > "$P/sdd/specs/$F/spec.md"
+n="$(cd "$P" && . "$PLUGIN/lib/sdd-comum.sh" && sdd_duvidas_abertas "$P" "$F")"
+[ "$n" = "0" ] && ok "spec sem dúvidas conta zero" || fail "sem dúvidas" "obtido: $n"
+mv "$P/spec.guardada" "$P/sdd/specs/$F/spec.md"
+
 for parser in jq python grep; do
   if [ "$parser" = "jq" ] && ! command -v jq >/dev/null; then continue; fi
   if [ "$parser" = "python" ] && ! command -v python3 >/dev/null; then continue; fi

@@ -621,12 +621,14 @@ sdd_tarefas_fora() {
   grep -cE '^[[:space:]]*- \[[oO]\][[:space:]]*\*{0,2}T-[0-9]{3}' "$arq" || true
 }
 
-# sdd_duvidas_abertas <raiz> <feature>: marcadores PRECISA ESCLARECER reais na spec.
+# sdd_duvidas_abertas <raiz> <feature>: perguntas PRECISA ESCLARECER distintas na spec.
+# A mesma pergunta aparece no requisito e na seção "Dúvidas em aberto"; vale uma só.
 sdd_duvidas_abertas() {
   local arq
   arq="$1/$(sdd_pasta_specs "$1")/$2/spec.md"
   [ -f "$arq" ] || { echo 0; return; }
-  grep -F '[PRECISA ESCLARECER' "$arq" | grep -v '{{' | grep -vc '^[[:space:]]*>' || true
+  grep -F '[PRECISA ESCLARECER' "$arq" | grep -v '{{' | grep -v '^[[:space:]]*>' \
+    | grep -oE '\[PRECISA ESCLARECER[^]]*\]' | sort -u | grep -c . || true
 }
 
 # sdd_aguarda_aprovacao <raiz> <feature>: imprime o artefato que espera aprovação, se houver.
