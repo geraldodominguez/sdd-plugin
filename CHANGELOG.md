@@ -4,6 +4,12 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
+## Não lançado
+
+### Correções
+
+- **Fixtures da fase red criavam ciclo entre tarefas (#9):** o `escritor-de-testes` podia montar uma fixture do domínio que importava um módulo da aplicação, e os testes de uma tarefa só passavam depois de outra que dependia dela. Agora o agente só importa código das tarefas que o teste exercita e das que elas declaram em `depende de`, devolve a lista de imports por arquivo, e o `/sdd:implementar` e o `/sdd:aprovar` dos testes conferem a ordem antes do green. O guia de decomposição registra a regra. Nenhum formato rastreável mudou.
+
 ## 2.2.0 - 2026-11-03
 
 ### Novo

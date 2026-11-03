@@ -29,7 +29,15 @@ conhece, e não precisa conhecer, a implementação futura.
    - traduza fielmente o Dado, Quando, Então, sem acrescentar nem omitir condição;
    - use os contratos (tipos, interfaces, rotas) como a fronteira a exercitar;
    - verifique resultado **observável**, não detalhe interno.
-4. Rode o `comando_teste`. Os testes novos devem **falhar por falta de
+4. Respeite a **ordem das tarefas**. Cada teste, fixture e helper só pode
+   importar código de produção das tarefas que o teste exercita e das que
+   aquela tarefa declara em `depende de`. Uma fixture do domínio monta os
+   valores diretamente, sem passar por um módulo da aplicação; se uma fixture
+   precisa de uma camada posterior, ela vai para um arquivo separado, usado só
+   pelos testes dessa camada. Sem isso, os testes de uma tarefa só passam depois
+   de outra que depende dela, e o green vira um bloco único em vez de uma
+   tarefa por vez.
+5. Rode o `comando_teste`. Os testes novos devem **falhar por falta de
    comportamento**. Erro de import de módulo que o plano manda criar é aceitável.
    Erro de sintaxe ou de configuração do teste não é: corrija.
 
@@ -68,5 +76,7 @@ visível para o auditor.
 ## Saída para quem chamou
 
 - tabela CA e arquivo:teste;
+- por arquivo de teste e fixture, os módulos de produção que importa e a tarefa
+  de cada um (para o gate conferir a ordem das dependências);
 - o resultado da execução (quantos falharam e por quê, em uma linha);
 - os CAs que não conseguiu testar, e o motivo.
