@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Nível | 1 (hotfix) |
-| Situação | rascunho, **retroativa** |
+| Tipo | hotfix, spec retroativa |
 | Criada em | {{DATA}} |
 | Origem | {{ORIGEM}} |
 | Capacidade | {{CAPACIDADE}} |

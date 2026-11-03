@@ -8,6 +8,7 @@ configuração) sempre sobem a versão maior.
 
 ### Correções
 
+- **Situação da spec que contradizia o histórico (#5):** os templates da spec, da spec leve e do plano traziam `| Situação | rascunho |`, que nada atualizava (e atualizar mudaria o hash do que acabou de ser aprovado). O campo saiu; a situação vem do `historico.md`, pelo `/sdd:status` e pelo `/sdd:listar specs`. No template do hotfix, o campo virou `| Tipo | hotfix, spec retroativa |`. Projetos que já têm o campo nas specs não precisam mudar nada.
 - **Dúvidas contadas em dobro (#4):** o `sdd-status` e o `sdd-pendencias` contavam as linhas com o marcador `[PRECISA ESCLARECER]`, e cada dúvida aparece no requisito e na seção "Dúvidas em aberto". Agora contam perguntas distintas.
 
 ## 2.1.0 - 2026-11-03
