@@ -4,6 +4,12 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
+## Não lançado
+
+### Novo
+
+- **Lacunas da spec ficam registradas no plano (#6):** o template do plano ganhou a seção 14, "Lacunas da spec e interpretação adotada" (lacuna, interpretação, natureza e onde resolver). O `arquiteto-de-contratos` passa a gravá-la em vez de deixar o "Problemas na spec" só no resumo, o `/sdd:planejar` confere a seção, e o `/sdd:aprovar` do plano a mostra. Lacuna de regra de negócio é marcada para voltar à spec (`/sdd:clarificar`), não decidida no plano. Planos existentes não precisam mudar.
+
 ## 2.1.1 - 2026-11-03
 
 ### Correções

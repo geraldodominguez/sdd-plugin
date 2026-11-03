@@ -91,3 +91,9 @@ Nenhuma nova. Usa `node:crypto` (`randomBytes`, `createHash`).
 ## 10. Riscos técnicos e mitigação
 
 - **Ataque de tempo na comparação do token:** a busca é por hash indexado, sem comparação de string em memória.
+
+## 11. Lacunas da spec e interpretação adotada
+
+| Lacuna | Interpretação adotada | Natureza | Onde resolver |
+|---|---|---|---|
+| formato do token no link | 32 bytes aleatórios em base64url | detalhe técnico | fica no plano |

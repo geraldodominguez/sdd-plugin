@@ -46,9 +46,12 @@ contexto.
    | Algum RF ficou sem componente? | devolva ao subagent |
    | Há regra de negócio nos contratos? | devolva ao subagent |
    | As seções de ameaças, implantação e rollback e observabilidade estão preenchidas? | devolva ao subagent |
+   | A seção 14 traz toda lacuna da spec que o subagent citou no resumo, e as de regra de negócio estão marcadas para voltar à spec? | devolva ao subagent |
 
 4. **Gate.** Apresente a abordagem em três a cinco linhas, os contratos
-   principais, as dependências novas, os ADRs propostos e os riscos. Próximo:
+   principais, as dependências novas, os ADRs propostos, os riscos e as lacunas da spec (seção 14 do plano). Se houver
+   lacuna de **regra de negócio**, diga que o caminho correto é `/sdd:clarificar` e
+   nova aprovação da spec, e não aprovar a regra só no plano. Próximo:
    `/sdd:aprovar`, para aprovar o plano e os contratos. Quando o usuário
    aprovar, mude os ADRs da feature para "aceita". Depois vêm as `/sdd:tarefas`.
 

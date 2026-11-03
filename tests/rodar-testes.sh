@@ -215,6 +215,11 @@ out="$(cd "$P" && sdd-listar tarefas --abertas 2>&1)"
 { echo "$out" | grep -q 'Grupo 1' && ! echo "$out" | grep -q 'Grupo 2'; } && ok "--abertas omite o grupo sem tarefa aberta" || fail "grupo vazio com --abertas" "$out"
 mv "$P/tarefas.guardado" "$P/sdd/specs/$F/tarefas.md"
 
+echo "lacunas da spec no plano"
+grep -q '^## 14\. Lacunas da spec e interpretação adotada' "$PLUGIN/skills/metodologia/templates/plano.md" && ok "template do plano traz a seção de lacunas da spec" || fail "seção 14 do plano"
+grep -q 'Problemas na spec' "$PLUGIN/agents/arquiteto-de-contratos.md" && fail "o subagent não manda mais as lacunas só para o resumo" || ok "o subagent registra as lacunas no plano, não só no resumo"
+grep -q 'Lacunas da spec e interpretação adotada' "$PLUGIN/agents/arquiteto-de-contratos.md" && ok "o subagent aponta a seção de lacunas" || fail "subagent sem a seção de lacunas"
+
 echo "dúvidas distintas"
 cp "$P/sdd/specs/$F/spec.md" "$P/spec.guardada"
 cat > "$P/sdd/specs/$F/spec.md" <<'EOF'
