@@ -94,14 +94,18 @@ listar_tarefas() {
     arq="$RAIZ/$PASTA_SPECS/$f/tarefas.md"
     [ -f "$arq" ] || continue
     fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
-    linhas="$(grep -E "$SDD_RE_TAREFA" "$arq" || true)"
-    if [ "$F_ABERTAS" -eq 1 ]; then
-      linhas="$(printf '%s\n' "$linhas" | grep -E '^[[:space:]]*- \[ \]' || true)"
-    fi
+    # Os títulos "## Grupo N" de cada seção saem antes das tarefas dela.
+    linhas="$(awk -v abertas="$F_ABERTAS" '
+      /^## / { grupo = substr($0, 4); impresso = 0; next }
+      /^[[:space:]]*- \[[ xXoO]\][[:space:]]*[*]*T-[0-9][0-9][0-9]/ {
+        if (abertas == 1 && $0 !~ /^[[:space:]]*- \[ \]/) next
+        if (grupo != "" && !impresso) { print "  " grupo; impresso = 1 }
+        sub(/^[[:space:]]*- /, "    "); print
+      }' "$arq")"
     [ -n "$linhas" ] || continue
     prog="$(sdd_tarefas_progresso "$RAIZ" "$f")"
     printf '%s (%s) · %s/%s feitas\n' "$f" "$fase" "${prog% *}" "${prog#* }"
-    printf '%s\n' "$linhas" | sed -E 's/^[[:space:]]*- /  /'
+    printf '%s\n' "$linhas"
     achou=1
   done
   [ "$achou" -eq 1 ] || vazio
