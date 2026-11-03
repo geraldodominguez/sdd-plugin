@@ -4,7 +4,7 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
-## Não lançado
+## 2.1.1 - 2026-11-03
 
 ### Correções
 
