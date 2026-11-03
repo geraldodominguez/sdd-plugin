@@ -42,6 +42,9 @@ pede, falta um requisito (ou um RNF) na spec, e o caminho é `/sdd:clarificar`.
 - `depende de: T-001, T-002` define a ordem obrigatória.
 - `[P]` marca tarefas sem dependência mútua no mesmo grupo, que podem rodar em paralelo.
 - Ciclo de dependência é erro de decomposição: refaça.
+- A ordem vale também para os **testes**: o teste de uma tarefa e as fixtures dele
+  só importam código das tarefas anteriores. Uma fixture que cruza camadas
+  (domínio importando a aplicação) cria um ciclo que só aparece no green.
 
 ## Rastreabilidade
 

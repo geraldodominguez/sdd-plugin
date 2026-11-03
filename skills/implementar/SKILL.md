@@ -76,6 +76,12 @@ tarefa faz para quem usa o sistema:
    - todo CA do escopo tem teste com marca (o `sdd-rastrear` ajuda);
    - os testes **falham pelo motivo certo**: comportamento ausente, não erro de
      sintaxe nem configuração quebrada;
+   - **a ordem das tarefas vale para os testes**: pela lista de imports que o
+     subagent devolveu (confira nos arquivos se faltar), nenhum teste ou fixture
+     da tarefa Tx importa código de uma tarefa que depende de Tx. Se importa, é
+     ciclo: as tarefas só ficariam verdes em bloco. Devolva ao
+     `escritor-de-testes` para separar a fixture (uma por camada) ou, se a
+     decomposição é que está errada, volte às tarefas;
    - numa feature adotada, os testes dos CAs atendidos só por tarefas `[O]`
      **passam**. Se um deles falhar, o trabalho feito fora do plugin não cumpre
      a spec: mostre ao usuário e pergunte se a tarefa volta a `[ ]` (o plugin

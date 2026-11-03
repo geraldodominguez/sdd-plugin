@@ -104,6 +104,7 @@ proíbem, e a auditoria procura testes mexidos depois da fase red. Ver o
 ## Está funcionando se
 
 - Os testes aparecem antes do código, e falham por falta de comportamento, não por erro de sintaxe.
+- Nenhum teste ou fixture importa código de uma tarefa que depende da tarefa dele: o green avança uma tarefa por vez, não em bloco.
 - Os nomes dos testes descrevem comportamento ("recusa link expirado").
 - Nenhum arquivo de teste muda depois que a fase green começa (`sdd-estado aprovado testes` continua saindo com 0).
 - Cada commit cita a tarefa (`feat(001): T-004 ...`).

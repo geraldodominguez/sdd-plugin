@@ -220,6 +220,11 @@ grep -q '^## 14\. Lacunas da spec e interpretação adotada' "$PLUGIN/skills/met
 grep -q 'Problemas na spec' "$PLUGIN/agents/arquiteto-de-contratos.md" && fail "o subagent não manda mais as lacunas só para o resumo" || ok "o subagent registra as lacunas no plano, não só no resumo"
 grep -q 'Lacunas da spec e interpretação adotada' "$PLUGIN/agents/arquiteto-de-contratos.md" && ok "o subagent aponta a seção de lacunas" || fail "subagent sem a seção de lacunas"
 
+echo "fixtures sem ciclo entre tarefas"
+grep -q 'ordem das tarefas' "$PLUGIN/agents/escritor-de-testes.md" && grep -q 'depende de' "$PLUGIN/agents/escritor-de-testes.md" && ok "o escritor-de-testes respeita a ordem das tarefas nas fixtures" || fail "regra de fixtures no escritor-de-testes"
+grep -q 'a ordem das tarefas vale para os testes' "$PLUGIN/skills/implementar/SKILL.md" && ok "o implementar confere a ordem das tarefas no gate da red" || fail "conferência no implementar"
+grep -q 'importam código' "$PLUGIN/skills/aprovar/SKILL.md" && ok "o aprovar dos testes mostra de quais tarefas os testes importam" || fail "resumo do aprovar"
+
 echo "dúvidas distintas"
 cp "$P/sdd/specs/$F/spec.md" "$P/spec.guardada"
 cat > "$P/sdd/specs/$F/spec.md" <<'EOF'
