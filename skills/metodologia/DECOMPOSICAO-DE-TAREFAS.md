@@ -22,6 +22,21 @@ Uma boa tarefa:
 3. **Aplicação e integração:** casos de uso, adaptadores, APIs.
 4. **Acabamento:** observabilidade, mensagens, documentação de uso.
 
+## Tarefas de fundação
+
+Criar o projeto, configurar o lint, escrever o Dockerfile: nada disso atende
+um RF diretamente, mas toda tarefa precisa citar algo (o `sdd-rastrear` cobra).
+Ligue a tarefa ao requisito que ela **habilita** e diga isso na descrição:
+
+```
+- [ ] T-001 configura o lint que proíbe `fetch` fora do adaptador, para habilitar RNF-003 (atende: RNF-003; depende de: nada)
+```
+
+Não ligue a um requisito só porque ele está por perto: o vínculo falso satisfaz
+a ferramenta e engana quem lê. Se uma tarefa não habilita nenhum requisito, ela
+provavelmente não precisa existir; se o trabalho é necessário e a spec não
+pede, falta um requisito (ou um RNF) na spec, e o caminho é `/sdd:clarificar`.
+
 ## Dependências e paralelismo
 
 - `depende de: T-001, T-002` define a ordem obrigatória.

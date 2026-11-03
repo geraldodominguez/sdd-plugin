@@ -59,6 +59,8 @@ são tocados.
 **Por que uma tarefa aparece com `[O]`?** Foi feita fora do plugin, antes da
 adoção, sem gate. Ela conta como feita.
 
+**As tarefas aparecem em grupos?** Sim: cada título `## Grupo N` do `tarefas.md` sai antes das tarefas dele, e um grupo sem tarefa no filtro não aparece.
+
 **A lista de tarefas mostra só a feature ativa?** Não: mostra todas, agrupadas
 por feature. Use `--feature` para uma só.
 

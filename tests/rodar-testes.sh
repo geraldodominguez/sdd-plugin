@@ -205,6 +205,16 @@ for tpl in spec.md spec-leve.md plano.md; do
   grep -q '^| Situação | rascunho |' "$PLUGIN/skills/metodologia/templates/$tpl" && fail "template $tpl sem o campo Situação" || ok "template $tpl sem o campo Situação"
 done
 
+echo "sdd-listar tarefas com grupos"
+cp "$P/sdd/specs/$F/tarefas.md" "$P/tarefas.guardado"
+printf '# Tarefas\n\n## Grupo 1: fundação\n\n- [x] T-001 a (atende: RF-001)\n- [ ] T-002 b (atende: RF-001)\n\n## Grupo 2: comportamento\n\n- [x] T-003 c (atende: CA-001)\n\n## Definição de pronto\n\n- [ ] Todo CA tem teste\n' > "$P/sdd/specs/$F/tarefas.md"
+out="$(cd "$P" && sdd-listar tarefas 2>&1)"
+{ echo "$out" | grep -q 'Grupo 1: fundação' && echo "$out" | grep -q 'Grupo 2: comportamento'; } && ok "listar tarefas mostra os títulos de grupo" || fail "grupos" "$out"
+echo "$out" | grep -q 'Definição de pronto' && fail "a definição de pronto não é grupo de tarefas" "$out" || ok "a definição de pronto não aparece como grupo"
+out="$(cd "$P" && sdd-listar tarefas --abertas 2>&1)"
+{ echo "$out" | grep -q 'Grupo 1' && ! echo "$out" | grep -q 'Grupo 2'; } && ok "--abertas omite o grupo sem tarefa aberta" || fail "grupo vazio com --abertas" "$out"
+mv "$P/tarefas.guardado" "$P/sdd/specs/$F/tarefas.md"
+
 echo "dúvidas distintas"
 cp "$P/sdd/specs/$F/spec.md" "$P/spec.guardada"
 cat > "$P/sdd/specs/$F/spec.md" <<'EOF'
