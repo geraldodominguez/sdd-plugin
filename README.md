@@ -106,7 +106,7 @@ comandos de teste, varredura de segurança e deploy. Para o CI, rode
 | specs e tarefas espalhadas por outros agentes | `/sdd:iniciar --adotar` |
 
 Perdeu o fio? `/sdd:status` mostra o quadro, `/sdd:pendencias` mostra o que
-espera você, e `/sdd:ajuda` diz qual comando serve para a sua situação.
+espera você, `/sdd:listar` abre as tarefas, os critérios e os planos, e `/sdd:ajuda` diz qual comando serve para a sua situação.
 
 ## Por que este plugin existe
 
@@ -335,6 +335,7 @@ artefatos que ela produz estão em [exemplos/](exemplos/).
 | Quando | Comando |
 |---|---|
 | Ao começar o dia | `/sdd:status` e `/sdd:pendencias` |
+| Ver o que falta numa feature | `/sdd:listar tarefas --abertas` ou `/sdd:listar falta` |
 | Surgiu uma ideia ou pedido | `/sdd:backlog adicionar` |
 | Começo da sprint | `/sdd:sprint planejar`, depois `/sdd:especificar B-NNN` para cada item |
 | Trabalhando numa feature | o comando que o `/sdd:status` recomenda; no fim de cada fase, `/sdd:aprovar` |

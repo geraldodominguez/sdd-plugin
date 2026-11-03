@@ -279,6 +279,7 @@ Regra útil: ideia nova vai para o backlog, não para a sprint em andamento.
 | Momento | Comando |
 |---|---|
 | começo do dia | `/sdd:status`, `/sdd:pendencias` |
+| ver tarefas, critérios e planos por extenso, ou o que falta numa feature | `/sdd:listar` |
 | voltar a uma feature depois de um tempo | `/sdd:retomar` |
 | não sei qual comando usar | `/sdd:ajuda` |
 | quero mudar comportamento | `/sdd:especificar` |

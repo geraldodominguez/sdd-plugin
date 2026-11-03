@@ -424,6 +424,7 @@ Detalhes no [release](../release.md) e no [Git Flow](git-flow.md).
 | Quando | Comando |
 |---|---|
 | começo do dia | `/sdd:status` e `/sdd:pendencias` |
+| ver o que falta numa feature | `/sdd:listar falta` |
 | ideia nova | `/sdd:backlog adicionar` (não entra na sprint em andamento) |
 | mudar comportamento | `/sdd:especificar` |
 | fim de cada fase | `/sdd:aprovar` |
