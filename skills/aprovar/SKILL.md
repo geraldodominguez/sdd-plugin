@@ -52,7 +52,7 @@ do `/sdd:release`.
      alerta se houver `[PRECISA ESCLARECER]` em aberto;
    - **plano:** abordagem, contratos, dependências novas, ADRs, ameaças e plano de implantação, e as lacunas da spec com a interpretação adotada (seção 14); se alguma for regra de negócio, recomende voltar à spec com `/sdd:clarificar` antes de aprovar;
    - **tarefas:** IDs e títulos, e o resultado do `sdd-rastrear`;
-   - **testes:** cada teste e o CA que cobre, e a execução falhando pelo motivo certo;
+   - **testes:** cada teste e o CA que cobre, a execução falhando pelo motivo certo, e de quais tarefas cada teste e fixture importam código; avise se algum importa uma tarefa posterior na ordem de `depende de`;
    - **entrega:** tarefas concluídas, suíte verde, `sdd-rastrear` sem lacunas;
    - **segurança:** veredito e achados críticos e altos;
    - **auditoria:** veredito, desvios e a delta spec, se houver.
