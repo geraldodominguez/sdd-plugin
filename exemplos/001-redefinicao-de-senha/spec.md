@@ -3,7 +3,6 @@
 | Campo | Valor |
 |---|---|
 | Nível | 2 (completo) |
-| Situação | aprovada |
 | Criada em | 2026-10-20 |
 | Contexto | [contexto.md](./contexto.md) |
 | Origem | B-001 |

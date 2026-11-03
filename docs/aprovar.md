@@ -86,6 +86,12 @@ passam de `proposta` para `aceita`.
 Sim. O hash não distingue vírgula de regra de negócio, e é justamente isso que o
 torna confiável. Rode `/sdd:aprovar` de novo: leva segundos.
 
+**Por que a spec não tem um campo "Situação" no cabeçalho?**
+
+Porque ele mentiria. Gravar "aprovada" no arquivo mudaria o hash do que acabou de
+ser aprovado, então a situação mora no `historico.md` e no `estado`. Para vê-la,
+use `/sdd:status NNN-slug` ou `/sdd:listar specs`.
+
 **O agente pode aprovar por mim?**
 
 Não deveria, e as instruções proíbem: o comando só existe quando você o digita,

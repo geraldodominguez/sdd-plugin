@@ -3,7 +3,6 @@
 | Campo | Valor |
 |---|---|
 | Nível | 1 (leve) |
-| Situação | rascunho |
 | Criada em | 2026-10-29 |
 | Origem | adoção: docs/specs/exportar-pedidos.md |
 | Capacidade | pedidos |

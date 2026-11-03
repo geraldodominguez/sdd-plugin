@@ -3,7 +3,6 @@
 | Campo | Valor |
 |---|---|
 | Spec | [spec.md](./spec.md) |
-| Situação | aprovado |
 
 ## 1. Checagem contra a constituição
 

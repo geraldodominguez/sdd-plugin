@@ -200,6 +200,40 @@ out="$(cd "$P" && sdd-status --ativa --falta 2>&1)"
 echo "$out" | grep -q "Falta para $F" && ok "--ativa --falta usa a feature ativa" || fail "--ativa --falta" "$out"
 (cd "$P" && assert_exit 1 "--falta recusa feature inexistente" sdd-status 999-nada --falta)
 
+echo "templates sem situação que mente"
+for tpl in spec.md spec-leve.md plano.md; do
+  grep -q '^| Situação | rascunho |' "$PLUGIN/skills/metodologia/templates/$tpl" && fail "template $tpl sem o campo Situação" || ok "template $tpl sem o campo Situação"
+done
+
+echo "sdd-listar tarefas com grupos"
+cp "$P/sdd/specs/$F/tarefas.md" "$P/tarefas.guardado"
+printf '# Tarefas\n\n## Grupo 1: fundação\n\n- [x] T-001 a (atende: RF-001)\n- [ ] T-002 b (atende: RF-001)\n\n## Grupo 2: comportamento\n\n- [x] T-003 c (atende: CA-001)\n\n## Definição de pronto\n\n- [ ] Todo CA tem teste\n' > "$P/sdd/specs/$F/tarefas.md"
+out="$(cd "$P" && sdd-listar tarefas 2>&1)"
+{ echo "$out" | grep -q 'Grupo 1: fundação' && echo "$out" | grep -q 'Grupo 2: comportamento'; } && ok "listar tarefas mostra os títulos de grupo" || fail "grupos" "$out"
+echo "$out" | grep -q 'Definição de pronto' && fail "a definição de pronto não é grupo de tarefas" "$out" || ok "a definição de pronto não aparece como grupo"
+out="$(cd "$P" && sdd-listar tarefas --abertas 2>&1)"
+{ echo "$out" | grep -q 'Grupo 1' && ! echo "$out" | grep -q 'Grupo 2'; } && ok "--abertas omite o grupo sem tarefa aberta" || fail "grupo vazio com --abertas" "$out"
+mv "$P/tarefas.guardado" "$P/sdd/specs/$F/tarefas.md"
+
+echo "dúvidas distintas"
+cp "$P/sdd/specs/$F/spec.md" "$P/spec.guardada"
+cat > "$P/sdd/specs/$F/spec.md" <<'EOF'
+# Spec
+- **RF-001**: o prazo é de [PRECISA ESCLARECER: quantos dias?]
+- **RF-002**: o valor é [PRECISA ESCLARECER: arredonda para cima?]
+> Marque [PRECISA ESCLARECER: pergunta] quando faltar informação.
+## 9. Dúvidas em aberto
+- [PRECISA ESCLARECER: quantos dias?]
+- [PRECISA ESCLARECER: arredonda para cima?]
+- [PRECISA ESCLARECER: {{pergunta}}]
+EOF
+n="$(cd "$P" && . "$PLUGIN/lib/sdd-comum.sh" && sdd_duvidas_abertas "$P" "$F")"
+[ "$n" = "2" ] && ok "a mesma dúvida no requisito e na seção 9 conta uma vez" || fail "dúvidas distintas" "obtido: $n"
+printf '# Spec\n- **RF-001**: ok\n' > "$P/sdd/specs/$F/spec.md"
+n="$(cd "$P" && . "$PLUGIN/lib/sdd-comum.sh" && sdd_duvidas_abertas "$P" "$F")"
+[ "$n" = "0" ] && ok "spec sem dúvidas conta zero" || fail "sem dúvidas" "obtido: $n"
+mv "$P/spec.guardada" "$P/sdd/specs/$F/spec.md"
+
 for parser in jq python grep; do
   if [ "$parser" = "jq" ] && ! command -v jq >/dev/null; then continue; fi
   if [ "$parser" = "python" ] && ! command -v python3 >/dev/null; then continue; fi

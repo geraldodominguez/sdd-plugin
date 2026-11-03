@@ -3,7 +3,6 @@
 | Campo | Valor |
 |---|---|
 | Spec | [spec.md](./spec.md) |
-| Situação | rascunho |
 
 > O plano responde **COMO**. Toda decisão atende a um requisito da spec e
 > respeita a constituição. Nada de regra de negócio implementada aqui: só

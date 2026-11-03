@@ -4,6 +4,15 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
+## 2.1.1 - 2026-11-03
+
+### Correções
+
+- **`sdd-listar tarefas` mostra os grupos (#8):** os títulos `## Grupo N` do `tarefas.md` saem antes das tarefas de cada grupo. O `sdd-listar tarefas --feature NNN` cobre o pedido de listar as tarefas de uma feature a partir do quadro.
+- **Tarefas de fundação (#7):** o guia de decomposição passou a orientar o que fazer com a tarefa que habilita requisitos sem atender nenhum: ligar ao requisito habilitado, dizer isso na descrição e não inventar vínculo. Nenhum formato rastreável mudou.
+- **Situação da spec que contradizia o histórico (#5):** os templates da spec, da spec leve e do plano traziam `| Situação | rascunho |`, que nada atualizava (e atualizar mudaria o hash do que acabou de ser aprovado). O campo saiu; a situação vem do `historico.md`, pelo `/sdd:status` e pelo `/sdd:listar specs`. No template do hotfix, o campo virou `| Tipo | hotfix, spec retroativa |`. Projetos que já têm o campo nas specs não precisam mudar nada.
+- **Dúvidas contadas em dobro (#4):** o `sdd-status` e o `sdd-pendencias` contavam as linhas com o marcador `[PRECISA ESCLARECER]`, e cada dúvida aparece no requisito e na seção "Dúvidas em aberto". Agora contam perguntas distintas.
+
 ## 2.1.0 - 2026-11-03
 
 ### Novo
