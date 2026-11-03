@@ -4,6 +4,16 @@ Versionamento [SemVer](https://semver.org/lang/pt-BR/). Mudanças nos formatos
 rastreáveis (linha de tarefa, marca de teste, IDs, fases, chaves de
 configuração) sempre sobem a versão maior.
 
+## 2.1.0 - 2026-11-03
+
+### Novo
+
+- **`/sdd:listar` e o utilitário `sdd-listar`:** lista, de todas as features, as tarefas `T-NNN`, as specs, os planos, os critérios de aceitação (com a tarefa e o teste de cada um) e as ADRs, com os filtros `--feature`, `--fase`, `--sprint`, `--esperando-eu` e `--abertas`. Só lê.
+- **`sdd-status <NNN-slug> --falta`** (e `/sdd:listar falta`): o que ainda separa a feature de ficar pronta (fases à frente, aprovação aguardada, dúvidas, tarefas abertas e lacunas de rastreabilidade).
+- O `settings.json` que o `sdd-iniciar` cria passa a liberar a leitura do `sdd-listar`. Um `settings.json` existente não é reescrito.
+
+Nenhum formato rastreável mudou.
+
 ## 2.0.0 - 2026-11-01
 
 Incompatível: os caminhos do layout mudam.

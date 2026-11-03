@@ -5,6 +5,8 @@
 #   sdd-status               quadro: sprint atual, features por coluna, backlog e pendências
 #   sdd-status <NNN-slug>    detalhe de uma feature
 #   sdd-status --ativa       detalhe da feature ativa
+#   sdd-status <NNN-slug> --falta   o que falta para a feature ficar pronta
+#   sdd-status --ativa --falta      o mesmo, para a feature ativa
 set -uo pipefail
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -113,6 +115,64 @@ detalhe() { # detalhe <feature>
   echo
   "$AQUI/sdd-rastrear" "$f" 2>/dev/null || true
 }
+
+falta() { # falta <feature>: o que ainda separa a feature de "pronta"
+  local f="$1" dir fase nivel tipo p restante n aguarda abertas lacunas
+  dir="$RAIZ/$PASTA_SPECS/$f"
+  [ -d "$dir" ] || { echo "sdd-status: a feature $f não existe." >&2; exit 1; }
+  fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"; nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
+  tipo="$(sdd_feature_ler "$RAIZ" "$f" tipo)"
+  if sdd_fase_entregue "$fase" || [ "$fase" = "cancelada" ]; then
+    echo "Feature $f: fase $fase. Nada falta para ficar pronta."
+    return 0
+  fi
+  echo "Falta para $f ficar pronta (nível ${nivel:-?}, fase $fase)"
+  restante=""; p="$fase"
+  while [ "$p" != "green" ]; do
+    p="$(sdd_proxima_fase "$p" "${nivel:-1}" "$tipo")"
+    [ -n "$p" ] || break
+    restante="$restante $p"
+  done
+  if [ "$p" = "green" ]; then
+    # Do green em diante a ordem depende do nível e da revisão de segurança.
+    if [ "$nivel" = "2" ] || [ "$(sdd_feature_ler "$RAIZ" "$f" seguranca)" = "obrigatoria" ]; then restante="$restante seguranca"; fi
+    [ "$nivel" = "2" ] && restante="$restante auditoria"
+    restante="$restante pronta"
+  fi
+  echo "  fases à frente:${restante:- (nenhuma mapeada)}"
+  aguarda="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
+  [ -n "$aguarda" ] && echo "  aguardando você: aprovação de $aguarda (/sdd:aprovar)"
+  n="$(sdd_duvidas_abertas "$RAIZ" "$f")"
+  [ "${n:-0}" -gt 0 ] && echo "  dúvidas em aberto: $n (/sdd:clarificar)"
+  if [ -f "$dir/tarefas.md" ]; then
+    abertas="$(grep -E '^[[:space:]]*- \[ \][[:space:]]*\*{0,2}T-[0-9]{3}' "$dir/tarefas.md" || true)"
+    if [ -n "$abertas" ]; then
+      echo "  tarefas abertas ($(printf '%s\n' "$abertas" | grep -c .)):"
+      printf '%s\n' "$abertas" | sed -E 's/^[[:space:]]*- \[ \][[:space:]]*/    /'
+    else
+      echo "  tarefas abertas: nenhuma"
+    fi
+  fi
+  lacunas="$("$AQUI/sdd-rastrear" "$f" 2>/dev/null | grep -E '^  [✗!]' || true)"
+  if [ -n "$lacunas" ]; then
+    echo "  lacunas de rastreabilidade:"
+    printf '%s\n' "$lacunas" | sed 's/^  /   /'
+  fi
+}
+
+FALTA=0; ARGS=()
+for a in "$@"; do
+  if [ "$a" = "--falta" ]; then FALTA=1; else ARGS+=("$a"); fi
+done
+set -- ${ARGS[@]+"${ARGS[@]}"}
+if [ "$FALTA" -eq 1 ]; then
+  alvo="${1:-}"
+  case "$alvo" in
+    ""|--ativa) alvo="$ATIVA" ;;
+  esac
+  [ -n "$alvo" ] || { echo "Nenhuma feature ativa. Informe uma: sdd-status <NNN-slug> --falta"; exit 0; }
+  falta "$alvo"; exit 0
+fi
 
 case "${1:-}" in
   --ativa)

@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+# sdd-listar: lista, de todas as features, o que o quadro só resume. Só lê.
+#
+# Uso:
+#   sdd-listar tarefas   [filtros]   as tarefas T-NNN, agrupadas por feature
+#   sdd-listar specs     [filtros]   uma linha por feature: nível, fase, dúvidas, aprovação da spec
+#   sdd-listar planos    [filtros]   o plano de cada feature e se está aprovado
+#   sdd-listar criterios [filtros]   os critérios CA, com a tarefa e o teste de cada um
+#   sdd-listar adrs      [--abertas] as decisões de arquitetura e a situação
+#
+# Filtros (valem para tarefas, specs, planos e criterios):
+#   --feature <NNN[-slug]>   só essa feature (aceita o número)
+#   --fase <fase>            só as features nessa fase
+#   --sprint                 só as features da sprint atual
+#   --esperando-eu           só as features que aguardam a sua aprovação
+#   --abertas                tarefas: só as não feitas; features: só as ainda
+#                            em construção; criterios: só os sem tarefa ou sem teste;
+#                            adrs: só os propostos
+#
+# Saída: 0 (inclusive quando nada casa com os filtros), 1 erro de uso.
+set -uo pipefail
+
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/sdd-comum.sh
+. "$AQUI/../lib/sdd-comum.sh"
+case "${1:-}" in -h|--ajuda|--help) sdd_ajuda "$0"; exit 0 ;; esac
+
+RAIZ="$(sdd_raiz_projeto)"
+if ! sdd_projeto_usa "$RAIZ"; then
+  echo "Este projeto ainda não usa SDD. Rode /sdd:iniciar para começar."
+  exit 0
+fi
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
+ATIVA="$(sdd_kv_ler "$RAIZ/sdd/estado" feature)"
+SPRINT="$(sdd_kv_ler "$RAIZ/sdd/estado" sprint)"
+
+TIPO="${1:-}"
+[ -n "$TIPO" ] || { sdd_ajuda "$0" >&2; exit 1; }
+shift
+
+F_FEATURE=""; F_FASE=""; F_SPRINT=0; F_ESPERANDO=0; F_ABERTAS=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --feature) [ $# -ge 2 ] || { echo "sdd-listar: --feature pede um valor." >&2; exit 1; }; F_FEATURE="$2"; shift ;;
+    --fase) [ $# -ge 2 ] || { echo "sdd-listar: --fase pede um valor." >&2; exit 1; }; F_FASE="$2"; shift ;;
+    --sprint) F_SPRINT=1 ;;
+    --esperando-eu) F_ESPERANDO=1 ;;
+    --abertas) F_ABERTAS=1 ;;
+    *) echo "sdd-listar: opção desconhecida: $1" >&2; exit 1 ;;
+  esac
+  shift
+done
+if [ -n "$F_FASE" ] && ! sdd_fase_valida "$F_FASE"; then
+  echo "sdd-listar: fase inválida: $F_FASE" >&2; exit 1
+fi
+
+na_sprint() { # na_sprint <feature>: a feature, ou o item de origem dela, está na sprint atual
+  [ -n "$SPRINT" ] || return 1
+  local item origem
+  origem="$(sdd_feature_ler "$RAIZ" "$1" origem)"
+  for item in $("$AQUI/sdd-sprint" itens "$SPRINT" 2>/dev/null); do
+    [ "$item" = "$1" ] && return 0
+    [ -n "$origem" ] && [ "$item" = "$origem" ] && return 0
+  done
+  return 1
+}
+
+# features_filtradas: as features que passam pelos filtros, uma por linha.
+features_filtradas() {
+  local f fase
+  for f in $(sdd_features "$RAIZ"); do
+    if [ -n "$F_FEATURE" ]; then
+      case "$f" in "$F_FEATURE"|"$F_FEATURE"-*) ;; *) continue ;; esac
+    fi
+    fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    [ -z "$F_FASE" ] || [ "$fase" = "$F_FASE" ] || continue
+    if [ "$F_SPRINT" -eq 1 ]; then na_sprint "$f" || continue; fi
+    if [ "$F_ESPERANDO" -eq 1 ] && [ -z "$(sdd_aguarda_aprovacao "$RAIZ" "$f")" ]; then continue; fi
+    printf '%s\n' "$f"
+  done
+}
+
+# em_construcao <fase>: a feature ainda não saiu da construção nem foi cancelada.
+em_construcao() { ! sdd_fase_entregue "$1" && [ "$1" != "cancelada" ]; }
+
+# so_construcao <fase>: com --abertas, descarta as features fora da construção.
+so_construcao() { [ "$F_ABERTAS" -eq 0 ] || em_construcao "$1"; }
+
+vazio() { echo "(nada com esses filtros)"; }
+
+listar_tarefas() {
+  local f fase arq prog achou=0 linhas
+  for f in $(features_filtradas); do
+    arq="$RAIZ/$PASTA_SPECS/$f/tarefas.md"
+    [ -f "$arq" ] || continue
+    fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    linhas="$(grep -E "$SDD_RE_TAREFA" "$arq" || true)"
+    if [ "$F_ABERTAS" -eq 1 ]; then
+      linhas="$(printf '%s\n' "$linhas" | grep -E '^[[:space:]]*- \[ \]' || true)"
+    fi
+    [ -n "$linhas" ] || continue
+    prog="$(sdd_tarefas_progresso "$RAIZ" "$f")"
+    printf '%s (%s) · %s/%s feitas\n' "$f" "$fase" "${prog% *}" "${prog#* }"
+    printf '%s\n' "$linhas" | sed -E 's/^[[:space:]]*- /  /'
+    achou=1
+  done
+  [ "$achou" -eq 1 ] || vazio
+}
+
+listar_specs() {
+  local f fase nivel n sit aguarda achou=0
+  for f in $(features_filtradas); do
+    fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    so_construcao "$fase" || continue
+    nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
+    if [ ! -f "$RAIZ/$PASTA_SPECS/$f/spec.md" ]; then
+      sit="sem spec"
+    elif sdd_aprovado_ok "$RAIZ" "$f" spec.md; then
+      sit="spec aprovada"
+    elif [ -n "$(sdd_ultima_aprovacao "$RAIZ" "$f" spec.md)" ]; then
+      sit="spec alterada depois de aprovada"
+    else
+      sit="spec ainda não aprovada"
+    fi
+    n="$(sdd_duvidas_abertas "$RAIZ" "$f")"
+    [ "${n:-0}" -gt 0 ] && sit="$sit · $n dúvida(s)"
+    aguarda="$(sdd_aguarda_aprovacao "$RAIZ" "$f")"
+    [ -n "$aguarda" ] && sit="$sit · aguarda aprovação de $aguarda"
+    printf '%-34s n%s · %s · %s\n' "$f" "${nivel:-?}" "$fase" "$sit"
+    achou=1
+  done
+  [ "$achou" -eq 1 ] || vazio
+}
+
+listar_planos() {
+  local f fase nivel dir sit nc achou=0
+  for f in $(features_filtradas); do
+    fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    so_construcao "$fase" || continue
+    nivel="$(sdd_feature_ler "$RAIZ" "$f" nivel)"
+    dir="$RAIZ/$PASTA_SPECS/$f"
+    if [ -f "$dir/plano.md" ]; then
+      if sdd_aprovado_ok "$RAIZ" "$f" plano.md; then
+        sit="aprovado"
+      elif [ -n "$(sdd_ultima_aprovacao "$RAIZ" "$f" plano.md)" ]; then
+        sit="alterado depois de aprovado"
+      else
+        sit="ainda não aprovado"
+      fi
+      nc=0
+      [ -d "$dir/contratos" ] && nc="$(find "$dir/contratos" -type f | wc -l | tr -d ' ')"
+      printf '%-34s plano %s · %s contrato(s)\n' "$f" "$sit" "$nc"
+    elif [ "$nivel" = "2" ]; then
+      printf '%-34s plano ainda não existe (nível 2: /sdd:planejar)\n' "$f"
+    else
+      printf '%-34s sem plano (nível %s dispensa)\n' "$f" "${nivel:-?}"
+    fi
+    achou=1
+  done
+  [ "$achou" -eq 1 ] || vazio
+}
+
+listar_criterios() {
+  local f fase num dir spec tarefas testes ca desc ts tst mostrar achou=0 impresso
+  for f in $(features_filtradas); do
+    fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
+    so_construcao "$fase" || continue
+    dir="$RAIZ/$PASTA_SPECS/$f"; spec="$dir/spec.md"; tarefas="$dir/tarefas.md"
+    [ -f "$spec" ] || continue
+    num="${f%%-*}"
+    testes="$(sdd_testes_da_feature "$RAIZ" "$num")"
+    impresso=0
+    for ca in $(grep -oE '\*\*CA-[0-9]{3}\*\*' "$spec" | tr -d '*' | sort -u); do
+      desc="$(grep -E "\*\*$ca\*\*" "$spec" | head -1 | sed -E "s/^.*\*\*$ca\*\*[[:space:]]*//")"
+      ts=""
+      [ -f "$tarefas" ] && ts="$(grep -E "$SDD_RE_TAREFA" "$tarefas" | grep -F "$ca" | sed -E 's/^[^T]*(T-[0-9]{3}).*/\1/' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)"
+      tst=""
+      if [ -n "$testes" ]; then
+        tst="$(cd "$RAIZ" && printf '%s\n' "$testes" | while IFS= read -r a; do grep -lE "${num}:${ca}" "$a" 2>/dev/null; done | head -1)"
+      fi
+      if [ "$F_ABERTAS" -eq 1 ] && [ -n "$ts" ] && [ -n "$tst" ]; then continue; fi
+      if [ "$impresso" -eq 0 ]; then echo "$f ($fase)"; impresso=1; fi
+      printf '  %s  %s · tarefa: %s · teste: %s\n' "$ca" "$desc" "${ts:-✗ nenhuma}" "${tst:-✗ nenhum}"
+      achou=1
+    done
+  done
+  [ "$achou" -eq 1 ] || vazio
+}
+
+listar_adrs() {
+  local a titulo sit achou=0
+  for a in "$RAIZ"/sdd/adr/*.md "$RAIZ/$PASTA_SPECS"/*/adr-*.md; do
+    [ -f "$a" ] || continue
+    case "$(basename "$a")" in README.md|readme.md) continue ;; esac
+    sit="$(sdd_md_campo "$a" "Situação")"
+    [ "$F_ABERTAS" -eq 0 ] || case "$sit" in proposta*) ;; *) continue ;; esac
+    titulo="$(head -1 "$a" | sed 's/^# //')"
+    printf '%-60s %s\n' "$titulo" "${sit:-sem situação}"
+    printf '    %s\n' "${a#"$RAIZ"/}"
+    achou=1
+  done
+  [ "$achou" -eq 1 ] || vazio
+}
+
+case "$TIPO" in
+  tarefas) listar_tarefas ;;
+  specs) listar_specs ;;
+  planos) listar_planos ;;
+  criterios) listar_criterios ;;
+  adrs) listar_adrs ;;
+  *) echo "sdd-listar: tipo desconhecido: $TIPO (tarefas, specs, planos, criterios, adrs)" >&2; exit 1 ;;
+esac

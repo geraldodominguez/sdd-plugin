@@ -1,6 +1,6 @@
 # Utilitários
 
-Treze scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
+Catorze scripts em bash, na pasta `bin/` do plugin. Nas sessões do Claude Code com
 o plugin ativo, eles ficam no PATH. Fora delas (no terminal, no CI), chame pelo
 caminho completo ou ponha `bin/` no PATH. Os comandos `/sdd:*` usam esses
 utilitários por baixo; você raramente precisa chamá-los direto, mas eles servem
@@ -19,6 +19,7 @@ A configuração de cada projeto (todas as chaves do `sdd/config.yml`) está em
 | [`sdd-backlog`](#sdd-backlog) | itens sem spec |
 | [`sdd-sprint`](#sdd-sprint) | sprints |
 | [`sdd-status`](#sdd-status) | o quadro e o detalhe de uma feature |
+| [`sdd-listar`](#sdd-listar) | tarefas, specs, planos, critérios e ADRs, de todas as features |
 | [`sdd-pendencias`](#sdd-pendencias) | o que espera decisão humana |
 | [`sdd-rastrear`](#sdd-rastrear) | lacunas de rastreabilidade de uma feature |
 | [`sdd-verificar`](#sdd-verificar) | o processo do projeto inteiro, para o CI |
@@ -355,12 +356,30 @@ pronta, em homologação ou em produção.
 sdd-status               o quadro
 sdd-status <NNN-slug>    o detalhe de uma feature
 sdd-status --ativa       o detalhe da feature ativa
+sdd-status <NNN-slug> --falta   o que falta para a feature ficar pronta
+sdd-status --ativa --falta      o mesmo, para a feature ativa
 ```
 
 No detalhe, cada artefato aparece com `✓` (existe, com a situação da
 aprovação), `✗` (alterado depois de aprovado) ou `·` (ainda não existe). Com o
 Git Flow, a linha `branch:` de uma feature pronta diz se ela já está em
 `develop`, inclusive quando a branch local foi apagada depois do `integrar`.
+
+## sdd-listar
+
+```
+sdd-listar tarefas   [filtros]
+sdd-listar specs     [filtros]
+sdd-listar planos    [filtros]
+sdd-listar criterios [filtros]
+sdd-listar adrs      [--abertas]
+```
+
+Só lê. Filtros: `--feature <NNN[-slug]>`, `--fase <fase>`, `--sprint`,
+`--esperando-eu` e `--abertas`. Em `criterios`, cada CA sai com a tarefa que o
+atende e o primeiro arquivo de teste com a marca `sdd:NNN:CA-XXX` (`✗` quando
+falta). Sem correspondência, imprime "(nada com esses filtros)" e sai com `0`.
+Saída: `0`, ou `1` em erro de uso.
 
 ## sdd-pendencias
 

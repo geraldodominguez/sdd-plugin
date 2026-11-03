@@ -20,6 +20,7 @@ terminal com `sdd-status`.
 |---|---|
 | como está o projeto | `status` |
 | o que depende de mim | [pendencias](pendencias.md) |
+| as tarefas, os critérios e os planos, por extenso | [listar](listar.md) |
 | o que aconteceu numa feature | [retomar](retomar.md) |
 
 ## O quadro
@@ -77,6 +78,10 @@ não só a ativa. Uma feature adotada de outro processo aparece com "em
 transição" até você aprovar a transição, e as tarefas feitas fora do plugin
 (`[O]`) aparecem à parte. No topo, a branch em que você está; se a feature
 ativa é feita em outra, um aviso diz qual.
+
+Com `--falta` (`/sdd:status 005-exportar-csv --falta`), o detalhe dá lugar ao que
+ainda separa a feature de ficar pronta: as fases à frente, a aprovação que
+aguarda você, as dúvidas, as tarefas abertas e as lacunas de rastreabilidade.
 
 No detalhe de uma feature (`/sdd:status 005-exportar-csv`), cada artefato
 aparece com `✓` (com a situação da aprovação), `✗` (alterado depois de
