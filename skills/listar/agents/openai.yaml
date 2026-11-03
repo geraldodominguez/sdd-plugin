@@ -1,0 +1,5 @@
+interface:
+  display_name: "Listar do SDD"
+  short_description: "Tarefas, specs, planos, critérios e ADRs"
+policy:
+  allow_implicit_invocation: false

@@ -1,7 +1,7 @@
 ---
 name: status
 description: A situação do projeto num quadro. Mostra a sprint atual, as features em cada coluna (especificação, planejamento, implementação, revisão, pronta, homologação), a release em andamento, os incidentes abertos, o topo do backlog e quanto está esperando por você, e diz qual comando rodar em seguida.
-argument-hint: "[NNN-slug para o detalhe de uma feature]"
+argument-hint: "[NNN-slug para o detalhe de uma feature] [--falta]"
 disable-model-invocation: true
 allowed-tools: Bash(sdd-gitflow *), Bash(sdd-status *), Bash(sdd-status), Bash(sdd-estado *), Bash(sdd-rastrear *), Bash(sdd-sprint *), Bash(sdd-pendencias *), Bash(sdd-release *), Bash(sdd-incidente *), Bash(sdd-sistema *)
 ---
@@ -11,7 +11,7 @@ allowed-tools: Bash(sdd-gitflow *), Bash(sdd-status *), Bash(sdd-status), Bash(s
 Argumentos: `$ARGUMENTS`
 
 1. Rode `sdd-status` (ou `sdd-status <NNN-slug>` se veio uma feature nos
-   argumentos) e mostre a saída num bloco de código.
+   argumentos, com `--falta` se veio, para ver só o que falta para ela ficar pronta) e mostre a saída num bloco de código.
 
 2. Acrescente uma **leitura** de no máximo quatro linhas:
    - **Sprint:** no ritmo ou atrasada, comparando o progresso com os dias que faltam.

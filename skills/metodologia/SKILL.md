@@ -39,7 +39,7 @@ que escapar aparece no `sdd-pendencias` como "Fora do padrão".
 - `sdd-incidente abrir | situacao | nota | hotfix | encerrar | listar | ver`
 - `sdd-adotar inventario | contar | aplicar | estrutura` (usado pelo `/sdd:iniciar`; o mapa só se aplica com a aprovação do usuário)
 - `sdd-gitflow conferir | iniciar | renomear | feature | release | hotfix | integrar | finalizar | esperada | valido | pode-integrar | nome`
-- `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
+- `sdd-backlog`, `sdd-sprint`, `sdd-status`, `sdd-listar`, `sdd-pendencias`, `sdd-rastrear`, `sdd-verificar`, `sdd-iniciar`
 
 ## Fases da feature
 

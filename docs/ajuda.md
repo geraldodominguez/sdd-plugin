@@ -21,13 +21,14 @@ que parece errado, mudança que cresceu no meio) ou para ver o mapa inteiro.
 | "Que comando serve para isto?" | `ajuda` |
 | "Como se escreve um bom critério?" | [metodologia](metodologia.md) |
 | "O que depende de mim?" | [pendencias](pendencias.md) |
+| "Quais são as tarefas, os critérios, os planos?" | [listar](listar.md) |
 
 ## O mapa que ela carrega
 
 Quatro grupos de comandos: o **fluxo da feature** (especificar, clarificar,
 planejar, tarefas, implementar, segurança, auditar, com o aprovar em cada
 gate), a **entrega** (sistema e release), a **manutenção** (incidente) e o
-**acompanhamento** (status, pendências, retomar, backlog, sprint), mais o
+**acompanhamento** (status, listar, pendências, retomar, backlog, sprint), mais o
 pipeline. Também cobre a preparação e a adoção de projetos (`/sdd:iniciar`,
 `--adotar`, a transição das features adotadas), o Git Flow e a versão
 calculada pelos commits. E uma tabela de situações comuns com o comando para
