@@ -84,3 +84,17 @@ Dados pessoais tratados: {{quais, com finalidade e retenção, ou "nenhum"}}
 ## 13. Riscos técnicos e mitigação
 
 - {{...}}
+
+## 14. Lacunas da spec e interpretação adotada
+
+> Tudo que a spec aprovada deixou em aberto e que o plano precisou resolver
+> para seguir. Registre aqui, nunca só na conversa: depois da aprovação, esta
+> tabela é o único lugar onde a escolha fica versionada. **Regra de negócio não
+> se decide no plano**: a coluna "Natureza" a marca, e o caminho é voltar à spec
+> (`/sdd:clarificar`, depois `/sdd:aprovar` de novo). Sem lacunas, escreva
+> "nenhuma".
+
+| Lacuna | Interpretação adotada | Natureza | Onde resolver |
+|---|---|---|---|
+| {{ex.: como arredondar a margem exibida}} | {{ex.: duas casas, para baixo}} | regra de negócio | spec (`/sdd:clarificar`) |
+| {{ex.: formato do identificador interno}} | {{ex.: UUID v7}} | detalhe técnico | fica no plano |

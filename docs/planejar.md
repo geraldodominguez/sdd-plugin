@@ -33,13 +33,19 @@ mudar um contrato depois invalida a aprovação.
 
 ## Além da arquitetura
 
-O plano também traz três seções que antecipam as etapas seguintes:
+O plano também traz três seções que antecipam as etapas seguintes, e uma que registra o que a spec deixou em aberto:
 
 | Seção | Antecipa |
 |---|---|
 | Ameaças e mitigação | a [revisão de segurança](seguranca.md): problema de arquitetura é barato no plano e caro depois |
 | Implantação e rollback | o plano de implantação da [release](release.md): migrations reversíveis, ordem, configuração |
 | Observabilidade | a operação: o que logar e medir para saber, em produção, que funciona |
+| Lacunas da spec e interpretação adotada | a escolha que o plano precisou fazer onde a spec calou: fica versionada, em vez de sumir no resumo da conversa |
+
+Regra de negócio não se decide no plano. Se a lacuna é "como arredondar", "o que
+mostrar com o campo vazio", o plano a marca como **regra de negócio** e o caminho
+é voltar à spec (`/sdd:clarificar`, depois `/sdd:aprovar` de novo). Só o detalhe
+técnico fica resolvido no próprio plano.
 
 ## Perguntas frequentes
 

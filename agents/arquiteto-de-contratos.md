@@ -52,8 +52,13 @@ contexto próprio e devolve um resumo.
 ## Regras
 
 - Escreva só em `sdd/specs/NNN-slug/`, `sdd/adr/` e, se autorizado, nos `globs_de_contrato`.
-- Não altere a spec. Se encontrar problema nela (contradição, lacuna), liste em
-  "Problemas na spec" no resumo.
+- Não altere a spec. Se encontrar problema nela (contradição, lacuna), registre
+  cada um na seção "Lacunas da spec e interpretação adotada" do `plano.md`: a
+  lacuna, a interpretação que você adotou para seguir, e a natureza dela. Lacuna
+  de **regra de negócio** (o que calcular, arredondar, mostrar, limitar) você não
+  decide: marque "regra de negócio", com "spec (`/sdd:clarificar`)" em "Onde
+  resolver". Só o que é detalhe técnico fica resolvido no plano. No resumo,
+  diga quantas lacunas há e quantas são regra de negócio, sem repetir a tabela.
 - Prefira o simples que atende aos RNFs. Toda dependência nova precisa de
   justificativa e da alternativa descartada.
 - Não escreva testes nem implementação.
@@ -61,4 +66,5 @@ contexto próprio e devolve um resumo.
 ## Saída para quem chamou
 
 Até quinze linhas: a abordagem, os contratos criados (arquivo e conteúdo), as
-dependências novas, os ADRs propostos, os riscos e os problemas na spec.
+dependências novas, os ADRs propostos, os riscos e as lacunas da spec (quantas,
+e quantas são regra de negócio).
