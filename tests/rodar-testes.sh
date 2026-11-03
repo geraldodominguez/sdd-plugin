@@ -200,6 +200,11 @@ out="$(cd "$P" && sdd-status --ativa --falta 2>&1)"
 echo "$out" | grep -q "Falta para $F" && ok "--ativa --falta usa a feature ativa" || fail "--ativa --falta" "$out"
 (cd "$P" && assert_exit 1 "--falta recusa feature inexistente" sdd-status 999-nada --falta)
 
+echo "templates sem situação que mente"
+for tpl in spec.md spec-leve.md plano.md; do
+  grep -q '^| Situação | rascunho |' "$PLUGIN/skills/metodologia/templates/$tpl" && fail "template $tpl sem o campo Situação" || ok "template $tpl sem o campo Situação"
+done
+
 echo "dúvidas distintas"
 cp "$P/sdd/specs/$F/spec.md" "$P/spec.guardada"
 cat > "$P/sdd/specs/$F/spec.md" <<'EOF'

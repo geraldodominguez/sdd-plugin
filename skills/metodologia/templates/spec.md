@@ -3,7 +3,6 @@
 | Campo | Valor |
 |---|---|
 | Nível | {{NIVEL}} (completo) |
-| Situação | rascunho |
 | Criada em | {{DATA}} |
 | Contexto | [contexto.md](./contexto.md) (projetos existentes) |
 | Origem | {{ORIGEM}} |

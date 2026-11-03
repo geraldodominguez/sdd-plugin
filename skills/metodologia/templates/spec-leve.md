@@ -3,7 +3,6 @@
 | Campo | Valor |
 |---|---|
 | Nível | {{NIVEL}} (leve) |
-| Situação | rascunho |
 | Criada em | {{DATA}} |
 | Origem | {{ORIGEM}} |
 | Capacidade | {{CAPACIDADE}} |
