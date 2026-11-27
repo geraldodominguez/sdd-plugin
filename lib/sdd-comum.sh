@@ -1170,7 +1170,9 @@ sdd_estrutura_sdd() {
 # sdd_git_preparar <raiz> <criar 0|1>: repositório, branch main, .gitignore,
 # identidade, commit inicial e remoto.
 sdd_git_preparar() {
-  local raiz="$1" criar="$2" topo l nome email
+  local raiz="$1" criar="$2" topo l nome email linhas_ignore
+  # read -a não expande os globs (.env.*, *.tmp.*) contra os arquivos da pasta atual.
+  IFS=' ' read -r -a linhas_ignore <<< "$SDD_GITIGNORE_LINHAS"
   if ! topo="$(git -C "$raiz" rev-parse --show-toplevel 2>/dev/null)"; then
     if [ "$criar" != 1 ]; then echo "- repositório git (falta)"; return 0; fi
     case "$raiz" in "$HOME"|/|"") echo "! repositório git: recusado em '$raiz' (rode a partir da pasta do projeto)"; return 0 ;; esac
@@ -1196,7 +1198,7 @@ sdd_git_preparar() {
   if [ "$criar" = 1 ]; then
     local arq="$raiz/.gitignore" novas=0
     [ -e "$arq" ] || : > "$arq"
-    for l in $SDD_GITIGNORE_LINHAS; do
+    for l in "${linhas_ignore[@]}"; do
       if ! grep -qxF "$l" "$arq"; then
         if [ "$novas" -eq 0 ] && [ -s "$arq" ] && [ -n "$(tail -c1 "$arq")" ]; then printf '\n' >> "$arq"; fi
         printf '%s\n' "$l" >> "$arq"
@@ -1205,7 +1207,7 @@ sdd_git_preparar() {
     done
     if [ "$novas" -gt 0 ]; then echo "+ .gitignore ($novas linha(s))"; else echo "= .gitignore"; fi
   else
-    for l in $SDD_GITIGNORE_LINHAS; do
+    for l in "${linhas_ignore[@]}"; do
       grep -qxF "$l" "$raiz/.gitignore" 2>/dev/null || { echo "- .gitignore: falta a linha $l"; }
     done
   fi

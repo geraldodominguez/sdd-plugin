@@ -33,7 +33,7 @@ done
 [ -n "$FEATURE" ] || FEATURE="$(sdd_estado_ler "$RAIZ" feature)"
 [ -n "$FEATURE" ] || { echo "sdd-rastrear: nenhuma feature ativa nem informada." >&2; exit 1; }
 
-PASTA_SPECS="$(sdd_config "$RAIZ" pasta_specs specs)"
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 DIR="$RAIZ/$PASTA_SPECS/$FEATURE"
 SPEC="$DIR/spec.md"
 TAREFAS="$DIR/tarefas.md"

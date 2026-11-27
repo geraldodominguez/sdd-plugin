@@ -1204,6 +1204,23 @@ printf '%s' "$out" | grep -q 'LEIAME.md cita docs/guias/manual.md' && ok "docs l
 out="$(cd "$D1" && sdd-adotar docs 2>&1)"
 printf '%s' "$out" | grep -q 'Não há docs/' && ok "docs sem docs/ na raiz: nada a fazer" || fail "docs repetido" "$out"
 
+echo ".gitignore sem expandir os globs contra a pasta atual"
+GI="$TMP/gitignore"; mkdir -p "$GI"; : > "$GI/.env.local"; : > "$GI/.env.example"; : > "$GI/a.tmp.1"
+(cd "$GI" && sdd-iniciar --sem-claude >/dev/null 2>&1)
+grep -qxF '.env.*' "$GI/.gitignore" && grep -qxF '*.tmp.*' "$GI/.gitignore" && ok "o .gitignore recebe .env.* e *.tmp.* literais" || fail "globs expandidos no .gitignore" "$(cat "$GI/.gitignore" 2>&1)"
+grep -qxF '.env.local' "$GI/.gitignore" && fail "o .gitignore não deve ganhar o nome de arquivo que casou com o glob" || ok "nenhum nome de arquivo da pasta vira linha do .gitignore"
+
+echo "pasta_specs ausente do config: vale sdd/specs"
+PS="$TMP/sem-pasta-specs"; mkdir -p "$PS/sdd/specs/001-x"
+printf 'protecao: leve\ngitflow: desligado\n' > "$PS/sdd/config.yml"
+printf 'feature=001-x\n' > "$PS/sdd/estado"
+printf 'fase=green\nnivel=1\n' > "$PS/sdd/specs/001-x/estado"
+printf '# Spec 001-x\n' > "$PS/sdd/specs/001-x/spec.md"
+assert_exit 2 "hook bloqueia editar o histórico da feature sem pasta_specs no config" guard_edit "$PS" "$PS/sdd/specs/001-x/historico.md"
+assert_exit 2 "hook bloqueia editar o estado da feature sem pasta_specs no config" guard_edit "$PS" "$PS/sdd/specs/001-x/estado"
+out="$(cd "$PS" && sdd-rastrear 001-x 2>&1)"
+echo "$out" | grep -q 'Rastreabilidade: sdd/specs/001-x' && ok "sdd-rastrear acha a spec sem pasta_specs no config" || fail "sdd-rastrear sem pasta_specs" "$out"
+
 echo "entradas inválidas"
 assert_exit 0 "stdin vazio: permite" bash -c "printf '' | '$PLUGIN/scripts/guarda-edicoes.sh'"
 assert_exit 0 "JSON inválido: permite" bash -c "printf 'não é json' | '$PLUGIN/scripts/guarda-edicoes.sh'"

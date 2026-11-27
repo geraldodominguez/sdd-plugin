@@ -31,7 +31,6 @@ if ! sdd_projeto_usa "$RAIZ"; then
   exit 0
 fi
 PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
-ATIVA="$(sdd_kv_ler "$RAIZ/sdd/estado" feature)"
 SPRINT="$(sdd_kv_ler "$RAIZ/sdd/estado" sprint)"
 
 TIPO="${1:-}"
@@ -165,7 +164,7 @@ listar_planos() {
 }
 
 listar_criterios() {
-  local f fase num dir spec tarefas testes ca desc ts tst mostrar achou=0 impresso
+  local f fase num dir spec tarefas testes ca desc ts tst achou=0 impresso
   for f in $(features_filtradas); do
     fase="$(sdd_feature_ler "$RAIZ" "$f" fase)"
     so_construcao "$fase" || continue
