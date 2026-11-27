@@ -54,7 +54,7 @@ case "$REL" in
   /*|[A-Za-z]:/*) exit 0 ;;
 esac
 
-PASTA_SPECS="$(sdd_config "$RAIZ" pasta_specs specs)"
+PASTA_SPECS="$(sdd_pasta_specs "$RAIZ")"
 PASTA_SISTEMA="$(sdd_pasta_sistema "$RAIZ")"
 PASTA_RELEASES="$(sdd_pasta_releases "$RAIZ")"
 PASTA_INCIDENTES="$(sdd_pasta_incidentes "$RAIZ")"
